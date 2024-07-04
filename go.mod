@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/andybalholm/brotli v1.0.3
 	github.com/go-gl/mathgl v1.1.0
+	github.com/golang/snappy v0.0.4
 	github.com/google/uuid v1.5.0
 	github.com/klauspost/compress v1.13.6
 	github.com/lucasb-eyer/go-colorful v1.2.0
@@ -19,11 +20,6 @@ require (
 )
 
 require (
-	github.com/golang/snappy v0.0.4
-	go.uber.org/atomic v1.11.0 // indirect
-)
-
-require (
 	github.com/atomicgo/cursor v0.0.1 // indirect
 	github.com/df-mc/atomic v1.10.0 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
@@ -32,6 +28,7 @@ require (
 	github.com/muhammadmuzzammil1998/jsonc v1.0.0
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 // indirect
+	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/crypto v0.19.0 // indirect
 	golang.org/x/image v0.0.0-20190321063152-3fc05d484e9f // indirect
 	golang.org/x/sys v0.17.0 // indirect
