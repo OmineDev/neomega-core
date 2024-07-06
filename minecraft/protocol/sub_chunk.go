@@ -67,13 +67,11 @@ func SubChunkEntryNoCache(r IO, x *SubChunkEntry) {
 }
 
 // SubChunkOffset represents an offset from the base position of another sub chunk.
-// Netease
-type SubChunkOffset [3]uint8
+type SubChunkOffset [3]int8
 
 // Marshal encodes/decodes a SubChunkOffset.
-// Netease: Int8 -> Uint8
 func (x *SubChunkOffset) Marshal(r IO) {
-	r.Uint8(&x[0])
-	r.Uint8(&x[1])
-	r.Uint8(&x[2])
+	r.Int8(&x[0])
+	r.Int8(&x[1])
+	r.Int8(&x[2])
 }
