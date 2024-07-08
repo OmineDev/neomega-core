@@ -370,14 +370,14 @@ func (ps *PropsForSearch) Compare(compare *PropsForSearch) (o ComparedOutput) {
 	this := map[string]int{}
 	that := map[string]int{}
 	for i, n := range *ps {
-		this[n.Name] = i
+		this[strings.TrimLeft(n.Name, "minecraft:")] = i
 	}
 	for i, n := range *compare {
-		that[n.Name] = i
+		that[strings.TrimLeft(n.Name, "minecraft:")] = i
 	}
 
 	for _, prop := range *compare {
-		if actualPi, found := this[prop.Name]; found {
+		if actualPi, found := this[strings.TrimLeft(prop.Name, "minecraft:")]; found {
 			actualP := (*ps)[actualPi]
 			if actualP.Value.FuzzyEqual(prop.Value) {
 				o.Same++
@@ -389,7 +389,7 @@ func (ps *PropsForSearch) Compare(compare *PropsForSearch) (o ComparedOutput) {
 		}
 	}
 	for _, an := range *ps {
-		if _, found := that[an.Name]; !found {
+		if _, found := that[strings.TrimLeft(an.Name, "minecraft:")]; !found {
 			o.Missing++
 		}
 	}

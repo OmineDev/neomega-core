@@ -245,7 +245,7 @@ func PropsFromMap(mapProps map[string]PropVal) Props {
 	// clean
 	cleanMapProps := map[string]PropVal{}
 	for k, v := range mapProps {
-		cleanMapProps[strings.ReplaceAll(strings.ReplaceAll(k, "\"", ""), "minecraft:", "")] = v
+		cleanMapProps[strings.ReplaceAll(k, "\"", "")] = v
 	}
 	mapProps = cleanMapProps
 	// sort

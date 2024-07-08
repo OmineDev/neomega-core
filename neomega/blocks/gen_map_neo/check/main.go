@@ -89,4 +89,10 @@ func main() {
 		panic("not ok")
 	}
 	fmt.Println(blocks.RuntimeIDToBlockNameAndStateStr(rtid))
+
+	rtid, ok = blocks.SchemBlockStrToRuntimeID("carved_pumpkin[facing=east]")
+	if !ok {
+		panic("not ok")
+	}
+	fmt.Println(blocks.RuntimeIDToBlockNameAndStateStr(rtid))
 }
