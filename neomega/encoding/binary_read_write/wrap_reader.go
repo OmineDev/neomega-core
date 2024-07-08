@@ -1,10 +1,17 @@
 package binary_read_write
 
-import "io"
+import (
+	"bytes"
+	"io"
+)
 
 type wrappedReader struct {
 	underlayReader io.Reader
 	readByte       func() (b byte, err error)
+}
+
+func (r *wrappedReader) IOReader() io.Reader {
+	return r.underlayReader
 }
 
 func (w *wrappedReader) Read(b []byte) (err error) {
@@ -33,7 +40,7 @@ func (w *wrappedReader) ReadByte() (b byte, err error) {
 	return w.readByte()
 }
 
-func WrapBinaryReader(underlayReader io.Reader) BinaryReader {
+func WrapBinaryReader(underlayReader io.Reader) *wrappedReader {
 	r := &wrappedReader{
 		underlayReader: underlayReader,
 		readByte:       nil,
@@ -48,6 +55,15 @@ func WrapBinaryReader(underlayReader io.Reader) BinaryReader {
 			err = r.Read(data)
 			return data[0], err
 		}
+	}
+	return r
+}
+
+func WrapBytes(data []byte) *wrappedReader {
+	underlayReader := bytes.NewReader(data)
+	r := &wrappedReader{
+		underlayReader: underlayReader,
+		readByte:       underlayReader.ReadByte,
 	}
 	return r
 }

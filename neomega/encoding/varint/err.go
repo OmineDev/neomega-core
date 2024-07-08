@@ -1,4 +1,4 @@
-package little_endian_with_varint
+package varint
 
 import "errors"
 

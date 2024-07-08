@@ -1,4 +1,4 @@
-package little_endian_with_varint
+package varint
 
 import "math"
 
@@ -15,13 +15,54 @@ type CanReadBoth interface {
 	CanReadOutBytes
 }
 
-// Int16 ...
-func Int16(r CanReadOutBytes) (int16, error) {
-	b, err := r.ReadOut(2)
-	if err != nil {
-		return 0, err
+func Uint16(reader CanReadBoth) (uint16, error) {
+	var val uint16
+	for i := uint(0); i < 16; i += 7 {
+		b, err := reader.ReadByte()
+		if err != nil {
+			return 0, err
+		}
+		val |= uint16(b&0x7f) << i
+		if b&0x80 == 0 {
+			break
+		}
 	}
-	return int16(uint16(b[0]) | uint16(b[1])<<8), nil
+	return val, nil
+}
+
+// Int16 ...
+func Int16(r CanReadBoth) (int16, error) {
+	var ux uint16
+	for i := uint(0); i < 16; i += 7 {
+		b, err := r.ReadByte()
+		if err != nil {
+			return 0, err
+		}
+		ux |= uint16(b&0x7f) << i
+		if b&0x80 == 0 {
+			break
+		}
+	}
+	x := int16(ux >> 1)
+	if ux&1 != 0 {
+		x = ^x
+	}
+	return x, nil
+}
+
+func Uint32(reader CanReadBoth) (uint32, error) {
+	var val uint32
+	for i := uint(0); i < 35; i += 7 {
+		b, err := reader.ReadByte()
+		if err != nil {
+			return 0, err
+		}
+		val |= uint32(b&0x7f) << i
+		if b&0x80 == 0 {
+			break
+		}
+	}
+	return val, nil
 }
 
 // Int32 ...
@@ -42,6 +83,21 @@ func Int32(r CanReadBoth) (int32, error) {
 		x = ^x
 	}
 	return x, nil
+}
+
+func Uint64(reader CanReadBoth) (uint64, error) {
+	var val uint64
+	for i := uint(0); i < 70; i += 7 {
+		b, err := reader.ReadByte()
+		if err != nil {
+			return 0, err
+		}
+		val |= uint64(b&0x7f) << i
+		if b&0x80 == 0 {
+			break
+		}
+	}
+	return val, nil
 }
 
 // Int64 ...

@@ -1,4 +1,4 @@
-package little_endian_with_varint
+package varint
 
 import (
 	"math"
@@ -15,11 +15,6 @@ type CanWriteByte interface {
 type CanWriteBoth interface {
 	CanWriteByte
 	CanWriteBytes
-}
-
-// WriteInt16 ...
-func WriteInt16(w CanWriteBytes, x int16) error {
-	return w.Write([]byte{byte(x), byte(x >> 8)})
 }
 
 // WriteInt32 ...
