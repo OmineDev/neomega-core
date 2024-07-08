@@ -98,10 +98,10 @@ func SchemBlockStrToRuntimeID(blockNameWithOrWithoutState string) (runtimeID uin
 	}
 }
 
-func SchematicToRuntimeID(block uint8, value uint8) uint32 {
-	value = value & 0xF
-	return quickSchematicMapping[block][value]
-}
+// func SchematicToRuntimeID(block uint8, value uint8) uint32 {
+// 	value = value & 0xF
+// 	return quickSchematicMapping[block][value]
+// }
 
 func ConvertStringToBlockNameAndPropsForSearch(blockString string) (blockNameForSearch describe.BaseWithNameSpace, propsForSearch *describe.PropsForSearch) {
 	blockString = strings.ReplaceAll(blockString, "{", "[")

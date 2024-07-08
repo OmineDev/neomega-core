@@ -3,12 +3,10 @@ package blocks
 import (
 	"bytes"
 	_ "embed"
-	"fmt"
 	"io"
 
 	"github.com/OmineDev/neomega-core/neomega/blocks/block_set"
 	"github.com/OmineDev/neomega-core/neomega/blocks/convertor"
-	"github.com/OmineDev/neomega-core/neomega/blocks/describe"
 
 	"github.com/andybalholm/brotli"
 )
@@ -52,32 +50,33 @@ func initNEMCBlocks() {
 
 var DefaultAnyToNemcConvertor *convertor.ToNEMCConvertor
 var SchemToNemcConvertor *convertor.ToNEMCConvertor
-var quickSchematicMapping [256][16]uint32
 
-func initSchematicBlockCheck(schematicToNemcConvertor *convertor.ToNEMCConvertor) {
-	quickSchematicMapping = [256][16]uint32{}
-	for i := 0; i < 256; i++ {
-		blockName := schematicBlockStrings[i]
-		_, found := DefaultAnyToNemcConvertor.TryBestSearchByLegacyValue(describe.BlockNameForSearch(blockName), 0)
-		if !found {
-			panic(fmt.Errorf("schematic %v 0 not found", blockName))
-		}
-	}
-	for blockI := 0; blockI < 256; blockI++ {
-		blockName := schematicBlockStrings[blockI]
-		// if blockName == "stone_slab" {
-		// 	fmt.Println("slab")
-		// }
-		for dataI := 0; dataI < 16; dataI++ {
-			rtid, found := schematicToNemcConvertor.TryBestSearchByLegacyValue(describe.BlockNameForSearch(blockName), uint16(dataI))
-			if !found || rtid == AIR_RUNTIMEID {
-				rtid, _ = schematicToNemcConvertor.TryBestSearchByLegacyValue(describe.BlockNameForSearch(blockName), 0)
-			}
-			quickSchematicMapping[blockI][dataI] = rtid
-		}
-	}
-	schematicToNemcConvertor = nil
-}
+// var quickSchematicMapping [256][16]uint32
+
+// func initSchematicBlockCheck(schematicToNemcConvertor *convertor.ToNEMCConvertor) {
+// 	quickSchematicMapping = [256][16]uint32{}
+// 	for i := 0; i < 256; i++ {
+// 		blockName := schematicBlockStrings[i]
+// 		_, found := DefaultAnyToNemcConvertor.TryBestSearchByLegacyValue(describe.BlockNameForSearch(blockName), 0)
+// 		if !found {
+// 			panic(fmt.Errorf("schematic %v 0 not found", blockName))
+// 		}
+// 	}
+// 	for blockI := 0; blockI < 256; blockI++ {
+// 		blockName := schematicBlockStrings[blockI]
+// 		// if blockName == "stone_slab" {
+// 		// 	fmt.Println("slab")
+// 		// }
+// 		for dataI := 0; dataI < 16; dataI++ {
+// 			rtid, found := schematicToNemcConvertor.TryBestSearchByLegacyValue(describe.BlockNameForSearch(blockName), uint16(dataI))
+// 			if !found || rtid == AIR_RUNTIMEID {
+// 				rtid, _ = schematicToNemcConvertor.TryBestSearchByLegacyValue(describe.BlockNameForSearch(blockName), 0)
+// 			}
+// 			quickSchematicMapping[blockI][dataI] = rtid
+// 		}
+// 	}
+// 	schematicToNemcConvertor = nil
+// }
 
 func initConvertor() {
 	DefaultAnyToNemcConvertor = MC_CURRENT.CreateEmptyConvertor()
@@ -109,7 +108,7 @@ func initConvertor() {
 		DefaultAnyToNemcConvertor.LoadConvertRecord(r, false, false)
 		SchemToNemcConvertor.LoadConvertRecord(r, true, true)
 	}
-	initSchematicBlockCheck(schematicToNemcConvertor)
+	// initSchematicBlockCheck(schematicToNemcConvertor)
 }
 
 func init() {

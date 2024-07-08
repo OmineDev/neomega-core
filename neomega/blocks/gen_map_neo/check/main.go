@@ -57,8 +57,8 @@ func main() {
 	fmt.Println(blocks.RuntimeIDToBlockNameWithStateStr(rtid))
 	rtid, _ = blocks.BlockStrToRuntimeID(`minecraft:mangrove_propagule[age=0,hanging=true,stage=0,waterlogged=true]`)
 	fmt.Println(blocks.RuntimeIDToBlockNameWithStateStr(rtid))
-	rtid = blocks.SchematicToRuntimeID(35, 3)
-	fmt.Println(blocks.RuntimeIDToBlockNameWithStateStr(rtid))
+	// rtid = blocks.SchematicToRuntimeID(35, 3)
+	// fmt.Println(blocks.RuntimeIDToBlockNameWithStateStr(rtid))
 	rtid, ok := blocks.BlockStrToRuntimeID(`wool ["color":"orange"]`)
 	if !ok {
 		panic("not ok")
