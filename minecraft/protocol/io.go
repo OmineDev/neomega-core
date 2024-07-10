@@ -28,6 +28,8 @@ type IO interface {
 	Varuint64(x *uint64)
 	Varint32(x *int32)
 	Varuint32(x *uint32)
+	Varint16(x *int16)   // Netease
+	Varuint16(x *uint16) // Netease
 	String(x *string)
 	StringUTF(x *string)
 	ByteSlice(x *[]byte)
@@ -43,7 +45,10 @@ type IO interface {
 	ByteFloat(x *float32)
 	Bytes(p *[]byte)
 	NBT(m *map[string]any, encoding nbt.Encoding)
+	NBTWithLength(m *map[string]any) // Netease
 	NBTList(m *[]any, encoding nbt.Encoding)
+	EnchantList(x *[]Enchant)   // Netease
+	ItemList(x *[]ItemWithSlot) // Netease
 	UUID(x *uuid.UUID)
 	RGBA(x *color.RGBA)
 	VarRGBA(x *color.RGBA)
@@ -79,6 +84,13 @@ func Slice[T any, S ~*[]T, A PtrMarshaler[T]](r IO, x S) {
 	count := uint32(len(*x))
 	r.Varuint32(&count)
 	SliceOfLen[T, S, A](r, count, x)
+}
+
+// Netease: SliceVarint16Length reads/writes a slice of T with a varint16 prefix.
+func SliceVarint16Length[T any, S ~*[]T, A PtrMarshaler[T]](r IO, x S) {
+	count := int16(len(*x))
+	r.Varint16(&count)
+	SliceOfLen[T, S, A](r, uint32(count), x)
 }
 
 // SliceUint8Length reads/writes a slice of T with a uint8 prefix.
@@ -130,11 +142,25 @@ func FuncSliceUint32Length[T any, S ~*[]T](r IO, x S, f func(*T)) {
 	FuncSliceOfLen(r, count, x, f)
 }
 
+// Netease: FuncSliceVarint16Length reads/writes a slice of T using function f with a varint16 length prefix.
+func FuncSliceVarint16Length[T any, S ~*[]T](r IO, x S, f func(*T)) {
+	count := int16(len(*x))
+	r.Varint16(&count)
+	FuncSliceOfLen(r, uint32(count), x, f)
+}
+
 // FuncSlice reads/writes a slice of T using function f with a varuint32 length prefix.
 func FuncSlice[T any, S ~*[]T](r IO, x S, f func(*T)) {
 	count := uint32(len(*x))
 	r.Varuint32(&count)
 	FuncSliceOfLen(r, count, x, f)
+}
+
+// Netease: FuncSliceVarint32Length reads/writes a slice of T using function f with a varint32 length prefix.
+func FuncSliceVarint32Length[T any, S ~*[]T](r IO, x S, f func(*T)) {
+	count := int32(len(*x))
+	r.Varint32(&count)
+	FuncSliceOfLen(r, uint32(count), x, f)
 }
 
 // FuncIOSlice reads/writes a slice of T using a function f with a varuint32 length prefix.
@@ -204,33 +230,33 @@ func Single[T any, S PtrMarshaler[T]](r IO, x S) {
 // Optional is an optional type in the protocol. If not set, only a false bool is written. If set, a true bool is
 // written and the Marshaler.
 type Optional[T any] struct {
-	set bool
-	val T
+	Set bool
+	Val T
 }
 
 // Option creates an Optional[T] with the value passed.
 func Option[T any](val T) Optional[T] {
-	return Optional[T]{set: true, val: val}
+	return Optional[T]{Set: true, Val: val}
 }
 
 // Value returns the value set in the Optional. If no value was set, false is returned.
 func (o Optional[T]) Value() (T, bool) {
-	return o.val, o.set
+	return o.Val, o.Set
 }
 
 // OptionalFunc reads/writes an Optional[T].
 func OptionalFunc[T any](r IO, x *Optional[T], f func(*T)) any {
-	r.Bool(&x.set)
-	if x.set {
-		f(&x.val)
+	r.Bool(&x.Set)
+	if x.Set {
+		f(&x.Val)
 	}
 	return x
 }
 
 // OptionalMarshaler reads/writes an Optional assuming *T implements Marshaler.
 func OptionalMarshaler[T any, A PtrMarshaler[T]](r IO, x *Optional[T]) {
-	r.Bool(&x.set)
-	if x.set {
-		A(&x.val).Marshal(r)
+	r.Bool(&x.Set)
+	if x.Set {
+		A(&x.Val).Marshal(r)
 	}
 }

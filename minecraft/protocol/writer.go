@@ -539,6 +539,34 @@ func (w *Writer) Varuint32(x *uint32) {
 	_ = w.w.WriteByte(byte(u))
 }
 
+// Netease specific.
+//
+// Varint16 writes an int16 as 1-2 bytes to the underlying buffer.
+func (w *Writer) Varint16(x *int16) {
+	u := *x
+	ux := uint16(u) << 1
+	if u < 0 {
+		ux = ^ux
+	}
+	for ux >= 0x80 {
+		_ = w.w.WriteByte(byte(ux) | 0x80)
+		ux >>= 7
+	}
+	_ = w.w.WriteByte(byte(ux))
+}
+
+// Netease specific.
+//
+// Varuint16 writes a uint16 as 1-2 bytes to the underlying buffer.
+func (w *Writer) Varuint16(x *uint16) {
+	u := *x
+	for u >= 0x80 {
+		_ = w.w.WriteByte(byte(u) | 0x80)
+		u >>= 7
+	}
+	_ = w.w.WriteByte(byte(u))
+}
+
 // NBT writes a map as NBT to the underlying buffer using the encoding passed.
 func (w *Writer) NBT(x *map[string]any, encoding nbt.Encoding) {
 	if err := nbt.NewEncoderWithEncoding(w.w, encoding).Encode(*x); err != nil {
@@ -546,11 +574,80 @@ func (w *Writer) NBT(x *map[string]any, encoding nbt.Encoding) {
 	}
 }
 
+// Netease specific.
+//
+// NBT writes a map as NBT with its length to the underlying buffer using the encoding passed.
+// We used NetworkLittleEndian as the marshal protocol.
+func (w *Writer) NBTWithLength(x *map[string]any) {
+	var length uint32
+	if x == nil || len(*x) == 0 {
+		w.Varuint32(&length)
+		return
+	}
+
+	buffer := bytes.NewBuffer([]byte{})
+	if err := nbt.NewEncoderWithEncoding(buffer, nbt.NetworkLittleEndian).Encode(*x); err != nil {
+		panic(err)
+	}
+	nbtBytes := buffer.Bytes()
+	length = uint32(len(nbtBytes))
+
+	w.Varuint32(&length)
+	w.w.Write(nbtBytes)
+}
+
 // NBTList writes a slice as NBT to the underlying buffer using the encoding passed.
 func (w *Writer) NBTList(x *[]any, encoding nbt.Encoding) {
 	if err := nbt.NewEncoderWithEncoding(w.w, encoding).Encode(*x); err != nil {
 		panic(err)
 	}
+}
+
+// Netease specific.
+//
+// EnchantList writes a slice of Enchant to the underlying buffer.
+func (w *Writer) EnchantList(x *[]Enchant) {
+	var bufferLength uint16
+	var ListLength int16
+
+	if x == nil || len(*x) == 0 {
+		w.Uint16(&bufferLength)
+		return
+	}
+
+	buffer := bytes.NewBuffer([]byte{})
+	writer := NewWriter(buffer, 0)
+	for _, value := range *x {
+		value.Marshal(writer)
+	}
+
+	ListLength = int16(len(*x))
+	bufferLength = uint16(buffer.Len())
+
+	w.Uint16(&bufferLength)
+	w.Varint16(&ListLength)
+	w.w.Write(buffer.Bytes())
+}
+
+// Netease specific.
+//
+// ItemList writes a slice of ItemWithSlot to the underlying buffer.
+func (w *Writer) ItemList(x *[]ItemWithSlot) {
+	var length uint32
+	if x == nil || len(*x) == 0 {
+		w.Varuint32(&length)
+		return
+	}
+
+	buffer := bytes.NewBuffer([]byte{})
+	writer := NewWriter(buffer, 0)
+	for _, value := range *x {
+		value.Marshal(writer)
+	}
+
+	length = uint32(buffer.Len())
+	w.Varuint32(&length)
+	w.w.Write(buffer.Bytes())
 }
 
 // ShieldID returns the shield ID provided to the writer.
