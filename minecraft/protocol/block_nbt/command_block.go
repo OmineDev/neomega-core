@@ -24,7 +24,7 @@ type CommandBlock struct {
 	Auto               byte     `nbt:"auto"`               // TAG_Byte(1) = 1
 	ConditionMet       byte     `nbt:"conditionMet"`       // TAG_Byte(1) = 0
 	ConditionalMode    byte     `nbt:"conditionalMode"`    // Not used; TAG_Byte(1) = 0
-	general.RedstoneBlock
+	Powered            byte     `nbt:"powered"`            // TAG_Byte(1) = 0
 	general.Global
 }
 
@@ -36,7 +36,7 @@ func (*CommandBlock) ID() string {
 
 func (c *CommandBlock) Marshal(io protocol.IO) {
 	c.Global.Marshal(io)
-	c.RedstoneBlock.Marshal(io)
+	io.Uint8(&c.Powered)
 	io.Uint8(&c.Auto)
 	io.Uint8(&c.ConditionMet)
 	io.Uint8(&c.LPCondionalMode)
@@ -56,8 +56,9 @@ func (c *CommandBlock) Marshal(io protocol.IO) {
 
 func (c *CommandBlock) ToNBT() map[string]any {
 	return utils.MergeMaps(
-		c.Global.ToNBT(), c.RedstoneBlock.ToNBT(),
+		c.Global.ToNBT(),
 		map[string]any{
+			"powered":            c.Powered,
 			"Command":            c.Command,
 			"CustomName":         c.CustomName,
 			"ExecuteOnFirstTick": c.ExecuteOnFirstTick,
@@ -80,7 +81,7 @@ func (c *CommandBlock) ToNBT() map[string]any {
 
 func (c *CommandBlock) FromNBT(x map[string]any) {
 	c.Global.FromNBT(x)
-	c.RedstoneBlock.FromNBT(x)
+	c.Powered = x["powered"].(byte)
 	c.Command = x["Command"].(string)
 	c.CustomName = x["CustomName"].(string)
 	c.ExecuteOnFirstTick = x["ExecuteOnFirstTick"].(byte)
