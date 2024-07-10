@@ -1,8 +1,10 @@
 package block_nbt
 
+import "github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
+
 // 投掷器
 type Dropper struct {
-	Dispenser
+	general.Dispenser
 }
 
 // ID ...
