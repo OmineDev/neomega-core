@@ -4,7 +4,7 @@ on:
   workflow_dispatch: {}
   push:
     paths:
-      - 'minecraft/protocol/block_nbt/**'
+      - 'minecraft/protocol/block_actors/**'
 
 jobs:
   checker:
@@ -17,5 +17,5 @@ jobs:
       uses: actions/setup-go@v5
     - name: Test codes
       run: |
-        cd minecraft/protocol/block_nbt/test/tiled_buffer
+        cd minecraft/protocol/block_actors/test/tiled_buffer
         go test
