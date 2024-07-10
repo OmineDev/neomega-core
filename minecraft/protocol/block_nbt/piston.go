@@ -7,7 +7,7 @@ import (
 )
 
 // 活塞
-type Piston struct {
+type PistonArm struct {
 	AttachedBlocks []protocol.BlockPos `nbt:"AttachedBlocks"` // * TAG_List[TAG_Int] (9[4])
 	BreakBlocks    []protocol.BlockPos `nbt:"BreakBlocks"`    // * TAG_List[TAG_Int] (9[4])
 	LastProgress   float32             `nbt:"LastProgress"`   // TAG_Float(6) = 0
@@ -19,11 +19,11 @@ type Piston struct {
 }
 
 // ID ...
-func (*Piston) ID() string {
-	return IDPiston
+func (*PistonArm) ID() string {
+	return IDPistonArm
 }
 
-func (p *Piston) Marshal(io protocol.IO) {
+func (p *PistonArm) Marshal(io protocol.IO) {
 	protocol.Single(io, &p.Global)
 	io.Float32(&p.Progress)
 	io.Float32(&p.LastProgress)
@@ -34,7 +34,7 @@ func (p *Piston) Marshal(io protocol.IO) {
 	protocol.FuncSliceVarint16Length(io, &p.BreakBlocks, io.BlockPos)
 }
 
-func (p *Piston) ToNBT() map[string]any {
+func (p *PistonArm) ToNBT() map[string]any {
 	attachedBlocks := make([]any, 0)
 	for _, value := range p.AttachedBlocks {
 		attachedBlocks = append(attachedBlocks, value[0], value[1], value[2])
@@ -57,7 +57,7 @@ func (p *Piston) ToNBT() map[string]any {
 	)
 }
 
-func (p *Piston) FromNBT(x map[string]any) {
+func (p *PistonArm) FromNBT(x map[string]any) {
 	p.Global.FromNBT(x)
 	attachedBlocks := slices.FromAnyList[int32](x["AttachedBlocks"].([]any))
 	for i := 0; i < len(attachedBlocks)/3; i++ {

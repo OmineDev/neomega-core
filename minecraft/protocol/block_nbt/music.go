@@ -7,22 +7,22 @@ import (
 )
 
 // 音符盒
-type NoteBlock struct {
+type Music struct {
 	Note uint32 `nbt:"note"` // * TAG_Byte(1) = 0
 	general.Global
 }
 
 // ID ...
-func (*NoteBlock) ID() string {
-	return IDNoteBlock
+func (*Music) ID() string {
+	return IDMusic
 }
 
-func (n *NoteBlock) Marshal(io protocol.IO) {
+func (n *Music) Marshal(io protocol.IO) {
 	protocol.Single(io, &n.Global)
 	io.Varuint32(&n.Note)
 }
 
-func (n *NoteBlock) ToNBT() map[string]any {
+func (n *Music) ToNBT() map[string]any {
 	return slices.MergeMaps(
 		n.Global.ToNBT(),
 		map[string]any{
@@ -31,7 +31,7 @@ func (n *NoteBlock) ToNBT() map[string]any {
 	)
 }
 
-func (n *NoteBlock) FromNBT(x map[string]any) {
+func (n *Music) FromNBT(x map[string]any) {
 	n.Global.FromNBT(x)
 	n.Note = uint32(x["note"].(byte))
 }

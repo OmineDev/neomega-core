@@ -21,31 +21,31 @@ const (
 	IDBrushableBlock = "BrushableBlock"
 	IDDecoratedPot   = "DecoratedPot"
 
-	IDBanner          = "Banner"
-	IDBeacon          = "Beacon"
-	IDBed             = "Bed"
-	IDBeehive         = "Beehive"
-	IDBell            = "Bell"
-	IDBrewingStand    = "BrewingStand"
-	IDCampfire        = "Campfire"
-	IDCommandBlock    = "CommandBlock"
-	IDComparator      = "Comparator"
-	IDConduit         = "Conduit"
-	IDCauldron        = "Cauldron"
-	IDEnchantingTable = "EnchantTable"
-	IDFlowerPot       = "FlowerPot"
-	IDHopper          = "Hopper"
-	IDJigsaw          = "JigsawBlock"
-	IDJukebox         = "Jukebox"
-	IDLectern         = "Lectern"
-	IDLodestone       = "Lodestone"
-	IDMobSpawner      = "MobSpawner"
-	IDMovingBlock     = "MovingBlock"
-	IDNetherReactor   = "NetherReactor"
-	IDNoteBlock       = "Music"
-	IDPiston          = "PistonArm"
-	IDSkull           = "Skull"
-	IDStructureBlock  = "StructureBlock"
+	IDBanner         = "Banner"
+	IDBeacon         = "Beacon"
+	IDBed            = "Bed"
+	IDBeehive        = "Beehive"
+	IDBell           = "Bell"
+	IDBrewingStand   = "BrewingStand"
+	IDCampfire       = "Campfire"
+	IDCommandBlock   = "CommandBlock"
+	IDComparator     = "Comparator"
+	IDConduit        = "Conduit"
+	IDCauldron       = "Cauldron"
+	IDEnchantTable   = "EnchantTable"
+	IDFlowerPot      = "FlowerPot"
+	IDHopper         = "Hopper"
+	IDJigsawBlock    = "JigsawBlock"
+	IDJukebox        = "Jukebox"
+	IDLectern        = "Lectern"
+	IDLodestone      = "Lodestone"
+	IDMobSpawner     = "MobSpawner"
+	IDMovingBlock    = "MovingBlock"
+	IDNetherReactor  = "NetherReactor"
+	IDMusic          = "Music"
+	IDPistonArm      = "PistonArm"
+	IDSkull          = "Skull"
+	IDStructureBlock = "StructureBlock"
 
 	IDSign        = "Sign"
 	IDHangingSign = "HangingSign"
@@ -66,8 +66,8 @@ const (
 	IDDispenser = "Dispenser"
 	IDDropper   = "Dropper"
 
-	IDFrame     = "ItemFrame"
-	IDGlowFrame = "GlowItemFrame"
+	IDItemFrame     = "ItemFrame"
+	IDGlowItemFrame = "GlowItemFrame"
 
 	IDChemistryTable = "ChemistryTable"
 	IDModBlock       = "ModBlock"
@@ -99,16 +99,16 @@ func NewPool() map[string]BlockNBT {
 		IDDecoratedPot:          &DecoratedPot{},
 		IDDispenser:             &Dispenser{},
 		IDDropper:               &Dropper{},
-		IDEnchantingTable:       &EnchantingTable{},
+		IDEnchantTable:          &EnchantTable{},
 		IDEndPortal:             &EndPortal{},
 		IDEnderChest:            &EnderChest{},
 		IDFlowerPot:             &FlowerPot{},
 		IDFurnace:               &Furnace{},
-		IDGlowFrame:             &GlowFrame{},
+		IDGlowItemFrame:         &GlowItemFrame{},
 		IDHangingSign:           &HangingSign{},
 		IDHopper:                &Hopper{},
-		IDFrame:                 &Frame{},
-		IDJigsaw:                &Jigsaw{},
+		IDItemFrame:             &ItemFrame{},
+		IDJigsawBlock:           &JigsawBlock{},
 		IDJukebox:               &Jukebox{},
 		IDLectern:               &Lectern{},
 		IDLodestone:             &Lodestone{},
@@ -116,8 +116,8 @@ func NewPool() map[string]BlockNBT {
 		IDModBlock:              &ModBlock{},
 		IDMovingBlock:           &MovingBlock{},
 		IDNetherReactor:         &NetherReactor{},
-		IDNoteBlock:             &NoteBlock{},
-		IDPiston:                &Piston{},
+		IDMusic:                 &Music{},
+		IDPistonArm:             &PistonArm{},
 		IDSculkCatalyst:         &SculkCatalyst{},
 		IDSculkSensor:           &SculkSensor{},
 		IDSculkShrieker:         &SculkShrieker{},

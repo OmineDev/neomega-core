@@ -7,24 +7,24 @@ import (
 )
 
 // 附魔台
-type EnchantingTable struct {
+type EnchantTable struct {
 	Rotation float32 `nbt:"rott"`       // TAG_Float(6) = 0
 	Name     string  `nbt:"CustomName"` // TAG_String(8) = ""
 	general.Global
 }
 
 // ID ...
-func (*EnchantingTable) ID() string {
-	return IDEnchantingTable
+func (*EnchantTable) ID() string {
+	return IDEnchantTable
 }
 
-func (e *EnchantingTable) Marshal(io protocol.IO) {
+func (e *EnchantTable) Marshal(io protocol.IO) {
 	protocol.Single(io, &e.Global)
 	io.String(&e.Name)
 	io.Float32(&e.Rotation)
 }
 
-func (e *EnchantingTable) ToNBT() map[string]any {
+func (e *EnchantTable) ToNBT() map[string]any {
 	if len(e.Name) > 0 {
 		temp := e.CustomName
 		defer func() {
@@ -40,7 +40,7 @@ func (e *EnchantingTable) ToNBT() map[string]any {
 	)
 }
 
-func (e *EnchantingTable) FromNBT(x map[string]any) {
+func (e *EnchantTable) FromNBT(x map[string]any) {
 	e.Global.FromNBT(x)
 	e.Rotation = x["rott"].(float32)
 }

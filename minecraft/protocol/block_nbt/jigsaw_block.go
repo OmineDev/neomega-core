@@ -7,7 +7,7 @@ import (
 )
 
 // 拼图方块
-type Jigsaw struct {
+type JigsawBlock struct {
 	FinalState        string `nbt:"final_state"`        // TAG_String(8) = "minecraft:air"
 	Joint             string `nbt:"joint"`              // TAG_String(8) = "rollable"
 	Name              string `nbt:"name"`               // TAG_String(8) = "minecraft:empty"
@@ -19,11 +19,11 @@ type Jigsaw struct {
 }
 
 // ID ...
-func (*Jigsaw) ID() string {
-	return IDJigsaw
+func (*JigsawBlock) ID() string {
+	return IDJigsawBlock
 }
 
-func (j *Jigsaw) Marshal(io protocol.IO) {
+func (j *JigsawBlock) Marshal(io protocol.IO) {
 	io.String(&j.Name)
 	io.String(&j.Target)
 	io.String(&j.TargetPool)
@@ -32,7 +32,7 @@ func (j *Jigsaw) Marshal(io protocol.IO) {
 	protocol.Single(io, &j.Global)
 }
 
-func (j *Jigsaw) ToNBT() map[string]any {
+func (j *JigsawBlock) ToNBT() map[string]any {
 	return slices.MergeMaps(
 		map[string]any{
 			"final_state":        j.FinalState,
@@ -47,7 +47,7 @@ func (j *Jigsaw) ToNBT() map[string]any {
 	)
 }
 
-func (j *Jigsaw) FromNBT(x map[string]any) {
+func (j *JigsawBlock) FromNBT(x map[string]any) {
 	j.FinalState = x["final_state"].(string)
 	j.Joint = x["joint"].(string)
 	j.Name = x["name"].(string)
