@@ -3,7 +3,7 @@ package block_nbt
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/utils/slices"
+	"github.com/OmineDev/neomega-core/utils/slices_wrapper"
 )
 
 // 讲台
@@ -43,7 +43,7 @@ func (l *Lectern) Marshal(io protocol.IO) {
 func (l *Lectern) ToNBT() map[string]any {
 	globalMap := l.Global.ToNBT()
 	if l.HasBook == 1 {
-		return slices.MergeMaps(
+		return slices_wrapper.MergeMaps(
 			globalMap,
 			map[string]any{
 				"book":       l.Book.ToNBT(),

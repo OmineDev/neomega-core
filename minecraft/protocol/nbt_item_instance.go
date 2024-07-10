@@ -3,7 +3,7 @@ package protocol
 
 import (
 	"github.com/OmineDev/neomega-core/minecraft/nbt"
-	"github.com/OmineDev/neomega-core/utils/slices"
+	"github.com/OmineDev/neomega-core/utils/slices_wrapper"
 )
 
 // ------------------------- Item -------------------------
@@ -39,7 +39,7 @@ func (i *Item) ToNBT() map[string]any {
 		}
 		temp["tag"].(map[string]any)["ench"] = i.EnchList.ToNBT()
 	}
-	return slices.MergeMaps(
+	return slices_wrapper.MergeMaps(
 		map[string]any{
 			"Count":       i.Count,
 			"Damage":      int16(i.Damage),
@@ -92,7 +92,7 @@ func (i *ItemWithSlot) Marshal(r IO) {
 }
 
 func (i *ItemWithSlot) ToNBT() map[string]any {
-	return slices.MergeMaps(
+	return slices_wrapper.MergeMaps(
 		map[string]any{
 			"Slot": i.Slot,
 		},

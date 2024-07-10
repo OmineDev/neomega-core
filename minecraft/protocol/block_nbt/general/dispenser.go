@@ -2,7 +2,7 @@ package general
 
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
-	"github.com/OmineDev/neomega-core/utils/slices"
+	"github.com/OmineDev/neomega-core/utils/slices_wrapper"
 )
 
 // 描述 发射器 和 投掷器 的通用字段
@@ -28,7 +28,7 @@ func (d *Dispenser) ToNBT() map[string]any {
 		}()
 		d.CustomName = d.Name
 	}
-	return slices.MergeMaps(
+	return slices_wrapper.MergeMaps(
 		d.Global.ToNBT(),
 		map[string]any{
 			"Items": d.Items.ToNBT(),

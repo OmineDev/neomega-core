@@ -3,7 +3,7 @@ package block_nbt
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/utils/slices"
+	"github.com/OmineDev/neomega-core/utils/slices_wrapper"
 )
 
 // 命令方块
@@ -55,7 +55,7 @@ func (c *CommandBlock) Marshal(io protocol.IO) {
 }
 
 func (c *CommandBlock) ToNBT() map[string]any {
-	return slices.MergeMaps(
+	return slices_wrapper.MergeMaps(
 		c.Global.ToNBT(),
 		map[string]any{
 			"powered":            c.Powered,
@@ -67,7 +67,7 @@ func (c *CommandBlock) ToNBT() map[string]any {
 			"LPRedstoneMode":     c.LPRedstoneMode,
 			"LastExecution":      c.LastExecution,
 			"LastOutput":         c.LastOutput,
-			"LastOutputParams":   slices.ToAnyList(c.LastOutputParams),
+			"LastOutputParams":   slices_wrapper.ToAnyList(c.LastOutputParams),
 			"SuccessCount":       c.SuccessCount,
 			"TickDelay":          c.TickDelay,
 			"TrackOutput":        c.TrackOutput,
@@ -90,7 +90,7 @@ func (c *CommandBlock) FromNBT(x map[string]any) {
 	c.LPRedstoneMode = x["LPRedstoneMode"].(byte)
 	c.LastExecution = x["LastExecution"].(int64)
 	c.LastOutput = x["LastOutput"].(string)
-	c.LastOutputParams = slices.FromAnyList[string](x["LastOutputParams"].([]any))
+	c.LastOutputParams = slices_wrapper.FromAnyList[string](x["LastOutputParams"].([]any))
 	c.SuccessCount = x["SuccessCount"].(int32)
 	c.TickDelay = x["TickDelay"].(int32)
 	c.TrackOutput = x["TrackOutput"].(byte)

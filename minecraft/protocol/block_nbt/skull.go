@@ -3,7 +3,7 @@ package block_nbt
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/utils/slices"
+	"github.com/OmineDev/neomega-core/utils/slices_wrapper"
 )
 
 // 头颅
@@ -29,7 +29,7 @@ func (s *Skull) Marshal(io protocol.IO) {
 }
 
 func (s *Skull) ToNBT() map[string]any {
-	return slices.MergeMaps(
+	return slices_wrapper.MergeMaps(
 		s.Global.ToNBT(),
 		map[string]any{
 			"DoingAnimation": s.DoingAnimation,

@@ -3,7 +3,7 @@ package block_nbt
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/utils/slices"
+	"github.com/OmineDev/neomega-core/utils/slices_wrapper"
 )
 
 // 音符盒
@@ -23,7 +23,7 @@ func (n *Music) Marshal(io protocol.IO) {
 }
 
 func (n *Music) ToNBT() map[string]any {
-	return slices.MergeMaps(
+	return slices_wrapper.MergeMaps(
 		n.Global.ToNBT(),
 		map[string]any{
 			"note": byte(n.Note),

@@ -3,7 +3,7 @@ package general
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/fields"
-	"github.com/OmineDev/neomega-core/utils/slices"
+	"github.com/OmineDev/neomega-core/utils/slices_wrapper"
 )
 
 // 描述 物品展示框 和 荧光物品展示框 的通用字段
@@ -22,7 +22,7 @@ func (f *Frame) ToNBT() map[string]any {
 	if frame, has := f.Frame.Value(); has {
 		temp = frame.ToNBT()
 	}
-	return slices.MergeMaps(
+	return slices_wrapper.MergeMaps(
 		f.Global.ToNBT(),
 		temp,
 	)

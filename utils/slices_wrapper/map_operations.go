@@ -1,4 +1,4 @@
-package slices
+package slices_wrapper
 
 import (
 	"maps"

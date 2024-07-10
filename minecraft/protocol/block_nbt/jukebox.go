@@ -3,7 +3,7 @@ package block_nbt
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/utils/slices"
+	"github.com/OmineDev/neomega-core/utils/slices_wrapper"
 )
 
 // 唱片机
@@ -29,7 +29,7 @@ func (j *Jukebox) ToNBT() map[string]any {
 			"RecordItem": recordItem.ToNBT(),
 		}
 	}
-	return slices.MergeMaps(
+	return slices_wrapper.MergeMaps(
 		j.Global.ToNBT(),
 		temp,
 	)

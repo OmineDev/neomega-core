@@ -3,7 +3,7 @@ package block_nbt
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/utils/slices"
+	"github.com/OmineDev/neomega-core/utils/slices_wrapper"
 )
 
 // 拼图方块
@@ -33,7 +33,7 @@ func (j *JigsawBlock) Marshal(io protocol.IO) {
 }
 
 func (j *JigsawBlock) ToNBT() map[string]any {
-	return slices.MergeMaps(
+	return slices_wrapper.MergeMaps(
 		map[string]any{
 			"final_state":        j.FinalState,
 			"joint":              j.Joint,

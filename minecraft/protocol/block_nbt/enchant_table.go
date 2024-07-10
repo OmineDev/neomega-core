@@ -3,7 +3,7 @@ package block_nbt
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/utils/slices"
+	"github.com/OmineDev/neomega-core/utils/slices_wrapper"
 )
 
 // 附魔台
@@ -32,7 +32,7 @@ func (e *EnchantTable) ToNBT() map[string]any {
 		}()
 		e.CustomName = e.Name
 	}
-	return slices.MergeMaps(
+	return slices_wrapper.MergeMaps(
 		e.Global.ToNBT(),
 		map[string]any{
 			"rott": e.Rotation,

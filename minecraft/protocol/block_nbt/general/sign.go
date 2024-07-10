@@ -3,7 +3,7 @@ package general
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/fields"
-	"github.com/OmineDev/neomega-core/utils/slices"
+	"github.com/OmineDev/neomega-core/utils/slices_wrapper"
 )
 
 // 描述各类告示牌的通用字段
@@ -22,7 +22,7 @@ func (s *Sign) Marshal(r protocol.IO) {
 }
 
 func (s *Sign) ToNBT() map[string]any {
-	return slices.MergeMaps(
+	return slices_wrapper.MergeMaps(
 		s.Global.ToNBT(),
 		map[string]any{
 			"BackText":  s.BackText.ToNBT(),

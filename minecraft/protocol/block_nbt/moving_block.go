@@ -3,7 +3,7 @@ package block_nbt
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/utils/slices"
+	"github.com/OmineDev/neomega-core/utils/slices_wrapper"
 )
 
 // 移动的方块
@@ -40,7 +40,7 @@ func (m *MovingBlock) ToNBT() map[string]any {
 			"movingEntity": movingEntity,
 		}
 	}
-	return slices.MergeMaps(
+	return slices_wrapper.MergeMaps(
 		m.Global.ToNBT(),
 		map[string]any{
 			"movingBlock":      m.MovingBlock,

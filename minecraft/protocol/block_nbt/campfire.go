@@ -3,7 +3,7 @@ package block_nbt
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/utils/slices"
+	"github.com/OmineDev/neomega-core/utils/slices_wrapper"
 )
 
 // 营火
@@ -39,19 +39,19 @@ func (c *Campfire) Marshal(io protocol.IO) {
 func (c *Campfire) ToNBT() map[string]any {
 	temp := make(map[string]any)
 	if item, has := c.Item1.Value(); has {
-		temp = slices.MergeMaps(temp, map[string]any{"Item1": item.ToNBT()})
+		temp = slices_wrapper.MergeMaps(temp, map[string]any{"Item1": item.ToNBT()})
 	}
 	if item, has := c.Item2.Value(); has {
-		temp = slices.MergeMaps(temp, map[string]any{"Item2": item.ToNBT()})
+		temp = slices_wrapper.MergeMaps(temp, map[string]any{"Item2": item.ToNBT()})
 	}
 	if item, has := c.Item3.Value(); has {
-		temp = slices.MergeMaps(temp, map[string]any{"Item3": item.ToNBT()})
+		temp = slices_wrapper.MergeMaps(temp, map[string]any{"Item3": item.ToNBT()})
 	}
 	if item, has := c.Item4.Value(); has {
-		temp = slices.MergeMaps(temp, map[string]any{"Item4": item.ToNBT()})
+		temp = slices_wrapper.MergeMaps(temp, map[string]any{"Item4": item.ToNBT()})
 	}
 
-	return slices.MergeMaps(
+	return slices_wrapper.MergeMaps(
 		c.Global.ToNBT(),
 		map[string]any{
 			"ItemTime1": c.ItemTime1,

@@ -3,7 +3,7 @@ package block_nbt
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/utils/slices"
+	"github.com/OmineDev/neomega-core/utils/slices_wrapper"
 )
 
 // 饰纹陶罐
@@ -23,7 +23,7 @@ func (d *DecoratedPot) Marshal(io protocol.IO) {
 }
 
 func (d *DecoratedPot) ToNBT() map[string]any {
-	return slices.MergeMaps(
+	return slices_wrapper.MergeMaps(
 		d.Global.ToNBT(),
 		map[string]any{
 			"animation": d.Animation,

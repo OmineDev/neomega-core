@@ -2,7 +2,7 @@ package fields
 
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
-	"github.com/OmineDev/neomega-core/utils/slices"
+	"github.com/OmineDev/neomega-core/utils/slices_wrapper"
 )
 
 // ------------------------- SpawnData -------------------------
@@ -46,9 +46,9 @@ func (m *MultiSpawnData) Marshal(r protocol.IO) {
 }
 
 func (m *MultiSpawnData) ToNBT() []any {
-	return slices.ToAnyList(m.Data)
+	return slices_wrapper.ToAnyList(m.Data)
 }
 
 func (m *MultiSpawnData) FromNBT(x []any) {
-	m.Data = slices.FromAnyList[SpawnData](x)
+	m.Data = slices_wrapper.FromAnyList[SpawnData](x)
 }

@@ -4,7 +4,7 @@ import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/fields"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/utils/slices"
+	"github.com/OmineDev/neomega-core/utils/slices_wrapper"
 )
 
 // 化合物创建器
@@ -28,7 +28,7 @@ func (c *ChemistryTable) ToNBT() map[string]any {
 	if item, has := c.Item.Value(); has {
 		temp = item.ToNBT()
 	}
-	return slices.MergeMaps(
+	return slices_wrapper.MergeMaps(
 		c.Global.ToNBT(), temp,
 	)
 }
