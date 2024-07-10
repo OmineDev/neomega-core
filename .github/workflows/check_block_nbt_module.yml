@@ -1,0 +1,21 @@
+name: Check Block NBT Module
+
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - 'minecraft/protocol/block_nbt/**'
+
+jobs:
+  checker:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Set up Go
+      uses: actions/setup-go@v5
+    - name: Test codes
+      run: |
+        cd minecraft/protocol/block_nbt/test/tiled_buffer
+        go test
