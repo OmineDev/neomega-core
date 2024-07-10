@@ -38,11 +38,16 @@ func WriteAndRead(ID string, block block_nbt.BlockNBT) (map[string]any, error) {
 		return nil, fmt.Errorf("WriteAndRead: ID of block NBT is not matched; id = %#v, ID = %#v", id, ID)
 	}
 	// write
-	new, err := Decode(ID, bytes.NewBuffer(blockBytes))
+	buffer := bytes.NewBuffer(blockBytes)
+	new, err := Decode(ID, buffer)
 	if err != nil {
 		return nil, fmt.Errorf("WriteAndRead: %v", err)
 	}
 	// read again
+	if length := buffer.Len(); length > 0 {
+		return nil, fmt.Errorf("WriteAndRead: %T: %v unread bytes left: 0x%x", block, length, buffer.Bytes())
+	}
+	// check unread parts
 	return new.ToNBT(), nil
 	// return
 }

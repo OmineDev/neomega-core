@@ -15,12 +15,17 @@ func TestFull(t *testing.T) {
 		var blockNBTMap map[string]any
 		// prepare
 		{
-			block, err := Decode(element.ID, bytes.NewBuffer(element.Buffer))
+			buffer := bytes.NewBuffer(element.Buffer)
+			block, err := Decode(element.ID, buffer)
 			if err != nil {
 				t.Errorf("TestFull: %v", err)
 			}
 			blockNBTMap = block.ToNBT()
 			// read
+			if length := buffer.Len(); length > 0 {
+				t.Errorf("%T: %v unread bytes left: 0x%x", block, length, buffer.Bytes())
+			}
+			// check unread parts
 			secondBlockMap, err := WriteAndRead(element.ID, block)
 			if err != nil {
 				t.Errorf("TestFull: %v", err)
