@@ -24,7 +24,7 @@ func (*Piston) ID() string {
 }
 
 func (p *Piston) Marshal(io protocol.IO) {
-	p.Global.Marshal(io)
+	protocol.Single(io, &p.Global)
 	io.Float32(&p.Progress)
 	io.Float32(&p.LastProgress)
 	io.Varuint32(&p.State)

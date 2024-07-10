@@ -21,8 +21,8 @@ func (*Cauldron) ID() string {
 }
 
 func (c *Cauldron) Marshal(io protocol.IO) {
-	c.Global.Marshal(io)
-	c.Items.Marshal(io)
+	protocol.Single(io, &c.Global)
+	protocol.Single(io, &c.Items)
 	io.Varint16(&c.PotionId)
 	io.Varint16(&c.PotionType)
 	io.Varint32(&c.CustomColor)

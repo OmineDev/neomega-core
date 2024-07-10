@@ -21,11 +21,11 @@ func (*BrewingStand) ID() string {
 }
 
 func (b *BrewingStand) Marshal(io protocol.IO) {
-	b.Global.Marshal(io)
+	protocol.Single(io, &b.Global)
 	io.Varint16(&b.FuelTotal)
 	io.Varint16(&b.FuelAmount)
 	io.Varint16(&b.CookTime)
-	b.Items.Marshal(io)
+	protocol.Single(io, &b.Items)
 }
 
 func (b *BrewingStand) ToNBT() map[string]any {

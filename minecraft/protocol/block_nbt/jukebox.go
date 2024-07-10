@@ -18,7 +18,7 @@ func (j *Jukebox) ID() string {
 }
 
 func (j *Jukebox) Marshal(io protocol.IO) {
-	j.Global.Marshal(io)
+	protocol.Single(io, &j.Global)
 	protocol.OptionalMarshaler(io, &j.RecordItem)
 }
 

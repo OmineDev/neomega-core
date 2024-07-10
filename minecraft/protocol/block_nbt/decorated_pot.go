@@ -19,7 +19,7 @@ func (*DecoratedPot) ID() string {
 }
 
 func (d *DecoratedPot) Marshal(io protocol.IO) {
-	d.Global.Marshal(io)
+	protocol.Single(io, &d.Global)
 }
 
 func (d *DecoratedPot) ToNBT() map[string]any {

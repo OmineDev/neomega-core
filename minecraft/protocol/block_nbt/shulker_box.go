@@ -19,7 +19,7 @@ func (*ShulkerBox) ID() string {
 
 func (s *ShulkerBox) Marshal(io protocol.IO) {
 	io.Varuint32(&s.Facing)
-	s.Chest.Marshal(io)
+	protocol.Single(io, &s.Global)
 }
 
 func (s *ShulkerBox) ToNBT() map[string]any {

@@ -19,7 +19,7 @@ func (*ChemistryTable) ID() string {
 }
 
 func (c *ChemistryTable) Marshal(io protocol.IO) {
-	c.Global.Marshal(io)
+	protocol.Single(io, &c.Global)
 	protocol.OptionalMarshaler(io, &c.Item)
 }
 

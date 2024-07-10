@@ -23,8 +23,8 @@ type Chest struct {
 }
 
 func (c *Chest) Marshal(r protocol.IO) {
-	c.Loot.Marshal(r)
-	c.Global.Marshal(r)
+	protocol.Single(r, &c.Loot)
+	protocol.Single(r, &c.Global)
 
 	r.Uint8(&c.Pairlead)
 	r.Uint8(&c.HasPair)
@@ -36,7 +36,7 @@ func (c *Chest) Marshal(r protocol.IO) {
 	}
 
 	protocol.OptionalFunc(r, &c.CustomSize, r.Varint16)
-	c.Items.Marshal(r)
+	protocol.Single(r, &c.Items)
 	r.Uint8(&c.Findable)
 }
 

@@ -21,7 +21,7 @@ func (*BrushableBlock) ID() string {
 }
 
 func (b *BrushableBlock) Marshal(io protocol.IO) {
-	b.Global.Marshal(io)
+	protocol.Single(io, &b.Global)
 }
 
 func (b *BrushableBlock) ToNBT() map[string]any {

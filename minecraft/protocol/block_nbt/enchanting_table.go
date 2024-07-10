@@ -19,7 +19,7 @@ func (*EnchantingTable) ID() string {
 }
 
 func (e *EnchantingTable) Marshal(io protocol.IO) {
-	e.Global.Marshal(io)
+	protocol.Single(io, &e.Global)
 	io.String(&e.Name)
 	io.Float32(&e.Rotation)
 }

@@ -18,7 +18,7 @@ func (*Bed) ID() string {
 }
 
 func (b *Bed) Marshal(io protocol.IO) {
-	b.Global.Marshal(io)
+	protocol.Single(io, &b.Global)
 	io.Varuint32(&b.Color)
 }
 

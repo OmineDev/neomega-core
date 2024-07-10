@@ -19,7 +19,7 @@ func (*Beacon) ID() string {
 }
 
 func (b *Beacon) Marshal(io protocol.IO) {
-	b.Global.Marshal(io)
+	protocol.Single(io, &b.Global)
 	io.Varint32(&b.Primary)
 	io.Varint32(&b.Secondary)
 }

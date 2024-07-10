@@ -35,7 +35,7 @@ func (*CommandBlock) ID() string {
 }
 
 func (c *CommandBlock) Marshal(io protocol.IO) {
-	c.Global.Marshal(io)
+	protocol.Single(io, &c.Global)
 	io.Uint8(&c.Powered)
 	io.Uint8(&c.Auto)
 	io.Uint8(&c.ConditionMet)

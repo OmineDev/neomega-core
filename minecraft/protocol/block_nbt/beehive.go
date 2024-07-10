@@ -20,7 +20,7 @@ func (*Beehive) ID() string {
 }
 
 func (b *Beehive) Marshal(io protocol.IO) {
-	b.Global.Marshal(io)
+	protocol.Single(io, &b.Global)
 	protocol.SliceVarint16Length(io, &b.Occupants)
 	io.Uint8(&b.ShouldSpawnBees)
 }

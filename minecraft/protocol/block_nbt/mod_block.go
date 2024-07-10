@@ -23,7 +23,7 @@ func (*ModBlock) ID() string {
 }
 
 func (m *ModBlock) Marshal(io protocol.IO) {
-	m.Global.Marshal(io)
+	protocol.Single(io, &m.Global)
 	io.Uint8(&m.Tick)
 	io.Uint8(&m.Movable)
 	io.Varuint32(&m.ExData)

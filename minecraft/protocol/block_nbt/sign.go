@@ -21,9 +21,9 @@ func (*Sign) ID() string {
 }
 
 func (s *Sign) Marshal(io protocol.IO) {
-	s.Global.Marshal(io)
-	s.FrontText.Marshal(io)
-	s.BackText.Marshal(io)
+	protocol.Single(io, &s.Global)
+	protocol.Single(io, &s.FrontText)
+	protocol.Single(io, &s.BackText)
 	io.Uint8(&s.IsWaxed)
 }
 

@@ -20,7 +20,7 @@ func (f *Frame) CheckExist(x map[string]any) (exist bool) {
 }
 
 func (f *Frame) Marshal(r protocol.IO) {
-	f.Item.Marshal(r)
+	protocol.Single(r, &f.Item)
 	r.Float32(&f.ItemRotation)
 	r.Float32(&f.ItemDropChance)
 }

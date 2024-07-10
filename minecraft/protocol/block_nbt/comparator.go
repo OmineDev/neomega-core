@@ -18,7 +18,7 @@ func (*Comparator) ID() string {
 }
 
 func (c *Comparator) Marshal(io protocol.IO) {
-	c.Global.Marshal(io)
+	protocol.Single(io, &c.Global)
 	io.Varint32(&c.OutputSignal)
 }
 

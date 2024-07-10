@@ -25,7 +25,7 @@ func (*Campfire) ID() string {
 }
 
 func (c *Campfire) Marshal(io protocol.IO) {
-	c.Global.Marshal(io)
+	protocol.Single(io, &c.Global)
 	io.Varint32(&c.ItemTime1)
 	protocol.OptionalMarshaler(io, &c.Item1)
 	io.Varint32(&c.ItemTime2)

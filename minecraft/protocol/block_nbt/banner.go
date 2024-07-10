@@ -21,7 +21,7 @@ func (*Banner) ID() string {
 }
 
 func (b *Banner) Marshal(io protocol.IO) {
-	b.Global.Marshal(io)
+	protocol.Single(io, &b.Global)
 	io.Varuint32(&b.Base)
 	io.Varint32(&b.Type)
 	protocol.SliceVarint16Length(io, &b.Patterns)

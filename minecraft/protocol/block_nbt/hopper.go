@@ -20,8 +20,8 @@ func (*Hopper) ID() string {
 }
 
 func (h *Hopper) Marshal(io protocol.IO) {
-	h.Global.Marshal(io)
-	h.Items.Marshal(io)
+	protocol.Single(io, &h.Global)
+	protocol.Single(io, &h.Items)
 	io.Varint32(&h.TransferCooldown)
 	io.Varint16(&h.MoveItemSpeed)
 }

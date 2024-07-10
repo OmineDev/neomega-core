@@ -19,7 +19,7 @@ func (*Conduit) ID() string {
 }
 
 func (c *Conduit) Marshal(io protocol.IO) {
-	c.Global.Marshal(io)
+	protocol.Single(io, &c.Global)
 	io.Varint64(&c.Target)
 	io.Uint8(&c.Active)
 }

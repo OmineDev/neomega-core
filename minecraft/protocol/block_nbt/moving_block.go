@@ -24,7 +24,7 @@ func (*MovingBlock) ID() string {
 }
 
 func (m *MovingBlock) Marshal(io protocol.IO) {
-	m.Global.Marshal(io)
+	protocol.Single(io, &m.Global)
 	io.NBTWithLength(&m.MovingBlock)
 	io.NBTWithLength(&m.MovingBlockExtra)
 	io.Varint32(&m.PistonPosX)

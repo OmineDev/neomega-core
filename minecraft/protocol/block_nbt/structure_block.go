@@ -38,7 +38,7 @@ func (*StructureBlock) ID() string {
 }
 
 func (s *StructureBlock) Marshal(io protocol.IO) {
-	s.Global.Marshal(io)
+	protocol.Single(io, &s.Global)
 	io.Uint8(&s.IsPowered)
 	io.Varint32(&s.Data)
 	io.Varint32(&s.RedstoneSaveMode)

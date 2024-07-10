@@ -20,7 +20,7 @@ func (*Bell) ID() string {
 }
 
 func (b *Bell) Marshal(io protocol.IO) {
-	b.Global.Marshal(io)
+	protocol.Single(io, &b.Global)
 	io.Uint8(&b.Ringing)
 	io.Varint32(&b.Ticks)
 	io.Varint32(&b.Direction)

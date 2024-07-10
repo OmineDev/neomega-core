@@ -20,7 +20,7 @@ func (*NetherReactor) ID() string {
 }
 
 func (n *NetherReactor) Marshal(io protocol.IO) {
-	n.Global.Marshal(io)
+	protocol.Single(io, &n.Global)
 	io.Uint8(&n.IsInitialized)
 	io.Varint16(&n.Progress)
 	io.Uint8(&n.HasFinished)

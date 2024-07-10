@@ -16,12 +16,12 @@ type Furnace struct {
 }
 
 func (f *Furnace) Marshal(r protocol.IO) {
-	f.Global.Marshal(r)
+	protocol.Single(r, &f.Global)
 	r.Varint16(&f.BurnTime)
 	r.Varint16(&f.CookTime)
 	r.Varint16(&f.BurnDuration)
 	r.Varint32(&f.StoredXPInt)
-	f.Items.Marshal(r)
+	protocol.Single(r, &f.Items)
 }
 
 func (f *Furnace) ToNBT() map[string]any {

@@ -18,7 +18,7 @@ func (*FlowerPot) ID() string {
 }
 
 func (f *FlowerPot) Marshal(io protocol.IO) {
-	f.Global.Marshal(io)
+	protocol.Single(io, &f.Global)
 	io.NBTWithLength(&f.PlantBlock)
 }
 

@@ -29,7 +29,7 @@ func (j *Jigsaw) Marshal(io protocol.IO) {
 	io.String(&j.TargetPool)
 	io.String(&j.FinalState)
 	io.String(&j.Joint)
-	j.Global.Marshal(io)
+	protocol.Single(io, &j.Global)
 }
 
 func (j *Jigsaw) ToNBT() map[string]any {

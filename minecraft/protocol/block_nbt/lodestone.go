@@ -18,7 +18,7 @@ func (*Lodestone) ID() string {
 }
 
 func (l *Lodestone) Marshal(io protocol.IO) {
-	l.Global.Marshal(io)
+	protocol.Single(io, &l.Global)
 	protocol.OptionalFunc(io, &l.TrackingHandle, io.Varint32)
 }
 

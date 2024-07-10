@@ -21,7 +21,7 @@ func (*Skull) ID() string {
 }
 
 func (s *Skull) Marshal(io protocol.IO) {
-	s.Global.Marshal(io)
+	protocol.Single(io, &s.Global)
 	io.Varuint16(&s.SkullType)
 	io.Float32(&s.Rotation)
 	io.Uint8(&s.DoingAnimation)

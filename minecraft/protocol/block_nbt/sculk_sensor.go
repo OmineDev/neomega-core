@@ -18,7 +18,7 @@ func (*SculkSensor) ID() string {
 }
 
 func (s *SculkSensor) Marshal(io protocol.IO) {
-	s.Global.Marshal(io)
+	protocol.Single(io, &s.Global)
 }
 
 func (s *SculkSensor) ToNBT() map[string]any {

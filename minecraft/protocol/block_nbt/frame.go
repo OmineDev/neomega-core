@@ -19,7 +19,7 @@ func (*Frame) ID() string {
 }
 
 func (f *Frame) Marshal(io protocol.IO) {
-	f.Global.Marshal(io)
+	protocol.Single(io, &f.Global)
 	protocol.OptionalMarshaler(io, &f.Frame)
 }
 

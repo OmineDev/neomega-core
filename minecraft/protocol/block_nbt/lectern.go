@@ -30,13 +30,13 @@ func (l *Lectern) CheckExist(x map[string]any) (exist bool) {
 }
 
 func (l *Lectern) Marshal(io protocol.IO) {
-	l.Global.Marshal(io)
+	protocol.Single(io, &l.Global)
 	io.Uint8(&l.HasBook)
 
 	if l.HasBook == 1 {
 		io.Varint32(&l.Page)
 		io.Varint32(&l.TotalPages)
-		l.Book.Marshal(io)
+		protocol.Single(io, &l.Book)
 	}
 }
 

@@ -20,9 +20,9 @@ func (*Dispenser) ID() string {
 }
 
 func (d *Dispenser) Marshal(io protocol.IO) {
-	d.Loot.Marshal(io)
-	d.Global.Marshal(io)
-	d.Items.Marshal(io)
+	protocol.Single(io, &d.Loot)
+	protocol.Single(io, &d.Global)
+	protocol.Single(io, &d.Items)
 	io.String(&d.Name)
 }
 

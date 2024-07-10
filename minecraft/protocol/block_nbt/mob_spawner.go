@@ -33,7 +33,7 @@ func (*MobSpawner) ID() string {
 }
 
 func (m *MobSpawner) Marshal(io protocol.IO) {
-	m.Global.Marshal(io)
+	protocol.Single(io, &m.Global)
 	io.String(&m.EntityIdentifier)
 	io.Varint16(&m.Delay)
 	io.Varint16(&m.MinSpawnDelay)

@@ -18,7 +18,7 @@ func (*NoteBlock) ID() string {
 }
 
 func (n *NoteBlock) Marshal(io protocol.IO) {
-	n.Global.Marshal(io)
+	protocol.Single(io, &n.Global)
 	io.Varuint32(&n.Note)
 }
 
