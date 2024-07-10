@@ -3,7 +3,7 @@ package block_nbt
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/utils"
+	"github.com/OmineDev/neomega-core/utils/slices"
 )
 
 // 发射器
@@ -34,7 +34,7 @@ func (d *Dispenser) ToNBT() map[string]any {
 		}()
 		d.CustomName = d.Name
 	}
-	return utils.MergeMaps(
+	return slices.MergeMaps(
 		d.Global.ToNBT(),
 		map[string]any{
 			"Items": d.Items.ToNBT(),

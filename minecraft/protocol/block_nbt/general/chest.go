@@ -2,7 +2,7 @@ package general
 
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
-	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/utils"
+	"github.com/OmineDev/neomega-core/utils/slices"
 )
 
 // 描述 箱子、末影箱、木桶 和 潜影盒 的通用字段
@@ -62,7 +62,7 @@ func (c *Chest) ToNBT() map[string]any {
 		}
 	}
 
-	return utils.MergeMaps(
+	return slices.MergeMaps(
 		c.Global.ToNBT(),
 		map[string]any{
 			"Findable": c.Findable,

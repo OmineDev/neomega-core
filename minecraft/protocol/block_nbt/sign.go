@@ -4,7 +4,7 @@ import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/fields"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/utils"
+	"github.com/OmineDev/neomega-core/utils/slices"
 )
 
 // 告示牌
@@ -28,7 +28,7 @@ func (s *Sign) Marshal(io protocol.IO) {
 }
 
 func (s *Sign) ToNBT() map[string]any {
-	return utils.MergeMaps(
+	return slices.MergeMaps(
 		s.Global.ToNBT(),
 		map[string]any{
 			"BackText":  s.BackText.ToNBT(),

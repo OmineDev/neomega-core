@@ -4,7 +4,7 @@ import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/fields"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/utils"
+	"github.com/OmineDev/neomega-core/utils/slices"
 )
 
 // 旗帜
@@ -38,7 +38,7 @@ func (b *Banner) ToNBT() map[string]any {
 			"Patterns": new,
 		}
 	}
-	return utils.MergeMaps(
+	return slices.MergeMaps(
 		b.Global.ToNBT(),
 		map[string]any{
 			"Base": int32(b.Base),

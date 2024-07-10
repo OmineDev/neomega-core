@@ -3,7 +3,7 @@ package block_nbt
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/utils"
+	"github.com/OmineDev/neomega-core/utils/slices"
 )
 
 // 结构方块
@@ -63,7 +63,7 @@ func (s *StructureBlock) Marshal(io protocol.IO) {
 }
 
 func (s *StructureBlock) ToNBT() map[string]any {
-	return utils.MergeMaps(
+	return slices.MergeMaps(
 		s.Global.ToNBT(),
 		map[string]any{
 			"animationMode":    byte(s.AnimationMode),

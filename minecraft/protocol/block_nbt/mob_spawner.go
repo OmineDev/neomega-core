@@ -4,7 +4,7 @@ import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/fields"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/utils"
+	"github.com/OmineDev/neomega-core/utils/slices"
 )
 
 // 刷怪笼
@@ -57,13 +57,13 @@ func (m *MobSpawner) ToNBT() map[string]any {
 		}
 	}
 	if spawnPotentials, has := m.SpawnPotentials.Value(); has {
-		utils.MergeMaps(
+		slices.MergeMaps(
 			map[string]any{
 				"SpawnPotentials": spawnPotentials.ToNBT(),
 			}, temp,
 		)
 	}
-	return utils.MergeMaps(
+	return slices.MergeMaps(
 		m.Global.ToNBT(),
 		map[string]any{
 			"Delay":               m.Delay,

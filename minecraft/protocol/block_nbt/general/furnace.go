@@ -2,7 +2,7 @@ package general
 
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
-	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/utils"
+	"github.com/OmineDev/neomega-core/utils/slices"
 )
 
 // 描述 熔炉、高炉、烟熏炉 的通用字段
@@ -25,7 +25,7 @@ func (f *Furnace) Marshal(r protocol.IO) {
 }
 
 func (f *Furnace) ToNBT() map[string]any {
-	return utils.MergeMaps(
+	return slices.MergeMaps(
 		f.Global.ToNBT(),
 		map[string]any{
 			"BurnDuration": f.BurnDuration,

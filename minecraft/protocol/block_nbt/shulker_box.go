@@ -3,7 +3,7 @@ package block_nbt
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/utils"
+	"github.com/OmineDev/neomega-core/utils/slices"
 )
 
 // 潜影盒
@@ -23,7 +23,7 @@ func (s *ShulkerBox) Marshal(io protocol.IO) {
 }
 
 func (s *ShulkerBox) ToNBT() map[string]any {
-	return utils.MergeMaps(
+	return slices.MergeMaps(
 		map[string]any{
 			"facing": byte(s.Facing),
 		},

@@ -3,7 +3,7 @@ package block_nbt
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/utils"
+	"github.com/OmineDev/neomega-core/utils/slices"
 )
 
 // 幽匿感测体
@@ -22,7 +22,7 @@ func (s *SculkSensor) Marshal(io protocol.IO) {
 }
 
 func (s *SculkSensor) ToNBT() map[string]any {
-	return utils.MergeMaps(
+	return slices.MergeMaps(
 		s.Global.ToNBT(),
 		map[string]any{
 			"VibrationListener": s.VibrationListener,

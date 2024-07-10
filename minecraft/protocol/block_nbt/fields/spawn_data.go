@@ -2,7 +2,7 @@ package fields
 
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
-	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/utils"
+	"github.com/OmineDev/neomega-core/utils/slices"
 )
 
 // ------------------------- SpawnData -------------------------
@@ -46,9 +46,9 @@ func (m *MultiSpawnData) Marshal(r protocol.IO) {
 }
 
 func (m *MultiSpawnData) ToNBT() []any {
-	return utils.ToAnyList(m.Data)
+	return slices.ToAnyList(m.Data)
 }
 
 func (m *MultiSpawnData) FromNBT(x []any) {
-	m.Data = utils.FromAnyList[SpawnData](x)
+	m.Data = slices.FromAnyList[SpawnData](x)
 }

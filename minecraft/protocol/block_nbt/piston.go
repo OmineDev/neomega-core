@@ -3,7 +3,7 @@ package block_nbt
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/utils"
+	"github.com/OmineDev/neomega-core/utils/slices"
 )
 
 // 活塞
@@ -43,7 +43,7 @@ func (p *Piston) ToNBT() map[string]any {
 	for _, value := range p.BreakBlocks {
 		breakBlocks = append(breakBlocks, value[0], value[1], value[2])
 	}
-	return utils.MergeMaps(
+	return slices.MergeMaps(
 		p.Global.ToNBT(),
 		map[string]any{
 			"AttachedBlocks": attachedBlocks,
@@ -59,7 +59,7 @@ func (p *Piston) ToNBT() map[string]any {
 
 func (p *Piston) FromNBT(x map[string]any) {
 	p.Global.FromNBT(x)
-	attachedBlocks := utils.FromAnyList[int32](x["AttachedBlocks"].([]any))
+	attachedBlocks := slices.FromAnyList[int32](x["AttachedBlocks"].([]any))
 	for i := 0; i < len(attachedBlocks)/3; i++ {
 		index := i * 3
 		p.AttachedBlocks = append(
@@ -67,7 +67,7 @@ func (p *Piston) FromNBT(x map[string]any) {
 			protocol.BlockPos{attachedBlocks[index], attachedBlocks[index+1], attachedBlocks[index+2]},
 		)
 	}
-	breakBlocks := utils.FromAnyList[int32](x["BreakBlocks"].([]any))
+	breakBlocks := slices.FromAnyList[int32](x["BreakBlocks"].([]any))
 	for i := 0; i < len(breakBlocks)/3; i++ {
 		index := i * 3
 		p.BreakBlocks = append(

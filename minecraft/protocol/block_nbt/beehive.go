@@ -4,7 +4,7 @@ import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/fields"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/utils"
+	"github.com/OmineDev/neomega-core/utils/slices"
 )
 
 // 蜂箱
@@ -36,7 +36,7 @@ func (b *Beehive) ToNBT() map[string]any {
 			"Occupants": new,
 		}
 	}
-	return utils.MergeMaps(
+	return slices.MergeMaps(
 		b.Global.ToNBT(),
 		map[string]any{
 			"ShouldSpawnBees": b.ShouldSpawnBees,

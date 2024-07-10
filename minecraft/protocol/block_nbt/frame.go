@@ -4,7 +4,7 @@ import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/fields"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/utils"
+	"github.com/OmineDev/neomega-core/utils/slices"
 )
 
 // 物品展示框
@@ -28,7 +28,7 @@ func (f *Frame) ToNBT() map[string]any {
 	if frame, has := f.Frame.Value(); has {
 		temp = frame.ToNBT()
 	}
-	return utils.MergeMaps(
+	return slices.MergeMaps(
 		f.Global.ToNBT(),
 		temp,
 	)

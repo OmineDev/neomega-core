@@ -3,7 +3,7 @@ package block_nbt
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/utils"
+	"github.com/OmineDev/neomega-core/utils/slices"
 )
 
 // 网易特有方块，可能被用于储存模组的自定义数据
@@ -33,7 +33,7 @@ func (m *ModBlock) Marshal(io protocol.IO) {
 }
 
 func (m *ModBlock) ToNBT() map[string]any {
-	return utils.MergeMaps(
+	return slices.MergeMaps(
 		m.Global.ToNBT(),
 		map[string]any{
 			"_tick":       m.Tick,

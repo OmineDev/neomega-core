@@ -3,7 +3,7 @@ package block_nbt
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/utils"
+	"github.com/OmineDev/neomega-core/utils/slices"
 )
 
 // 下界反应核
@@ -27,7 +27,7 @@ func (n *NetherReactor) Marshal(io protocol.IO) {
 }
 
 func (n *NetherReactor) ToNBT() map[string]any {
-	return utils.MergeMaps(
+	return slices.MergeMaps(
 		n.Global.ToNBT(),
 		map[string]any{
 			"HasFinished":   n.HasFinished,

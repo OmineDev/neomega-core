@@ -3,7 +3,7 @@ package block_nbt
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/utils"
+	"github.com/OmineDev/neomega-core/utils/slices"
 )
 
 // 潮涌核心
@@ -25,7 +25,7 @@ func (c *Conduit) Marshal(io protocol.IO) {
 }
 
 func (c *Conduit) ToNBT() map[string]any {
-	return utils.MergeMaps(
+	return slices.MergeMaps(
 		c.Global.ToNBT(),
 		map[string]any{
 			"Active": c.Active,

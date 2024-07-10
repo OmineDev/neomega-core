@@ -1,4 +1,4 @@
-package utils
+package slices
 
 // 将 []T 转换为 []any
 func ToAnyList[T any](list []T) []any {

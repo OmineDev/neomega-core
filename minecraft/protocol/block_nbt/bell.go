@@ -3,7 +3,7 @@ package block_nbt
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
-	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/utils"
+	"github.com/OmineDev/neomega-core/utils/slices"
 )
 
 // 钟
@@ -27,7 +27,7 @@ func (b *Bell) Marshal(io protocol.IO) {
 }
 
 func (b *Bell) ToNBT() map[string]any {
-	return utils.MergeMaps(
+	return slices.MergeMaps(
 		b.Global.ToNBT(),
 		map[string]any{
 			"Direction": b.Direction,
