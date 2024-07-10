@@ -2,13 +2,14 @@ package block_nbt
 
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
+	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/fields"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/utils"
 )
 
 // 物品展示框
 type Frame struct {
-	Frame protocol.Optional[general.Frame]
+	Frame protocol.Optional[fields.Frame]
 	general.Global
 }
 
@@ -36,9 +37,9 @@ func (f *Frame) ToNBT() map[string]any {
 func (f *Frame) FromNBT(x map[string]any) {
 	f.Global.FromNBT(x)
 
-	new := general.Frame{}
+	new := fields.Frame{}
 	if new.CheckExist(x) {
 		new.FromNBT(x)
-		f.Frame = protocol.Optional[general.Frame]{Set: true, Val: new}
+		f.Frame = protocol.Optional[fields.Frame]{Set: true, Val: new}
 	}
 }

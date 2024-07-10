@@ -2,14 +2,15 @@ package block_nbt
 
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
+	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/fields"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/utils"
 )
 
 // 告示牌
 type Sign struct {
-	BackText  general.SignText
-	FrontText general.SignText
+	BackText  fields.SignText
+	FrontText fields.SignText
 	IsWaxed   byte `nbt:"IsWaxed"` // TAG_Byte(1) = 0
 	general.Global
 }

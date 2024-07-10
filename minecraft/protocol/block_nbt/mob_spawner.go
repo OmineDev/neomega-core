@@ -2,6 +2,7 @@ package block_nbt
 
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
+	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/fields"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/utils"
 )
@@ -20,8 +21,8 @@ type MobSpawner struct {
 	SpawnCount          int16   `nbt:"SpawnCount"`          // TAG_Short(3) = 4
 	SpawnRange          int16   `nbt:"SpawnRange"`          // TAG_Short(3) = 4
 
-	SpawnData       protocol.Optional[general.SpawnData]      `nbt:"SpawnData"`       // TAG_Compound(10)
-	SpawnPotentials protocol.Optional[general.MultiSpawnData] `nbt:"SpawnPotentials"` // TAG_List(9)
+	SpawnData       protocol.Optional[fields.SpawnData]      `nbt:"SpawnData"`       // TAG_Compound(10)
+	SpawnPotentials protocol.Optional[fields.MultiSpawnData] `nbt:"SpawnPotentials"` // TAG_List(9)
 
 	general.Global
 }
@@ -96,13 +97,13 @@ func (m *MobSpawner) FromNBT(x map[string]any) {
 	m.SpawnRange = x["SpawnRange"].(int16)
 
 	if spawnData, has := x["SpawnData"].(map[string]any); has {
-		new := general.SpawnData{}
+		new := fields.SpawnData{}
 		new.FromNBT(spawnData)
-		m.SpawnData = protocol.Optional[general.SpawnData]{Set: true, Val: new}
+		m.SpawnData = protocol.Optional[fields.SpawnData]{Set: true, Val: new}
 	}
 	if spawnPotentials, has := x["SpawnPotentials"].([]any); has {
-		new := general.MultiSpawnData{}
+		new := fields.MultiSpawnData{}
 		new.FromNBT(spawnPotentials)
-		m.SpawnPotentials = protocol.Optional[general.MultiSpawnData]{Set: true, Val: new}
+		m.SpawnPotentials = protocol.Optional[fields.MultiSpawnData]{Set: true, Val: new}
 	}
 }

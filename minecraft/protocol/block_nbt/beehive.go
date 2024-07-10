@@ -2,14 +2,15 @@ package block_nbt
 
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
+	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/fields"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/utils"
 )
 
 // 蜂箱
 type Beehive struct {
-	Occupants       []general.BeehiveOccupants `nbt:"Occupants"`       // TAG_List[TAG_Compound] (9[10])
-	ShouldSpawnBees byte                       `nbt:"ShouldSpawnBees"` // TAG_Byte(1) = 0
+	Occupants       []fields.BeehiveOccupants `nbt:"Occupants"`       // TAG_List[TAG_Compound] (9[10])
+	ShouldSpawnBees byte                      `nbt:"ShouldSpawnBees"` // TAG_Byte(1) = 0
 	general.Global
 }
 
@@ -49,9 +50,9 @@ func (b *Beehive) FromNBT(x map[string]any) {
 	b.ShouldSpawnBees = x["ShouldSpawnBees"].(byte)
 
 	if occupants, has := x["Occupants"].([]any); has {
-		b.Occupants = make([]general.BeehiveOccupants, len(occupants))
+		b.Occupants = make([]fields.BeehiveOccupants, len(occupants))
 		for key, value := range occupants {
-			new := general.BeehiveOccupants{}
+			new := fields.BeehiveOccupants{}
 			new.FromNBT(value.(map[string]any))
 			b.Occupants[key] = new
 		}

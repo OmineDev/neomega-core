@@ -2,15 +2,16 @@ package block_nbt
 
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
+	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/fields"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/utils"
 )
 
 // 旗帜
 type Banner struct {
-	Base     uint32                   `nbt:"Base"`     // * TAG_Int(4) = 0
-	Patterns []general.BannerPatterns `nbt:"Patterns"` // TAG_List[TAG_Compound] (9[10])
-	Type     int32                    `nbt:"Type"`     // TAG_Int(4) = 0
+	Base     uint32                  `nbt:"Base"`     // * TAG_Int(4) = 0
+	Patterns []fields.BannerPatterns `nbt:"Patterns"` // TAG_List[TAG_Compound] (9[10])
+	Type     int32                   `nbt:"Type"`     // TAG_Int(4) = 0
 	general.Global
 }
 
@@ -53,9 +54,9 @@ func (b *Banner) FromNBT(x map[string]any) {
 	b.Type = x["Type"].(int32)
 
 	if patterns, has := x["Patterns"].([]any); has {
-		b.Patterns = make([]general.BannerPatterns, len(patterns))
+		b.Patterns = make([]fields.BannerPatterns, len(patterns))
 		for key, value := range patterns {
-			new := general.BannerPatterns{}
+			new := fields.BannerPatterns{}
 			new.FromNBT(value.(map[string]any))
 			b.Patterns[key] = new
 		}

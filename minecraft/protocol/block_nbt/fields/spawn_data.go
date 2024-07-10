@@ -1,4 +1,4 @@
-package general
+package fields
 
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"

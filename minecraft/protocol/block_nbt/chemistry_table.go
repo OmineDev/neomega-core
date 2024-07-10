@@ -2,13 +2,14 @@ package block_nbt
 
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
+	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/fields"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/utils"
 )
 
 // 化合物创建器
 type ChemistryTable struct {
-	Item protocol.Optional[general.ChemistryTableItem]
+	Item protocol.Optional[fields.ChemistryTableItem]
 	general.Global
 }
 
@@ -35,9 +36,9 @@ func (c *ChemistryTable) ToNBT() map[string]any {
 func (c *ChemistryTable) FromNBT(x map[string]any) {
 	c.Global.FromNBT(x)
 
-	new := general.ChemistryTableItem{}
+	new := fields.ChemistryTableItem{}
 	if new.CheckExist(x) {
 		new.FromNBT(x)
-		c.Item = protocol.Optional[general.ChemistryTableItem]{Set: true, Val: new}
+		c.Item = protocol.Optional[fields.ChemistryTableItem]{Set: true, Val: new}
 	}
 }

@@ -2,13 +2,14 @@ package block_nbt
 
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
+	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/general"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/block_nbt/utils"
 )
 
 // 潜影盒
 type ShulkerBox struct {
 	Facing uint32 `nbt:"facing"` // * TAG_Byte(1) = 0
-	Chest
+	general.Chest
 }
 
 // ID ...
