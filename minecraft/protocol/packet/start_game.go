@@ -221,7 +221,6 @@ type StartGame struct {
 	// PropertyData contains properties that should be applied on the player. These properties are the same as the
 	// ones that are sent in the SyncActorProperty packet.
 	PropertyData map[string]any
-
 	// ServerBlockStateChecksum is a checksum to ensure block states between the server and client match.
 	// This can simply be left empty, and the client will avoid trying to verify it.
 	ServerBlockStateChecksum uint64
@@ -243,36 +242,37 @@ type StartGame struct {
 	ServerAuthoritativeSound bool
 
 	// Netease
-	Unknown1 uint64
-	// Netease: they may be a UUID
-	Unknown2 uint64
-	Unknown3 uint64
+	Unknown1 bool
+	// Netease
+	Unknown2 string
+	// Netease
+	Unknown3 string
 	// Netease
 	Unknown4 bool
 	// Netease
 	Unknown5 bool
 	// Netease
-	Unknown6 bool
+	Unknown6 int32
 	// Netease
-	Unknown7 bool
+	Unknown7 int32
 	// Netease
-	Unknown8 string
+	Unknown8 int32
 	// Netease
-	Unknown9 string
+	Unknown9 int32
 	// Netease
-	Unknown10 bool
+	Unknown10 int32
 	// Netease
 	Unknown11 bool
 	// Netease
-	Unknown12 int32
+	Unknown12 bool
 	// Netease
-	Unknown13 int32
+	Unknown13 bool
 	// Netease
 	Unknown14 int32
 	// Netease
-	Unknown15 int32
+	Unknown15 bool
 	// Netease
-	Unknown16 int32
+	Unknown16 bool
 	// Netease
 	Unknown17 bool
 	// Netease
@@ -280,39 +280,27 @@ type StartGame struct {
 	// Netease
 	Unknown19 bool
 	// Netease
-	Unknown20 int32
+	Unknown20 bool
 	// Netease
 	Unknown21 bool
 	// Netease
 	Unknown22 bool
 	// Netease
 	Unknown23 bool
-	// Netease
-	Unknown24 bool
+	// Netease: uncertain
+	Unknown24 []byte
 	// Netease
 	Unknown25 bool
 	// Netease
 	Unknown26 bool
 	// Netease
 	Unknown27 bool
-	// Netease
-	Unknown28 bool
+	// Netease: UUID string
+	Unknown28 string
 	// Netease
 	Unknown29 bool
-	// Netease: uncertain
-	Unknown30 []byte
 	// Netease
-	Unknown31 bool
-	// Netease
-	Unknown32 bool
-	// Netease
-	Unknown33 bool
-	// Netease: UUID string
-	Unknown34 string
-	// Netease
-	Unknown35 bool
-	// Netease
-	Unknown36 bool
+	Unknown30 bool
 }
 
 // ID ...
@@ -390,41 +378,40 @@ func (pk *StartGame) Marshal(io protocol.IO) {
 	io.Bool(&pk.ServerAuthoritativeInventory)
 	io.String(&pk.GameVersion)
 	io.NBT(&pk.PropertyData, nbt.NetworkLittleEndian)
+	io.Uint64(&pk.ServerBlockStateChecksum)
+	io.UUID(&pk.WorldTemplateID)
+	io.Bool(&pk.ClientSideGeneration)
+	io.Bool(&pk.UseBlockNetworkIDHashes)
+	io.Bool(&pk.ServerAuthoritativeSound)
 	// Netease
-	io.Uint64(&pk.Unknown1)
-	io.Uint64(&pk.Unknown2)
-	io.Uint64(&pk.Unknown3)
+	io.Bool(&pk.Unknown1)
+	io.String(&pk.Unknown2)
+	io.String(&pk.Unknown3)
 	io.Bool(&pk.Unknown4)
 	io.Bool(&pk.Unknown5)
-	io.Bool(&pk.Unknown6)
-	io.Bool(&pk.Unknown7)
-	io.String(&pk.Unknown8)
-	io.String(&pk.Unknown9)
-	io.Bool(&pk.Unknown10)
+	io.Int32(&pk.Unknown6)
+	io.Int32(&pk.Unknown7)
+	io.Int32(&pk.Unknown8)
+	io.Int32(&pk.Unknown9)
+	io.Int32(&pk.Unknown10)
 	io.Bool(&pk.Unknown11)
-	io.Int32(&pk.Unknown12)
-	io.Int32(&pk.Unknown13)
+	io.Bool(&pk.Unknown12)
+	io.Bool(&pk.Unknown13)
 	io.Int32(&pk.Unknown14)
-	io.Int32(&pk.Unknown15)
-	io.Int32(&pk.Unknown16)
+	io.Bool(&pk.Unknown15)
+	io.Bool(&pk.Unknown16)
 	io.Bool(&pk.Unknown17)
 	io.Bool(&pk.Unknown18)
 	io.Bool(&pk.Unknown19)
-	io.Int32(&pk.Unknown20)
+	io.Bool(&pk.Unknown20)
 	io.Bool(&pk.Unknown21)
 	io.Bool(&pk.Unknown22)
 	io.Bool(&pk.Unknown23)
-	io.Bool(&pk.Unknown24)
+	io.ByteSlice(&pk.Unknown24)
 	io.Bool(&pk.Unknown25)
 	io.Bool(&pk.Unknown26)
 	io.Bool(&pk.Unknown27)
-	io.Bool(&pk.Unknown28)
+	io.String(&pk.Unknown28)
 	io.Bool(&pk.Unknown29)
-	io.ByteSlice(&pk.Unknown30)
-	io.Bool(&pk.Unknown31)
-	io.Bool(&pk.Unknown32)
-	io.Bool(&pk.Unknown33)
-	io.String(&pk.Unknown34)
-	io.Bool(&pk.Unknown35)
-	io.Bool(&pk.Unknown36)
+	io.Bool(&pk.Unknown30)
 }
