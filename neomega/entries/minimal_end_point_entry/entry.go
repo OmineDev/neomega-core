@@ -1,19 +1,301 @@
 package minimal_end_point_entry
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/OmineDev/neomega-core/i18n"
+	standard_nbt "github.com/OmineDev/neomega-core/minecraft/nbt"
+	"github.com/OmineDev/neomega-core/minecraft/protocol"
+
+	// alter_nbt "github.com/OmineDev/neomega-core/neomega/alter/nbt"
+	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
+	"github.com/OmineDev/neomega-core/neomega"
+	"github.com/OmineDev/neomega-core/neomega/blocks"
 	"github.com/OmineDev/neomega-core/neomega/bundle"
+	"github.com/OmineDev/neomega-core/neomega/chunks"
+	"github.com/OmineDev/neomega-core/neomega/chunks/chunk"
 	"github.com/OmineDev/neomega-core/neomega/chunks/define"
 	"github.com/OmineDev/neomega-core/nodes"
 	"github.com/OmineDev/neomega-core/nodes/defines"
 	"github.com/OmineDev/neomega-core/nodes/underlay_conn"
+	"github.com/pterm/pterm"
 )
 
 const ENTRY_NAME = "omega_minimal_end_point"
+
+type ChunkRequestResultHandler struct {
+	d        *ChunkRequester
+	ctx      context.Context
+	chunkPos define.ChunkPos
+}
+
+func (cr *ChunkRequestResultHandler) SetContext(ctx context.Context) neomega.ChunkRequestResultHandler {
+	cr.ctx = ctx
+	return cr
+}
+
+func (cr *ChunkRequestResultHandler) SetTimeout(timeout time.Duration) neomega.ChunkRequestResultHandler {
+	ctx, _ := context.WithTimeout(cr.ctx, timeout)
+	cr.ctx = ctx
+	return cr
+}
+
+func (cr *ChunkRequestResultHandler) AsyncGetResult(callback func(c *chunks.ChunkWithAuxInfo, err error)) {
+	w := make(chan struct {
+		cd  *chunks.ChunkWithAuxInfo
+		err error
+	}, 1)
+	cr.d.mu.Lock()
+	cr.d.chunkListeners[cr.chunkPos] = append(cr.d.chunkListeners[cr.chunkPos], func(cd *chunks.ChunkWithAuxInfo, err error) {
+		w <- struct {
+			cd  *chunks.ChunkWithAuxInfo
+			err error
+		}{
+			cd, err,
+		}
+	})
+	cr.d.mu.Unlock()
+	cr.d.sendSubChunkRequest(cr.chunkPos)
+	go func() {
+		select {
+		case response := <-w:
+			callback(response.cd, response.err)
+		case <-cr.ctx.Done():
+			callback(nil, cr.ctx.Err())
+		}
+	}()
+}
+
+func (cr *ChunkRequestResultHandler) BlockGetResult() (c *chunks.ChunkWithAuxInfo, err error) {
+	w := make(chan struct {
+		cd  *chunks.ChunkWithAuxInfo
+		err error
+	}, 1)
+	cr.d.mu.Lock()
+	cr.d.chunkListeners[cr.chunkPos] = append(cr.d.chunkListeners[cr.chunkPos], func(cd *chunks.ChunkWithAuxInfo, err error) {
+		w <- struct {
+			cd  *chunks.ChunkWithAuxInfo
+			err error
+		}{
+			cd, err,
+		}
+	})
+	cr.d.mu.Unlock()
+	cr.d.sendSubChunkRequest(cr.chunkPos)
+	select {
+	case response := <-w:
+		return response.cd, response.err
+	case <-cr.ctx.Done():
+		return nil, cr.ctx.Err()
+	}
+}
+
+type ChunkRequester struct {
+	interact       neomega.InteractCore
+	extendInfo     neomega.ExtendInfo
+	chunkListeners map[define.ChunkPos][]func(cd *chunks.ChunkWithAuxInfo, err error)
+	mu             sync.Mutex
+}
+
+func (c *ChunkRequester) sendSubChunkRequest(chunkPos define.ChunkPos) {
+	subChunkOffsets := make([]protocol.SubChunkOffset, 0, 24)
+	for i := int8(-4); i <= 19; i++ {
+		subChunkOffsets = append(subChunkOffsets, [3]int8{0, i, 0})
+	}
+	// TODO: auto decide offsets base on dimension
+	dim, found := c.extendInfo.GetBotDimension()
+	if !found {
+		dim = 0
+	}
+	dim = 0 // TODO: auto decide offsets base on dimension
+	c.interact.SendPacket(&packet.SubChunkRequest{
+		Dimension: dim,
+		Position:  protocol.SubChunkPos{chunkPos.X(), 0, chunkPos.Z()},
+		Offsets:   subChunkOffsets,
+	})
+}
+
+func (c *ChunkRequester) RequestChunk(chunkPos define.ChunkPos) neomega.ChunkRequestResultHandler {
+	return &ChunkRequestResultHandler{
+		d:        c,
+		ctx:      context.Background(),
+		chunkPos: chunkPos,
+	}
+}
+
+func SubChunkDecode(data []byte) (subChunkIndex int8, subChunk *chunk.SubChunk, nbts []map[string]interface{}, err error) {
+	buf := bytes.NewBuffer(data)
+	subChunkIndex, subChunk, err = SubChunkBlockDecode(buf)
+	nbts = make([]map[string]interface{}, 0)
+	if buf.Len() > 0 {
+		nbtDecoder := standard_nbt.NewDecoder(buf)
+		blockData := make(map[string]interface{})
+		for buf.Len() != 0 {
+			if err := nbtDecoder.Decode(&blockData); err != nil {
+				pterm.Printfln("decode chunk nbt error %v", err)
+				break
+			}
+			//fmt.Println(blockData)
+			nbts = append(nbts, blockData)
+		}
+	}
+	return subChunkIndex, subChunk, nbts, err
+}
+
+func SubChunkBlockDecode(buf *bytes.Buffer) (int8, *chunk.SubChunk, error) {
+	ver, err := buf.ReadByte()
+	Index := int8(127)
+	if err != nil {
+		return Index, nil, fmt.Errorf("error reading version: %w", err)
+	}
+	sub := chunk.NewSubChunk(blocks.AIR_RUNTIMEID)
+	switch ver {
+	default:
+		return Index, nil, fmt.Errorf("unknown sub chunk version %v: can't decode", ver)
+	case 9:
+		// Version 8 allows up to 256 layers for one sub chunk.
+		storageCount, err := buf.ReadByte()
+		if err != nil {
+			return Index, nil, fmt.Errorf("error reading storage count: %w", err)
+		}
+		uIndex, err := buf.ReadByte()
+		Index = int8(uIndex)
+		if err != nil {
+			return Index, nil, fmt.Errorf("error reading subchunk index: %w", err)
+		}
+		// The index as written here isn't the actual index of the subchunk within the chunk. Rather, it is the Y
+		// value of the subchunk. This means that we need to translate it to an index.
+		sub.Storages = make([]*chunk.PalettedStorage, storageCount)
+
+		for i := byte(0); i < storageCount; i++ {
+			sub.Storages[i], err = decodePalettedStorage(buf)
+			if err != nil {
+				return Index, nil, err
+			}
+		}
+	}
+	return Index, sub, nil
+}
+
+func decodePalettedStorage(buf *bytes.Buffer) (*chunk.PalettedStorage, error) {
+	blockSize, err := buf.ReadByte()
+	if err != nil {
+		return nil, fmt.Errorf("error reading block size: %w", err)
+	}
+	blockSize >>= 1
+	if blockSize == 0x7f {
+		return nil, nil
+	}
+	uint32Count := chunk.PaletteSize(blockSize).Uint32s()
+	uint32s := make([]uint32, uint32Count)
+	byteCount := uint32Count * 4
+
+	data := buf.Next(byteCount)
+	if len(data) != byteCount {
+		return nil, fmt.Errorf("cannot read paletted storage (size=%v): not enough block data present: expected %v bytes, got %v", blockSize, byteCount, len(data))
+	}
+	for i := 0; i < uint32Count; i++ {
+		// Explicitly don't use the binary package to greatly improve performance of reading the uint32s.
+		uint32s[i] = uint32(data[i*4]) | uint32(data[i*4+1])<<8 | uint32(data[i*4+2])<<16 | uint32(data[i*4+3])<<24
+	}
+	p, err := decodePalette(buf, chunk.PaletteSize(blockSize))
+	if err != nil {
+		return nil, err
+	}
+	return chunk.NewPalettedStorage(uint32s, p), err
+}
+
+func decodePalette(buf *bytes.Buffer, blockSize chunk.PaletteSize) (*chunk.Palette, error) {
+	var paletteCount int32 = 1
+	if blockSize != 0 {
+		if err := protocol.Varint32(buf, &paletteCount); err != nil {
+			return nil, fmt.Errorf("error reading palette entry count: %w", err)
+		}
+		if paletteCount <= 0 {
+			return nil, fmt.Errorf("invalid palette entry count %v", paletteCount)
+		}
+	}
+
+	blocks, temp := make([]uint32, paletteCount), int32(0)
+	for i := int32(0); i < paletteCount; i++ {
+		if err := protocol.Varint32(buf, &temp); err != nil {
+			return nil, fmt.Errorf("error decoding palette entry: %w", err)
+		}
+		blocks[i] = uint32(temp)
+	}
+	return &chunk.Palette{Values: blocks, Size: blockSize}, nil
+}
+
+func (c *ChunkRequester) onSubChunk(pk *packet.SubChunk) {
+	cp := define.ChunkPos{pk.Position.X(), pk.Position.Z()}
+	cd := &chunks.ChunkWithAuxInfo{
+		Chunk:     chunk.New(blocks.AIR_RUNTIMEID, define.WorldRange),
+		BlockNbts: make(map[define.CubePos]map[string]interface{}),
+		SyncTime:  time.Now().Unix(),
+		ChunkPos:  cp,
+	}
+	var err error
+	for _, entry := range pk.SubChunkEntries {
+		index := entry.Offset[1]
+		if entry.Result == protocol.SubChunkResultSuccessAllAir {
+			continue
+		}
+		if entry.Result != protocol.SubChunkResultSuccess {
+			err = fmt.Errorf("subchunk result unsuccessful: %v", entry.Result)
+			break
+		}
+
+		// normal
+		allFound := true
+		subIndex, subChunk, nbts, subChunkDecodeErr := SubChunkDecode(entry.RawPayload)
+		if index != subIndex {
+			err = fmt.Errorf("subchunk index mismatch: %v!=%v", index, subIndex)
+			break
+		}
+
+		if subChunkDecodeErr == nil && allFound && len(nbts) == 0 {
+			cd.Chunk.AssignSub(int(subIndex+4), subChunk)
+			for _, nbt := range nbts {
+				x, y, z, ok := define.GetPosFromNBT(nbt)
+				if ok {
+					cd.BlockNbts[define.CubePos{x, y, z}] = nbt
+				}
+			}
+		}
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if listeners, found := c.chunkListeners[cp]; found {
+		for _, l := range listeners {
+			if err != nil {
+				l(nil, err)
+			} else {
+				l(cd, nil)
+			}
+		}
+	}
+	delete(c.chunkListeners, cp)
+}
+
+func NewChunkRequester(interact neomega.InteractCore, react neomega.ReactCore, info neomega.ExtendInfo) *ChunkRequester {
+	r := &ChunkRequester{
+		interact:       interact,
+		extendInfo:     info,
+		mu:             sync.Mutex{},
+		chunkListeners: make(map[define.ChunkPos][]func(cd *chunks.ChunkWithAuxInfo, err error)),
+	}
+	react.SetTypedPacketCallBack(packet.IDSubChunk, func(p packet.Packet) {
+		pk := p.(*packet.SubChunk)
+		r.onSubChunk(pk)
+	}, true)
+
+	return r
+}
 
 func Entry(args *Args) {
 	var node defines.Node
@@ -27,7 +309,7 @@ func Entry(args *Args) {
 		if err != nil {
 			panic(err)
 		}
-		node = nodes.NewGroup("github.com/OmineDev/neomega-core/neomega", slave, false)
+		node = nodes.NewGroup("neomega", slave, false)
 		node.ListenMessage("reboot", func(msg defines.Values) {
 			reason, _ := msg.ToString()
 			fmt.Println(reason)
@@ -43,17 +325,28 @@ func Entry(args *Args) {
 			time.Sleep(time.Second)
 		}
 	}
+
 	omegaCore, err := bundle.NewEndPointMicroOmega(node)
 	if err != nil {
 		panic(err)
 	}
-	err = omegaCore.GetBotAction().HighLevelPickBlock(define.CubePos{1148, -60, 1029}, 3, 3)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("pick complete")
-	time.Sleep(time.Second)
-	omegaCore.GetBotAction().DropItemFromHotBar(3)
+	ret := omegaCore.GetGameControl().SendWebSocketCmdNeedResponse("tp @s 1024 100 1024").BlockGetResult()
+	fmt.Println(ret)
+	requestor := NewChunkRequester(omegaCore.GetGameControl(), omegaCore.GetReactCore(), omegaCore.GetMicroUQHolder())
+	chunk, err := requestor.RequestChunk(define.ChunkPos{1024 >> 4, 1024 >> 4}).BlockGetResult()
+	fmt.Println(chunk)
+	fmt.Println(err)
+	// omegaCore, err := bundle.NewEndPointMicroOmega(node)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// err = omegaCore.GetBotAction().HighLevelPickBlock(define.CubePos{1148, -60, 1029}, 3, 3)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Println("pick complete")
+	// time.Sleep(time.Second)
+	// omegaCore.GetBotAction().DropItemFromHotBar(3)
 	// time.Sleep(time.Second)
 	// fmt.Println(omegaCore)
 	// players := omegaCore.GetMicroUQHolder().GetAllOnlinePlayers()

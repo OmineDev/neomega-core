@@ -155,6 +155,10 @@ func (o *MicroOmega) GetGameControl() neomega.GameCtrl {
 	return o
 }
 
+func (o *MicroOmega) GetReactCore() neomega.ReactCore {
+	return o
+}
+
 func (o *MicroOmega) GetGameListener() neomega.PacketDispatcher {
 	return o
 }

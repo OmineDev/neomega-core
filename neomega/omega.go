@@ -318,6 +318,7 @@ type GameCtrl interface {
 type MicroOmega interface {
 	Dead() chan error
 	GetGameControl() GameCtrl
+	GetReactCore() ReactCore
 	GetGameListener() PacketDispatcher
 	GetMicroUQHolder() MicroUQHolder
 	GetPlayerInteract() PlayerInteract
