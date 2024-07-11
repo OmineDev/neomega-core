@@ -125,11 +125,9 @@ type PlayerAuthInput struct {
 	// Netease
 	Unknown1 bool
 	// Netease
-	Unknown2 bool
+	Unknown2 mgl32.Vec2
 	// Netease
-	Unknown3 mgl32.Vec2
-	// Netease
-	Unknown4 bool
+	Unknown3 bool
 }
 
 // ID ...
@@ -146,8 +144,7 @@ func (pk *PlayerAuthInput) Marshal(io protocol.IO) {
 	io.Varuint64(&pk.InputData)
 	io.Varuint32(&pk.InputMode)
 	io.Varuint32(&pk.PlayMode)
-	io.Varuint32(&pk.InteractionModel) // For Netease
-	io.Bool(&pk.Unknown1)              // For Netease
+	io.Varuint32(&pk.InteractionModel)
 	if pk.PlayMode == PlayModeReality {
 		io.Vec3(&pk.GazeDirection)
 	}
@@ -169,7 +166,7 @@ func (pk *PlayerAuthInput) Marshal(io protocol.IO) {
 	io.Vec2(&pk.AnalogueMoveVector)
 
 	// Netease
-	io.Bool(&pk.Unknown2)
-	io.Vec2(&pk.Unknown3)
-	io.Bool(&pk.Unknown4)
+	io.Bool(&pk.Unknown1)
+	io.Vec2(&pk.Unknown2)
+	io.Bool(&pk.Unknown3)
 }
