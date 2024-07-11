@@ -39,7 +39,7 @@ func Entry(args *Args) {
 			panic(err)
 		}
 		master := nodes.NewZMQMasterNode(server)
-		node = nodes.NewGroup("github.com/OmineDev/neomega-core/neomega", master, false)
+		node = nodes.NewGroup("neomega", master, false)
 	}
 	omegaCore, err = access_helper.ImpactServer(ctx, node, accessOption)
 	if err != nil {
