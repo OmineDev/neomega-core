@@ -16,8 +16,10 @@ type ChunkRequestResultHandler interface {
 }
 
 // an low level api, can only request and retreive data without auto request gen or nbt translate
-type ChunkRequester interface {
-	RequestChunk(chunkPos define.ChunkPos) ChunkRequestResultHandler
+type LowLevelChunkRequester interface {
+	// LowLevelRequestChunk will not check bot positon or translate nbt
+	// so extra code (e.g. req generator & scheduler & postprocess & fallback control) is required
+	LowLevelRequestChunk(chunkPos define.ChunkPos) ChunkRequestResultHandler
 	// TODO: fine grained control
 	// RequestSubChunks(chunkPos define.ChunkPos, subChunks []int8) ChunkRequestResultHandler
 }

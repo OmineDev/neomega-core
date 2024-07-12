@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/OmineDev/neomega-core/neomega/modules/bot_action"
+	"github.com/OmineDev/neomega-core/neomega/modules/chunk_request"
 	"github.com/OmineDev/neomega-core/neomega/modules/info_sender"
 	"github.com/OmineDev/neomega-core/neomega/modules/player_interact"
 	"github.com/OmineDev/neomega-core/neomega/modules/structure"
@@ -33,6 +34,7 @@ type MicroOmega struct {
 	// neomega.BlockPlacer
 	neomega.PlayerInteract
 	neomega.StructureRequester
+	neomega.LowLevelChunkRequester
 	neomega.CommandHelper
 	neomega.BotAction
 	neomega.BotActionHighLevel
@@ -55,6 +57,7 @@ func NewMicroOmega(
 	playerInteract := player_interact.NewPlayerInteract(reactCore, microUQHolder.GetPlayersInfo(), microUQHolder.GetBotBasicInfo(), cmdSender, infoSender, interactCore)
 	// asyncNbtBlockPlacer := placer.NewAsyncNbtBlockPlacer(reactCore, cmdSender, interactCore)
 	structureRequester := structure.NewStructureRequester(interactCore, reactCore, microUQHolder)
+	chunkRequester := chunk_request.NewChunkRequester(interactCore, reactCore, microUQHolder)
 	cmdHelper := bot_action.NewCommandHelper(cmdSender, microUQHolder)
 	var botAction neomega.BotAction
 	if isAccessPoint {
@@ -64,6 +67,7 @@ func NewMicroOmega(
 	}
 
 	botActionHighLevel := bot_action.NewBotActionHighLevel(microUQHolder, interactCore, reactCore, cmdSender, cmdHelper, structureRequester, botAction, node)
+
 	omega := &MicroOmega{
 		reactCore,
 		interactCore,
@@ -73,6 +77,7 @@ func NewMicroOmega(
 		// asyncNbtBlockPlacer,
 		playerInteract,
 		structureRequester,
+		chunkRequester,
 		cmdHelper,
 		botAction,
 		botActionHighLevel,
@@ -172,6 +177,10 @@ func (o *MicroOmega) GetMicroUQHolder() neomega.MicroUQHolder {
 }
 
 func (o *MicroOmega) GetStructureRequester() neomega.StructureRequester {
+	return o
+}
+
+func (o *MicroOmega) GetLowLevelChunkRequester() neomega.LowLevelChunkRequester {
 	return o
 }
 

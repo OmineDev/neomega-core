@@ -323,6 +323,7 @@ type MicroOmega interface {
 	GetMicroUQHolder() MicroUQHolder
 	GetPlayerInteract() PlayerInteract
 	GetStructureRequester() StructureRequester
+	GetLowLevelChunkRequester() LowLevelChunkRequester
 	GetBotAction() BotActionComplex
 }
 
