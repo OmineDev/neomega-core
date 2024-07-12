@@ -44,10 +44,12 @@ type IO interface {
 	USoundPos(x *mgl32.Vec3)
 	ByteFloat(x *float32)
 	Bytes(p *[]byte)
+	PistonAttachedBlocks(m *[]int32) // Netease
 	NBT(m *map[string]any, encoding nbt.Encoding)
 	NBTWithLength(m *map[string]any) // Netease
 	NBTList(m *[]any, encoding nbt.Encoding)
 	EnchantList(x *[]Enchant)   // Netease
+	NBTItem(m *Item)            // Netease
 	ItemList(x *[]ItemWithSlot) // Netease
 	UUID(x *uuid.UUID)
 	RGBA(x *color.RGBA)
@@ -77,6 +79,24 @@ type IO interface {
 // Marshaler is a type that can be written to or read from an IO.
 type Marshaler interface {
 	Marshal(r IO)
+}
+
+// Netease specific.
+//
+// Varint 描述了 __tag NBT 在网络传输时整数的数据类型
+type Int interface {
+	uint16 | uint32 | uint64 | int16 | int32 | int64
+}
+
+// Netease specific.
+//
+// TAGNumber 描述了标准 NBT 中允许的整数类型。
+// uint8 被指代 TAG_Byte(1)，
+// uint16 被指代 TAG_Short(3)，
+// int32 被指代 TAG_Int(4)，
+// int64 被指代 TAG_Long(5)
+type TAGNumber interface {
+	uint8 | int16 | int32 | int64
 }
 
 // Slice reads/writes a slice of T with a varuint32 prefix.
@@ -230,33 +250,96 @@ func Single[T any, S PtrMarshaler[T]](r IO, x S) {
 // Optional is an optional type in the protocol. If not set, only a false bool is written. If set, a true bool is
 // written and the Marshaler.
 type Optional[T any] struct {
-	Set bool
-	Val T
+	set bool
+	val T
 }
 
 // Option creates an Optional[T] with the value passed.
 func Option[T any](val T) Optional[T] {
-	return Optional[T]{Set: true, Val: val}
+	return Optional[T]{set: true, val: val}
 }
 
 // Value returns the value set in the Optional. If no value was set, false is returned.
 func (o Optional[T]) Value() (T, bool) {
-	return o.Val, o.Set
+	return o.val, o.set
 }
 
 // OptionalFunc reads/writes an Optional[T].
 func OptionalFunc[T any](r IO, x *Optional[T], f func(*T)) any {
-	r.Bool(&x.Set)
-	if x.Set {
-		f(&x.Val)
+	r.Bool(&x.set)
+	if x.set {
+		f(&x.val)
 	}
 	return x
 }
 
 // OptionalMarshaler reads/writes an Optional assuming *T implements Marshaler.
 func OptionalMarshaler[T any, A PtrMarshaler[T]](r IO, x *Optional[T]) {
-	r.Bool(&x.Set)
-	if x.Set {
-		A(&x.Val).Marshal(r)
+	r.Bool(&x.set)
+	if x.set {
+		A(&x.val).Marshal(r)
 	}
+}
+
+// Netease specific.
+//
+// NBTOptionalFunc 读写网易一个可选的字段 x 。
+// readPrefix 指代该字段是否在网易 __tag NBT 传输协议中可选，
+// f1 用于返回非空的 x 字段，
+// f2 则是用于 读取/写入 该字段的函数
+func NBTOptionalFunc[T any](r IO, x *T, f1 func() *T, readPrefix bool, f2 func(*T)) {
+	var has bool
+	if readPrefix {
+		if x != nil {
+			has = true
+		}
+		r.Bool(&has)
+		if !has {
+			return
+		}
+	}
+	f2(f1())
+}
+
+// Netease specific.
+//
+// NBTOptionalMarshaler 读写网易一个可选的且已实现 Marshal 的字段 x 。
+// readPrefix 指代该字段是否在网易 __tag NBT 传输协议中可选，
+// x 用于返回非空的 x 字段
+func NBTOptionalMarshaler[T any, A PtrMarshaler[T]](r IO, x *T, f func() *T, readPrefix bool) {
+	var has bool
+	if readPrefix {
+		if x != nil {
+			has = true
+		}
+		r.Bool(&has)
+		if !has {
+			return
+		}
+	}
+	A(f()).Marshal(r)
+}
+
+// Netease: NBTOptionalSliceVarint16Length reads/writes an optional slice of T with a varint16 prefix.
+func NBTOptionalSliceVarint16Length[T any, S ~*[]T, A PtrMarshaler[T]](r IO, x S) {
+	var has bool
+	if x != nil {
+		has = true
+	}
+	r.Bool(&has)
+	if has {
+		count := int16(len(*x))
+		r.Varint16(&count)
+		SliceOfLen[T, S, A](r, uint32(count), x)
+	}
+}
+
+// Netease specific.
+//
+// 从 __tag NBT 的传输流以 T1 的数据类型 读取/写入 数据到 x 上。
+// f 指代用于被用于传输流 解码/编码 网端 __tag NBT 的函数
+func NBTInt[T1 Int, T2 TAGNumber](x *T2, f func(*T1)) {
+	t2 := T1(*x)
+	f(&t2)
+	*x = T2(t2)
 }
