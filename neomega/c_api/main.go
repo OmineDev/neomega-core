@@ -741,7 +741,7 @@ func ConnectOmega(address *C.char) (Cerr *C.char) {
 		if err != nil {
 			return C.CString(err.Error())
 		}
-		node = nodes.NewGroup("github.com/OmineDev/neomega-core/neomega", slave, false)
+		node = nodes.NewGroup("neomega", slave, false)
 		if !node.CheckNetTag("access-point") {
 			return C.CString(i18n.T(i18n.S_no_access_point_in_network))
 		}
