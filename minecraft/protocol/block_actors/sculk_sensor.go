@@ -4,7 +4,7 @@ import general "github.com/OmineDev/neomega-core/minecraft/protocol/block_actors
 
 // 幽匿感测体
 type SculkSensor struct {
-	general.BlockActor
+	general.BlockActor `mapstructure:",squash"`
 }
 
 // ID ...

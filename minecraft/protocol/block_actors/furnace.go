@@ -4,7 +4,7 @@ import general "github.com/OmineDev/neomega-core/minecraft/protocol/block_actors
 
 // 熔炉
 type Furnace struct {
-	general.FurnaceBlockActor
+	general.FurnaceBlockActor `mapstructure:",squash"`
 }
 
 // ID ...

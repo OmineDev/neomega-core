@@ -7,8 +7,8 @@ import (
 
 // 花盆
 type FlowerPot struct {
-	general.BlockActor
-	PlantBlock map[string]any `mapstructure:"PlantBlock"` // TAG_Compound(10)
+	general.BlockActor `mapstructure:",squash"`
+	PlantBlock         map[string]any `mapstructure:"PlantBlock"` // TAG_Compound(10)
 }
 
 // ID ...

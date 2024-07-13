@@ -7,10 +7,10 @@ import (
 
 // 钟
 type Bell struct {
-	general.BlockActor
-	Direction int32 `mapstructure:"Direction"` // TAG_Int(4) = 255
-	Ringing   byte  `mapstructure:"Ringing"`   // TAG_Byte(1) = 0
-	Ticks     int32 `mapstructure:"Ticks"`     // TAG_Int(4) = 18
+	general.BlockActor `mapstructure:",squash"`
+	Direction          int32 `mapstructure:"Direction"` // TAG_Int(4) = 255
+	Ringing            byte  `mapstructure:"Ringing"`   // TAG_Byte(1) = 0
+	Ticks              int32 `mapstructure:"Ticks"`     // TAG_Int(4) = 18
 }
 
 // ID ...

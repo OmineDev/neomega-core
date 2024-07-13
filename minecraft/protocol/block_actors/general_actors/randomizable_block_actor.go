@@ -6,7 +6,7 @@ import (
 
 // 描述部分容器的 战利品表
 type RandomizableBlockActor struct {
-	BlockActor
+	BlockActor    `mapstructure:",squash"`
 	LootTable     *string `mapstructure:"LootTable,omitempty"`     // TAG_String(8) = ""
 	LootTableSeed int32   `mapstructure:"LootTableSeed,omitempty"` // TAG_Int(4) = 0
 }

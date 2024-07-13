@@ -7,9 +7,9 @@ import (
 
 // 饰纹陶罐
 type DecoratedPot struct {
-	general.BlockActor
-	Animation byte          `mapstructure:"animation"` // Not used; TAG_Byte(1) = 0
-	Item      protocol.Item `mapstructure:"item"`      // Not used; TAG_Compound(10)
+	general.BlockActor `mapstructure:",squash"`
+	Animation          byte          `mapstructure:"animation"` // Not used; TAG_Byte(1) = 0
+	Item               protocol.Item `mapstructure:"item"`      // Not used; TAG_Compound(10)
 }
 
 // ID ...

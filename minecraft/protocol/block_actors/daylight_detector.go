@@ -4,7 +4,7 @@ import general "github.com/OmineDev/neomega-core/minecraft/protocol/block_actors
 
 // 阳光探测器
 type DayLightDetector struct {
-	general.BlockActor
+	general.BlockActor `mapstructure:",squash"`
 }
 
 // ID ...

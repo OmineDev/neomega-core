@@ -7,8 +7,8 @@ import (
 
 // 潜影盒
 type ShulkerBox struct {
-	general.ChestBlockActor
-	Facing byte `mapstructure:"facing"` // TAG_Byte(1) = 0
+	general.ChestBlockActor `mapstructure:",squash"`
+	Facing                  byte `mapstructure:"facing"` // TAG_Byte(1) = 0
 }
 
 // ID ...

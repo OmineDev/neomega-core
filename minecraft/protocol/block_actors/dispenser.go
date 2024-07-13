@@ -4,7 +4,7 @@ import general "github.com/OmineDev/neomega-core/minecraft/protocol/block_actors
 
 // 发射器
 type Dispenser struct {
-	general.DispenserBlockActor
+	general.DispenserBlockActor `mapstructure:",squash"`
 }
 
 // ID ...

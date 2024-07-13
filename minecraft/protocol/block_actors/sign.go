@@ -4,7 +4,7 @@ import general "github.com/OmineDev/neomega-core/minecraft/protocol/block_actors
 
 // 告示牌
 type Sign struct {
-	general.SignBlockActor
+	general.SignBlockActor `mapstructure:",squash"`
 }
 
 // ID ...

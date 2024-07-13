@@ -7,11 +7,11 @@ import (
 
 // 头颅
 type Skull struct {
-	general.BlockActor
-	DoingAnimation byte    `mapstructure:"DoingAnimation"` // * TAG_Byte(1) = 0
-	MouthTickCount int32   `mapstructure:"MouthTickCount"` // TAG_Int(4) = 0
-	Rotation       float32 `mapstructure:"Rotation"`       // TAG_Float(6) = 0
-	SkullType      byte    `mapstructure:"SkullType"`      // TAG_Byte(1) = 0
+	general.BlockActor `mapstructure:",squash"`
+	DoingAnimation     byte    `mapstructure:"DoingAnimation"` // * TAG_Byte(1) = 0
+	MouthTickCount     int32   `mapstructure:"MouthTickCount"` // TAG_Int(4) = 0
+	Rotation           float32 `mapstructure:"Rotation"`       // TAG_Float(6) = 0
+	SkullType          byte    `mapstructure:"SkullType"`      // TAG_Byte(1) = 0
 }
 
 // ID ...

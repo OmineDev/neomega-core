@@ -7,10 +7,10 @@ import (
 
 // 描述各类告示牌的通用字段
 type SignBlockActor struct {
-	BlockActor
-	BackText  fields.SignText `mapstructure:"BackText"`  // TAG_Compound(10)
-	FrontText fields.SignText `mapstructure:"FrontText"` // TAG_Compound(10)
-	IsWaxed   byte            `mapstructure:"IsWaxed"`   // TAG_Byte(1) = 0
+	BlockActor `mapstructure:",squash"`
+	BackText   fields.SignText `mapstructure:"BackText"`  // TAG_Compound(10)
+	FrontText  fields.SignText `mapstructure:"FrontText"` // TAG_Compound(10)
+	IsWaxed    byte            `mapstructure:"IsWaxed"`   // TAG_Byte(1) = 0
 }
 
 func (s *SignBlockActor) Marshal(r protocol.IO) {

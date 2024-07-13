@@ -6,10 +6,10 @@ import (
 
 // 描述 箱子、末影箱、木桶 和 潜影盒 的通用字段
 type ChestBlockActor struct {
-	RandomizableBlockActor
+	RandomizableBlockActor `mapstructure:",squash"`
 
-	Findable byte                    `mapstructure:"Findable"` // TAG_Byte(1) = 0
-	Items    []protocol.ItemWithSlot `mapstructure:"Items"`    // TAG_List[TAG_Compound] (9[10])
+	Findable byte  `mapstructure:"Findable"` // TAG_Byte(1) = 0
+	Items    []any `mapstructure:"Items"`    // TAG_List[TAG_Compound] (9[10])
 
 	Pairlead    *byte  `mapstructure:"pairlead,omitempty"`    // TAG_Byte(1) = 0
 	Pairx       *int32 `mapstructure:"pairx,omitempty"`       // TAG_Int(4) = 0
@@ -73,6 +73,6 @@ func (c *ChestBlockActor) Marshal(r protocol.IO) {
 	}
 
 	protocol.NBTOptionalFunc(r, c.CustomSize, func5, true, r.Varint16)
-	r.ItemList(&c.Items)
+	protocol.NBTSlice(r, &c.Items, func(t *[]protocol.ItemWithSlot) { r.ItemList(t) })
 	r.Uint8(&c.Findable)
 }

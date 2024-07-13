@@ -8,7 +8,7 @@ import (
 
 // 化合物创建器
 type ChemistryTable struct {
-	general.BlockActor
+	general.BlockActor         `mapstructure:",squash"`
 	*fields.ChemistryTableItem `mapstructure:",omitempty"`
 }
 

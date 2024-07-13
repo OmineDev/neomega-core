@@ -7,9 +7,9 @@ import (
 
 // 信标
 type Beacon struct {
-	general.BlockActor
-	Primary   int32 `mapstructure:"primary"`   // TAG_Int(4) = 0
-	Secondary int32 `mapstructure:"secondary"` // TAG_Int(4) = 0
+	general.BlockActor `mapstructure:",squash"`
+	Primary            int32 `mapstructure:"primary"`   // TAG_Int(4) = 0
+	Secondary          int32 `mapstructure:"secondary"` // TAG_Int(4) = 0
 }
 
 // ID ...

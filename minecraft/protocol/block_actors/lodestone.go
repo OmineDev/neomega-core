@@ -7,8 +7,8 @@ import (
 
 // 磁石
 type Lodestone struct {
-	general.BlockActor
-	TrackingHandle *int32 `mapstructure:"trackingHandle,omitempty"` // TAG_Int(4) = 0
+	general.BlockActor `mapstructure:",squash"`
+	TrackingHandle     *int32 `mapstructure:"trackingHandle,omitempty"` // TAG_Int(4) = 0
 }
 
 // ID ...

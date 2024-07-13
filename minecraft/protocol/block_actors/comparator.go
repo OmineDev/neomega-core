@@ -7,8 +7,8 @@ import (
 
 // 比较器
 type Comparator struct {
-	general.BlockActor
-	OutputSignal int32 `mapstructure:"OutputSignal"` // TAG_Int(4) = 0
+	general.BlockActor `mapstructure:",squash"`
+	OutputSignal       int32 `mapstructure:"OutputSignal"` // TAG_Int(4) = 0
 }
 
 // ID ...

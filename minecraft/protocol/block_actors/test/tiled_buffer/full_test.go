@@ -43,12 +43,15 @@ func TestFull(t *testing.T) {
 		{
 			var newBlockNBTMap map[string]any
 			new := block_actors.NewPool()[element.ID]
-			if err := mapstructure.Decode(blockNBTMap, &new); err != nil {
+			// prepare
+			err := mapstructure.Decode(blockNBTMap, &new)
+			if err != nil {
 				t.Errorf("TestFull: %v", err)
 			}
 			if err := mapstructure.Decode(new, &newBlockNBTMap); err != nil {
 				t.Errorf("TestFull: %v", err)
 			}
+			// to nbt
 			if !reflect.DeepEqual(blockNBTMap, newBlockNBTMap) {
 				t.Errorf("TestFull: NBT Map convert is unequivalence; element.ID = %#v", element.ID)
 			}
@@ -58,7 +61,7 @@ func TestFull(t *testing.T) {
 			t.Errorf("TestFull: %v", err)
 		}
 		// check NBT encode
-		pterm.Success.Printf("%v\n", blockNBTMap)
+		pterm.Success.Printf("%#v\n", blockNBTMap)
 		// print success
 	}
 }

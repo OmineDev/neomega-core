@@ -7,18 +7,15 @@ import (
 
 // 描述 物品展示框 和 荧光物品展示框 的通用字段
 type ItemFrameBlockActor struct {
-	BlockActor
-	*fields.FrameItem `mapstructure:",omitempty"`
+	BlockActor       `mapstructure:",squash"`
+	fields.FrameItem `mapstructure:",omitempty,squash"`
 }
 
 func (f *ItemFrameBlockActor) Marshal(r protocol.IO) {
 	fun := func() *fields.FrameItem {
-		if f.FrameItem == nil {
-			f.FrameItem = new(fields.FrameItem)
-		}
-		return f.FrameItem
+		return &f.FrameItem
 	}
 
 	protocol.Single(r, &f.BlockActor)
-	protocol.NBTOptionalMarshaler(r, f.FrameItem, fun, true)
+	protocol.NBTOptionalMarshaler(r, &f.FrameItem, fun, true)
 }

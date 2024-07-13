@@ -7,8 +7,8 @@ import (
 
 // 唱片机
 type Jukebox struct {
-	general.BlockActor
-	RecordItem *protocol.Item `mapstructure:"RecordItem,omitempty"` // TAG_Compound(10)
+	general.BlockActor `mapstructure:",squash"`
+	RecordItem         *protocol.Item `mapstructure:"RecordItem,omitempty"` // TAG_Compound(10)
 }
 
 // ID ...

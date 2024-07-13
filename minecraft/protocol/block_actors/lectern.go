@@ -7,11 +7,11 @@ import (
 
 // 讲台
 type Lectern struct {
-	general.BlockActor
-	Book       *protocol.Item `mapstructure:"book,omitempty"`       // TAG_Compound(10)
-	HasBook    *byte          `mapstructure:"hasBook,omitempty"`    // TAG_Byte(1) = 0
-	Page       *int32         `mapstructure:"page,omitempty"`       // TAG_Int(4) = 0
-	TotalPages *int32         `mapstructure:"totalPages,omitempty"` // TAG_Int(4) = 1
+	general.BlockActor `mapstructure:",squash"`
+	Book               *protocol.Item `mapstructure:"book,omitempty"`       // TAG_Compound(10)
+	HasBook            *byte          `mapstructure:"hasBook,omitempty"`    // TAG_Byte(1) = 0
+	Page               *int32         `mapstructure:"page,omitempty"`       // TAG_Int(4) = 0
+	TotalPages         *int32         `mapstructure:"totalPages,omitempty"` // TAG_Int(4) = 1
 }
 
 // ID ...

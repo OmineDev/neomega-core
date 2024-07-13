@@ -1,9 +1,12 @@
 package protocol
 
 import (
+	"fmt"
 	"image/color"
+	"reflect"
 
 	"github.com/OmineDev/neomega-core/minecraft/nbt"
+	"github.com/mitchellh/mapstructure"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/google/uuid"
@@ -281,12 +284,18 @@ func OptionalMarshaler[T any, A PtrMarshaler[T]](r IO, x *Optional[T]) {
 	}
 }
 
-// Netease specific.
-//
-// NBTOptionalFunc 读写网易一个可选的字段 x 。
-// readPrefix 指代该字段是否在网易 __tag NBT 传输协议中可选，
-// f1 用于返回非空的 x 字段，
-// f2 则是用于 读取/写入 该字段的函数
+/*
+Netease specific.
+
+NBTOptionalFunc 读写网易一个可选的字段 x 。
+
+readPrefix 指代该字段是否在网易 __tag NBT 传输协议中可选，
+此时若 x 为空，则仅写入 false 布尔值，
+否则写入 true 布尔值和该字段的二进制表达形式。
+
+f1 用于返回非空的 x 字段，
+f2 则是用于 读取/写入 该字段的函数
+*/
 func NBTOptionalFunc[T any](r IO, x *T, f1 func() *T, readPrefix bool, f2 func(*T)) {
 	var has bool
 	if readPrefix {
@@ -301,11 +310,17 @@ func NBTOptionalFunc[T any](r IO, x *T, f1 func() *T, readPrefix bool, f2 func(*
 	f2(f1())
 }
 
-// Netease specific.
-//
-// NBTOptionalMarshaler 读写网易一个可选的且已实现 Marshal 的字段 x 。
-// readPrefix 指代该字段是否在网易 __tag NBT 传输协议中可选，
-// x 用于返回非空的 x 字段
+/*
+Netease specific.
+
+NBTOptionalMarshaler 读写网易一个可选的且已实现 Marshal 的字段 x 。
+
+readPrefix 指代该字段是否在网易 __tag NBT 传输协议中可选，
+此时若 x 为空，则仅写入 false 布尔值，
+否则写入 true 布尔值和该字段的二进制表达形式。
+
+x 用于返回非空的 x 字段
+*/
 func NBTOptionalMarshaler[T any, A PtrMarshaler[T]](r IO, x *T, f func() *T, readPrefix bool) {
 	var has bool
 	if readPrefix {
@@ -320,20 +335,6 @@ func NBTOptionalMarshaler[T any, A PtrMarshaler[T]](r IO, x *T, f func() *T, rea
 	A(f()).Marshal(r)
 }
 
-// Netease: NBTOptionalSliceVarint16Length reads/writes an optional slice of T with a varint16 prefix.
-func NBTOptionalSliceVarint16Length[T any, S ~*[]T, A PtrMarshaler[T]](r IO, x S) {
-	var has bool
-	if x != nil {
-		has = true
-	}
-	r.Bool(&has)
-	if has {
-		count := int16(len(*x))
-		r.Varint16(&count)
-		SliceOfLen[T, S, A](r, uint32(count), x)
-	}
-}
-
 // Netease specific.
 //
 // 从 __tag NBT 的传输流以 T1 的数据类型 读取/写入 数据到 x 上。
@@ -342,4 +343,82 @@ func NBTInt[T1 Int, T2 TAGNumber](x *T2, f func(*T1)) {
 	t2 := T1(*x)
 	f(&t2)
 	*x = T2(t2)
+}
+
+// Netease specific.
+//
+// 在读取时，NBTSlice 使用 f 将底层输出流解码，
+// 然后并转换为 []any 并输出到 x 上。
+// 在写入时，NBTSlice 将 x 转换为 []T，
+// 然后使用 f 向底层输出流编码
+func NBTSlice[T any](r IO, x *[]any, f func(*[]T)) {
+	if _, isReader := r.(*Reader); isReader {
+		new := make([]T, 0)
+		f(&new)
+		*x = make([]any, len(new))
+		// read
+		for key, value := range new {
+			var mapping map[string]any
+			// prepare
+			val := reflect.ValueOf(value)
+			valType := val.Kind()
+			matchA := valType == reflect.Struct
+			matchB := valType == reflect.Ptr && val.Elem().Kind() == reflect.Struct
+			if !matchA && !matchB {
+				(*x)[key] = value
+				continue
+			}
+			// for normal data
+			err := mapstructure.Decode(value, &mapping)
+			if err != nil {
+				panic(fmt.Sprintf("NBTSlice: %v", err))
+			}
+			(*x)[key] = mapping
+			// for struct
+		}
+	} else {
+		new := make([]T, len(*x))
+		err := mapstructure.Decode(*x, &new)
+		if err != nil {
+			panic(fmt.Sprintf("NBTSlice: %v", err))
+		}
+		f(&new)
+	}
+}
+
+// Netease specific.
+//
+// NBTSliceVarint16Length reads/writes a []any by using func SliceVarint16Length.
+// s refer to the true data type of this slice.
+func NBTSliceVarint16Length[T any, S ~*[]T, A PtrMarshaler[T]](r IO, x *[]any, s S) {
+	NBTSlice(r, x, func(t *[]T) {
+		SliceVarint16Length[T, S, A](r, t)
+	})
+}
+
+// Netease specific.
+//
+// NBTFuncSliceVarint32Length reads/writes a []any by using func FuncSliceVarint32Length.
+// f refer to the function which FuncSliceVarint32Length request to.
+func NBTFuncSliceVarint32Length[T any, S ~*[]T](r IO, x *[]any, f func(*T)) {
+	NBTSlice(r, x, func(t *[]T) {
+		FuncSliceVarint32Length[T, S](r, t, f)
+	})
+}
+
+// Netease specific.
+//
+// NBTOptionalSliceVarint16Length reads/writes an optional []any with a varint16 prefix.
+// s refer to the true data type of this slice.
+func NBTOptionalSliceVarint16Length[T any, S ~*[]T, A PtrMarshaler[T]](r IO, x *[]any, s S) {
+	var has bool
+	if x != nil {
+		has = true
+	}
+	r.Bool(&has)
+	if has {
+		NBTSlice(r, x, func(t *[]T) {
+			SliceVarint16Length[T, S, A](r, t)
+		})
+	}
 }

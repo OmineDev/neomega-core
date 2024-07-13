@@ -8,10 +8,10 @@ import (
 
 // 旗帜
 type Banner struct {
-	general.BlockActor
-	Base     int32                   `mapstructure:"Base"`               // TAG_Int(4) = 0
-	Patterns []fields.BannerPatterns `mapstructure:"Patterns,omitempty"` // TAG_List[TAG_Compound] (9[10])
-	Type     int32                   `mapstructure:"Type"`               // TAG_Int(4) = 0
+	general.BlockActor `mapstructure:",squash"`
+	Base               int32 `mapstructure:"Base"`               // TAG_Int(4) = 0
+	Patterns           []any `mapstructure:"Patterns,omitempty"` // TAG_List[TAG_Compound] (9[10])
+	Type               int32 `mapstructure:"Type"`               // TAG_Int(4) = 0
 }
 
 // ID ...
@@ -23,5 +23,5 @@ func (b *Banner) Marshal(io protocol.IO) {
 	protocol.Single(io, &b.BlockActor)
 	protocol.NBTInt(&b.Base, io.Varuint32)
 	io.Varint32(&b.Type)
-	protocol.SliceVarint16Length(io, &b.Patterns)
+	protocol.NBTSliceVarint16Length(io, &b.Patterns, &[]fields.BannerPatterns{})
 }

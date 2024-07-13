@@ -4,7 +4,7 @@ import general "github.com/OmineDev/neomega-core/minecraft/protocol/block_actors
 
 // 孢子花
 type SporeBlossom struct {
-	general.BlockActor
+	general.BlockActor `mapstructure:",squash"`
 }
 
 // ID ...

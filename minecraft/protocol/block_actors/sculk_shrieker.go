@@ -4,7 +4,7 @@ import general "github.com/OmineDev/neomega-core/minecraft/protocol/block_actors
 
 // 幽匿尖啸体
 type SculkShrieker struct {
-	general.BlockActor
+	general.BlockActor `mapstructure:",squash"`
 }
 
 // ID ...

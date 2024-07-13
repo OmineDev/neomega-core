@@ -7,14 +7,14 @@ import (
 
 // 移动的方块
 type MovingBlock struct {
-	general.BlockActor
-	MovingBlock      map[string]any  `mapstructure:"movingBlock"`            // TAG_Compound(10)
-	MovingBlockExtra map[string]any  `mapstructure:"movingBlockExtra"`       // TAG_Compound(10)
-	PistonPosX       int32           `mapstructure:"pistonPosX"`             // TAG_Int(4) = 0
-	PistonPosY       int32           `mapstructure:"pistonPosY"`             // TAG_Int(4) = 0
-	PistonPosZ       int32           `mapstructure:"pistonPosZ"`             // TAG_Int(4) = 0
-	Expanding        byte            `mapstructure:"expanding"`              // Not used; TAG_Byte(1) = 0 or 1 (Boolean)
-	MovingEntity     *map[string]any `mapstructure:"movingEntity,omitempty"` // TAG_Compound(10)
+	general.BlockActor `mapstructure:",squash"`
+	MovingBlock        map[string]any  `mapstructure:"movingBlock"`            // TAG_Compound(10)
+	MovingBlockExtra   map[string]any  `mapstructure:"movingBlockExtra"`       // TAG_Compound(10)
+	PistonPosX         int32           `mapstructure:"pistonPosX"`             // TAG_Int(4) = 0
+	PistonPosY         int32           `mapstructure:"pistonPosY"`             // TAG_Int(4) = 0
+	PistonPosZ         int32           `mapstructure:"pistonPosZ"`             // TAG_Int(4) = 0
+	Expanding          byte            `mapstructure:"expanding"`              // Not used; TAG_Byte(1) = 0 or 1 (Boolean)
+	MovingEntity       *map[string]any `mapstructure:"movingEntity,omitempty"` // TAG_Compound(10)
 }
 
 // ID ...

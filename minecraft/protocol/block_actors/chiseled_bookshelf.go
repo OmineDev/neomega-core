@@ -4,7 +4,7 @@ import general "github.com/OmineDev/neomega-core/minecraft/protocol/block_actors
 
 // 雕纹书架
 type ChiseledBookshelf struct {
-	general.BlockActor
+	general.BlockActor `mapstructure:",squash"`
 }
 
 // ID ...

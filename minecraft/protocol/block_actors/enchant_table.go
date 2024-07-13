@@ -7,8 +7,8 @@ import (
 
 // 附魔台
 type EnchantTable struct {
-	general.BlockActor
-	Rotation float32 `mapstructure:"rott"` // TAG_Float(6) = 0
+	general.BlockActor `mapstructure:",squash"`
+	Rotation           float32 `mapstructure:"rott"` // TAG_Float(6) = 0
 }
 
 // ID ...

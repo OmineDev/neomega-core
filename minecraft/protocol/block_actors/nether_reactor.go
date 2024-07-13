@@ -7,10 +7,10 @@ import (
 
 // 下界反应核
 type NetherReactor struct {
-	general.BlockActor
-	HasFinished   byte  `mapstructure:"HasFinished"`   // TAG_Byte(1) = 0
-	IsInitialized byte  `mapstructure:"IsInitialized"` // TAG_Byte(1) = 0
-	Progress      int16 `mapstructure:"Progress"`      // TAG_Short(3) = 0
+	general.BlockActor `mapstructure:",squash"`
+	HasFinished        byte  `mapstructure:"HasFinished"`   // TAG_Byte(1) = 0
+	IsInitialized      byte  `mapstructure:"IsInitialized"` // TAG_Byte(1) = 0
+	Progress           int16 `mapstructure:"Progress"`      // TAG_Short(3) = 0
 }
 
 // ID ...

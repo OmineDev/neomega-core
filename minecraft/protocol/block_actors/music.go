@@ -7,8 +7,8 @@ import (
 
 // 音符盒
 type Music struct {
-	general.BlockActor
-	Note byte `mapstructure:"note"` // TAG_Byte(1) = 0
+	general.BlockActor `mapstructure:",squash"`
+	Note               byte `mapstructure:"note"` // TAG_Byte(1) = 0
 }
 
 // ID ...

@@ -7,13 +7,13 @@ import (
 
 // 网易特有方块，可能被用于储存模组的自定义数据
 type ModBlock struct {
-	general.BlockActor
-	Tick       byte   `mapstructure:"_tick"`       // TAG_Byte(1) = 0
-	Movable    byte   `mapstructure:"_movable"`    // TAG_Byte(1) = 1
-	ExData     int32  `mapstructure:"exData"`      // TAG_Int(4) = 0
-	BlockName  string `mapstructure:"_blockName"`  // TAG_String(8) = ""
-	UniqueId   int64  `mapstructure:"_uniqueId"`   // TAG_Long(5) = 0
-	TickClient byte   `mapstructure:"_tickClient"` // TAG_Byte(1) = 0
+	general.BlockActor `mapstructure:",squash"`
+	Tick               byte   `mapstructure:"_tick"`       // TAG_Byte(1) = 0
+	Movable            byte   `mapstructure:"_movable"`    // TAG_Byte(1) = 1
+	ExData             int32  `mapstructure:"exData"`      // TAG_Int(4) = 0
+	BlockName          string `mapstructure:"_blockName"`  // TAG_String(8) = ""
+	UniqueId           int64  `mapstructure:"_uniqueId"`   // TAG_Long(5) = 0
+	TickClient         byte   `mapstructure:"_tickClient"` // TAG_Byte(1) = 0
 }
 
 // ID ...

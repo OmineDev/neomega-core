@@ -7,11 +7,11 @@ import (
 
 // 酿造台
 type BrewingStand struct {
-	general.BlockActor
-	CookTime   int16                   `mapstructure:"CookTime"`   // TAG_Short(3) = 0
-	FuelAmount int16                   `mapstructure:"FuelAmount"` // TAG_Short(3) = 0
-	FuelTotal  int16                   `mapstructure:"FuelTotal"`  // TAG_Short(3) = 0
-	Items      []protocol.ItemWithSlot `mapstructure:"Items"`      // TAG_List[TAG_Compound] (9[10])
+	general.BlockActor `mapstructure:",squash"`
+	CookTime           int16 `mapstructure:"CookTime"`   // TAG_Short(3) = 0
+	FuelAmount         int16 `mapstructure:"FuelAmount"` // TAG_Short(3) = 0
+	FuelTotal          int16 `mapstructure:"FuelTotal"`  // TAG_Short(3) = 0
+	Items              []any `mapstructure:"Items"`      // TAG_List[TAG_Compound] (9[10])
 }
 
 // ID ...
@@ -24,5 +24,5 @@ func (b *BrewingStand) Marshal(io protocol.IO) {
 	io.Varint16(&b.FuelTotal)
 	io.Varint16(&b.FuelAmount)
 	io.Varint16(&b.CookTime)
-	io.ItemList(&b.Items)
+	protocol.NBTSlice(io, &b.Items, func(t *[]protocol.ItemWithSlot) { io.ItemList(t) })
 }

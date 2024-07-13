@@ -7,15 +7,15 @@ import (
 
 // 营火
 type Campfire struct {
-	general.BlockActor
-	Item1     *protocol.Item `mapstructure:"Item1,omitempty"` // TAG_Compound(10)
-	Item2     *protocol.Item `mapstructure:"Item2,omitempty"` // TAG_Compound(10)
-	Item3     *protocol.Item `mapstructure:"Item3,omitempty"` // TAG_Compound(10)
-	Item4     *protocol.Item `mapstructure:"Item4,omitempty"` // TAG_Compound(10)
-	ItemTime1 int32          `mapstructure:"ItemTime1"`       // TAG_Int(4) = 0
-	ItemTime2 int32          `mapstructure:"ItemTime2"`       // TAG_Int(4) = 0
-	ItemTime3 int32          `mapstructure:"ItemTime3"`       // TAG_Int(4) = 0
-	ItemTime4 int32          `mapstructure:"ItemTime4"`       // TAG_Int(4) = 0
+	general.BlockActor `mapstructure:",squash"`
+	Item1              *protocol.Item `mapstructure:"Item1,omitempty"` // TAG_Compound(10)
+	Item2              *protocol.Item `mapstructure:"Item2,omitempty"` // TAG_Compound(10)
+	Item3              *protocol.Item `mapstructure:"Item3,omitempty"` // TAG_Compound(10)
+	Item4              *protocol.Item `mapstructure:"Item4,omitempty"` // TAG_Compound(10)
+	ItemTime1          int32          `mapstructure:"ItemTime1"`       // TAG_Int(4) = 0
+	ItemTime2          int32          `mapstructure:"ItemTime2"`       // TAG_Int(4) = 0
+	ItemTime3          int32          `mapstructure:"ItemTime3"`       // TAG_Int(4) = 0
+	ItemTime4          int32          `mapstructure:"ItemTime4"`       // TAG_Int(4) = 0
 }
 
 // ID ...

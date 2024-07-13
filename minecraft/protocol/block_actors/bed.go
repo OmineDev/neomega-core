@@ -7,8 +7,8 @@ import (
 
 // 床
 type Bed struct {
-	general.BlockActor
-	Color byte `mapstructure:"color"` // TAG_Byte(1) = 0
+	general.BlockActor `mapstructure:",squash"`
+	Color              byte `mapstructure:"color"` // TAG_Byte(1) = 0
 }
 
 // ID ...

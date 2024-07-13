@@ -4,7 +4,7 @@ import general "github.com/OmineDev/neomega-core/minecraft/protocol/block_actors
 
 // 末影箱
 type EnderChest struct {
-	general.ChestBlockActor
+	general.ChestBlockActor `mapstructure:",squash"`
 }
 
 // ID ...

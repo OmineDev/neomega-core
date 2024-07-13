@@ -7,9 +7,9 @@ import (
 
 // 潮涌核心
 type Conduit struct {
-	general.BlockActor
-	Active byte  `mapstructure:"Active"` // TAG_Byte(1) = 0
-	Target int64 `mapstructure:"Target"` // TAG_Long(5) = -1
+	general.BlockActor `mapstructure:",squash"`
+	Active             byte  `mapstructure:"Active"` // TAG_Byte(1) = 0
+	Target             int64 `mapstructure:"Target"` // TAG_Long(5) = -1
 }
 
 // ID ...

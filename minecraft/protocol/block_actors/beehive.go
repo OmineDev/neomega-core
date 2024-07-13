@@ -8,9 +8,9 @@ import (
 
 // 蜂箱
 type Beehive struct {
-	general.BlockActor
-	Occupants       []fields.BeehiveOccupants `mapstructure:"Occupants,omitempty"` // TAG_List[TAG_Compound] (9[10])
-	ShouldSpawnBees byte                      `mapstructure:"ShouldSpawnBees"`     // TAG_Byte(1) = 0
+	general.BlockActor `mapstructure:",squash"`
+	Occupants          []any `mapstructure:"Occupants,omitempty"` // TAG_List[TAG_Compound] (9[10])
+	ShouldSpawnBees    byte  `mapstructure:"ShouldSpawnBees"`     // TAG_Byte(1) = 0
 }
 
 // ID ...
@@ -20,6 +20,6 @@ func (*Beehive) ID() string {
 
 func (b *Beehive) Marshal(io protocol.IO) {
 	protocol.Single(io, &b.BlockActor)
-	protocol.SliceVarint16Length(io, &b.Occupants)
+	protocol.NBTSliceVarint16Length(io, &b.Occupants, &[]fields.BeehiveOccupants{})
 	io.Uint8(&b.ShouldSpawnBees)
 }

@@ -115,7 +115,7 @@ func (w *Writer) NBTItem(x *Item) {
 // 但是同时负载该物品存放在容器中的槽位
 type ItemWithSlot struct {
 	Slot byte `mapstructure:"Slot"` // TAG_Byte(1) = 0
-	Item
+	Item `mapstructure:",squash"`
 }
 
 func (i *ItemWithSlot) Marshal(r IO) {
