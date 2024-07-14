@@ -781,7 +781,7 @@ func StartOmega(address *C.char, impactOptionsJson *C.char) (Cerr *C.char) {
 			}
 			// server := nodes.NewSimpleZMQServer(socket)
 			master := nodes.NewZMQMasterNode(server)
-			node = nodes.NewGroup("github.com/OmineDev/neomega-core/neomega", master, false)
+			node = nodes.NewGroup("neomega", master, false)
 		}
 	}
 	ctx := context.Background()
