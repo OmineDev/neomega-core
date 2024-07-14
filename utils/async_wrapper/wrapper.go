@@ -102,6 +102,9 @@ func (w *AsyncWrapper[T]) do() {
 		break
 	case <-w.controller.c.Done():
 		w.controller.SetErrIfNo(w.controller.Context().Err())
+		if w.controller.cancelHook != nil {
+			w.controller.cancelHook()
+		}
 		break
 	}
 }
@@ -112,9 +115,15 @@ type AsyncController[T any] struct {
 	// 0: waiting
 	// 1: ret set
 	// 2: err set
-	status int
-	ret    T
-	err    error
+	status     int
+	ret        T
+	err        error
+	cancelHook func()
+}
+
+// add cancel hook
+func (a *AsyncController[T]) SetCancelHook(hook func()) {
+	a.cancelHook = hook
 }
 
 // make context readonly
