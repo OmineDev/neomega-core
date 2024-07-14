@@ -24,7 +24,7 @@ type PlayerInteract struct {
 	gameIntractable       neomega.GameIntractable
 	chatCbs               []func(chat *neomega.GameChat)
 	commandBlockTellCbs   map[string][]func(*neomega.GameChat)
-	nextMsgCbs            map[string][]func(*neomega.GameChat)
+	nextMsgListenerChan   map[string]chan *neomega.GameChat
 	specificItemMsgCbs    map[string][]func(*neomega.GameChat)
 	playerChangeListeners []func(neomega.PlayerKit, string)
 	cachedPlayers         map[uuid.UUID]neomega.PlayerKit
@@ -47,7 +47,7 @@ func NewPlayerInteract(
 		gameIntractable:       gameIntractable,
 		chatCbs:               make([]func(chat *neomega.GameChat), 0),
 		commandBlockTellCbs:   make(map[string][]func(*neomega.GameChat)),
-		nextMsgCbs:            make(map[string][]func(*neomega.GameChat)),
+		nextMsgListenerChan:   make(map[string]chan *neomega.GameChat),
 		specificItemMsgCbs:    make(map[string][]func(*neomega.GameChat)),
 		cachedPlayers:         make(map[uuid.UUID]neomega.PlayerKit),
 		playerChangeListeners: make([]func(neomega.PlayerKit, string), 0),
@@ -101,7 +101,8 @@ func (i *PlayerInteract) onRemovePlayer(uid uuid.UUID) {
 	}
 	name, found := player.GetUsername()
 	if found {
-		delete(i.nextMsgCbs, name)
+		close(i.nextMsgListenerChan[name])
+		delete(i.nextMsgListenerChan, name)
 	}
 	for _, cb := range i.playerChangeListeners {
 		go cb(player, "offline")

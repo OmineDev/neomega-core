@@ -9,6 +9,7 @@ import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
 	"github.com/OmineDev/neomega-core/neomega"
 	"github.com/OmineDev/neomega-core/neomega/uqholder"
+	"github.com/OmineDev/neomega-core/utils/async_wrapper"
 )
 
 type PlayerKit struct {
@@ -44,8 +45,8 @@ func (p *PlayerKit) SubTitle(subTitle string, title string) {
 	p.i.info.SubTitleTo(p.userName, subTitle, title)
 }
 
-func (p *PlayerKit) InterceptJustNextInput(cb func(chat *neomega.GameChat)) {
-	p.i.InterceptJustNextInput(p.userName, cb)
+func (p *PlayerKit) GetInput() *async_wrapper.AsyncWrapper[*neomega.GameChat] {
+	return p.i.GetInput(p.userName)
 }
 
 func (p *PlayerKit) CheckCondition(onResult func(bool), conditions ...string) {

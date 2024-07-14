@@ -6,6 +6,7 @@ import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
 	"github.com/OmineDev/neomega-core/neomega"
 	"github.com/OmineDev/neomega-core/neomega/uqholder"
+	"github.com/OmineDev/neomega-core/utils/async_wrapper"
 )
 
 func (i *PlayerInteract) onTextPacket(pk *packet.Text) {
@@ -58,26 +59,33 @@ func (i *PlayerInteract) SetOnSpecificItemMsgCallBack(itemName string, cb func(c
 	i.specificItemMsgCbs[itemName] = append(i.specificItemMsgCbs[itemName], cb)
 }
 
-func (i *PlayerInteract) InterceptJustNextInput(playerName string, cb func(chat *neomega.GameChat)) {
-	i.mu.Lock()
-	defer i.mu.Unlock()
-	var cbs []func(*neomega.GameChat)
-	var ok bool
-	if cbs, ok = i.nextMsgCbs[playerName]; !ok {
-		cbs = make([]func(*neomega.GameChat), 0)
-	}
-	cbs = append(cbs, cb)
-	i.nextMsgCbs[playerName] = cbs
+func (i *PlayerInteract) GetInput(playerName string) *async_wrapper.AsyncWrapper[*neomega.GameChat] {
+	return async_wrapper.NewAsyncWrapper(func(ac *async_wrapper.AsyncController[*neomega.GameChat]) {
+		var c chan *neomega.GameChat
+		i.mu.Lock()
+		found := false
+		if c, found = i.nextMsgListenerChan[playerName]; !found {
+			c = make(chan *neomega.GameChat)
+			i.nextMsgListenerChan[playerName] = c
+		}
+		i.mu.Unlock()
+		select {
+		case chat := <-c:
+			ac.SetResult(chat)
+		case <-ac.Context().Done():
+			return
+		}
+	}, true)
 }
 
 func (i *PlayerInteract) onChat(chat *neomega.GameChat) {
 	i.mu.Lock()
+	defer i.mu.Unlock()
 	// specific item msg
 	if cbs, ok := i.specificItemMsgCbs[chat.RawName]; ok {
 		for _, cb := range cbs {
 			go cb(chat)
 		}
-		i.mu.Unlock()
 		return
 	}
 	_, isPlayer := i.playersUQ.GetPlayerByName(chat.Name)
@@ -90,23 +98,15 @@ func (i *PlayerInteract) onChat(chat *neomega.GameChat) {
 				}
 			}
 		}
-		i.mu.Unlock()
 		return
 	}
-	// player, query/intercepts are responded first-in-last-out
-	if cbs, ok := i.nextMsgCbs[chat.Name]; ok {
-		if len(cbs) > 0 {
-			lastIntercept := cbs[len(cbs)-1]
-			go lastIntercept(chat)
-			i.nextMsgCbs[chat.Name] = cbs[:len(cbs)-1]
+	if ch, ok := i.nextMsgListenerChan[chat.Name]; ok {
+		select {
+		case ch <- chat:
+			return
+		default:
 		}
-		if len(i.nextMsgCbs[chat.Name]) == 0 {
-			delete(i.nextMsgCbs, chat.Name)
-		}
-		i.mu.Unlock()
-		return
 	}
-	i.mu.Unlock()
 	for _, cb := range i.chatCbs {
 		go cb(chat)
 	}
