@@ -1,10 +1,10 @@
 package cmd_sender
 
 import (
-	"context"
-
+	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
 	"github.com/OmineDev/neomega-core/neomega"
 	"github.com/OmineDev/neomega-core/nodes/defines"
+	"github.com/OmineDev/neomega-core/utils/async_wrapper"
 
 	"github.com/google/uuid"
 )
@@ -28,34 +28,30 @@ func NewEndPointCmdSender(node defines.APINode, reactable neomega.ReactCore, int
 	return c
 }
 
-func (c *EndPointCmdSender) SendPlayerCmdNeedResponse(cmd string) neomega.ResponseHandle {
+func (c *EndPointCmdSender) SendPlayerCmdNeedResponse(cmd string) *async_wrapper.AsyncWrapper[*packet.CommandOutput] {
 	ud, _ := uuid.NewUUID()
 	args := defines.FromString(cmd).Extend(defines.FromUUID(ud))
-	deferredAction := func() {
+	return async_wrapper.NewAsyncWrapper(func(ac *async_wrapper.AsyncController[*packet.CommandOutput]) {
+		c.cbByUUID.Set(ud.String(), func(co *packet.CommandOutput) {
+			ac.SetResult(co)
+		})
+		ac.SetCancelHook(func() {
+			c.cbByUUID.Delete(ud.String())
+		})
 		c.node.CallOmitResponse("send-player-command", args)
-	}
-	return &CmdResponseHandle{
-		deferredActon:         deferredAction,
-		timeoutSpecificResult: nil,
-		terminated:            false,
-		uuidStr:               ud.String(),
-		cbByUUID:              c.cbByUUID,
-		ctx:                   context.Background(),
-	}
+	}, false)
 }
 
-func (c *EndPointCmdSender) SendAICommandNeedResponse(runtimeid string, cmd string) neomega.ResponseHandle {
+func (c *EndPointCmdSender) SendAICommandNeedResponse(runtimeid string, cmd string) *async_wrapper.AsyncWrapper[*packet.CommandOutput] {
 	ud, _ := uuid.NewUUID()
 	args := defines.FromString(runtimeid).Extend(defines.FromString(cmd), defines.FromUUID(ud))
-	deferredAction := func() {
-		c.node.CallOmitResponse("send-ai-command", args)
-	}
-	return &CmdResponseHandle{
-		deferredActon:         deferredAction,
-		timeoutSpecificResult: nil,
-		terminated:            false,
-		uuidStr:               ud.String(),
-		cbByUUID:              c.cbByUUID,
-		ctx:                   context.Background(),
-	}
+	return async_wrapper.NewAsyncWrapper(func(ac *async_wrapper.AsyncController[*packet.CommandOutput]) {
+		c.cbByUUID.Set(ud.String(), func(co *packet.CommandOutput) {
+			ac.SetResult(co)
+		})
+		ac.SetCancelHook(func() {
+			c.cbByUUID.Delete(ud.String())
+		})
+		c.node.CallOmitResponse("send-player-command", args)
+	}, false)
 }

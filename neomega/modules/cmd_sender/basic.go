@@ -1,13 +1,13 @@
 package cmd_sender
 
 import (
-	"context"
 	"strings"
 	"sync"
 
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
 	"github.com/OmineDev/neomega-core/neomega"
+	"github.com/OmineDev/neomega-core/utils/async_wrapper"
 	"github.com/OmineDev/neomega-core/utils/sync_wrapper"
 
 	"github.com/google/uuid"
@@ -182,20 +182,18 @@ func (c *CmdSenderBasic) SendPlayerCmdOmitResponse(cmd string) {
 	c.SendPacket(pkt)
 }
 
-func (c *CmdSenderBasic) SendWebSocketCmdNeedResponse(cmd string) neomega.ResponseHandle {
+func (c *CmdSenderBasic) SendWebSocketCmdNeedResponse(cmd string) *async_wrapper.AsyncWrapper[*packet.CommandOutput] {
 	ud, _ := uuid.NewUUID()
 	pkt := c.packCmdWithUUID(cmd, ud, true)
-	deferredAction := func() {
+	return async_wrapper.NewAsyncWrapper(func(ac *async_wrapper.AsyncController[*packet.CommandOutput]) {
+		c.cbByUUID.Set(ud.String(), func(co *packet.CommandOutput) {
+			ac.SetResult(co)
+		})
+		ac.SetCancelHook(func() {
+			c.cbByUUID.Delete(ud.String())
+		})
 		c.SendPacket(pkt)
-	}
-	return &CmdResponseHandle{
-		deferredActon:         deferredAction,
-		timeoutSpecificResult: nil,
-		terminated:            false,
-		uuidStr:               ud.String(),
-		cbByUUID:              c.cbByUUID,
-		ctx:                   context.Background(),
-	}
+	}, false)
 }
 
 func (c *CmdSenderBasic) SendAICommandOmitResponse(runtimeid string, cmd string) {

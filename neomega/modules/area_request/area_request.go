@@ -73,9 +73,7 @@ func (o *AreaRequester) LowLevelRequestStructure(pos define.CubePos, size define
 			o.structureListeners[structureName] = make([]func(neomega.StructureResponse), 0, 1)
 		}
 		o.structureListeners[structureName] = append(o.structureListeners[structureName], func(sr neomega.StructureResponse) {
-			if ac.Context().Err() == nil {
-				ac.SetResult(sr)
-			}
+			ac.SetResult(sr)
 		})
 		o.structuresMu.Unlock()
 		o.requestStructure(pos, size, structureName)
@@ -166,9 +164,7 @@ func (o *AreaRequester) LowLevelRequestChunk(chunkPos define.ChunkPos) *async_wr
 			o.chunkListeners[chunkPos] = make([]func(*chunks.ChunkWithAuxInfo, error), 0, 1)
 		}
 		o.chunkListeners[chunkPos] = append(o.chunkListeners[chunkPos], func(cd *chunks.ChunkWithAuxInfo, err error) {
-			if ac.Context().Err() == nil {
-				ac.SetResultAndErr(cd, err)
-			}
+			ac.SetResultAndErr(cd, err)
 		})
 		o.chunkMu.Unlock()
 		o.requestSubChunk(chunkPos)

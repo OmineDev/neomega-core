@@ -86,7 +86,7 @@ func (w *NoRetAsyncWrapper) do() {
 	case <-w.controller.w:
 		break
 	case <-w.controller.c.Done():
-		w.controller.SetErrIfNo(w.controller.Context().Err())
+		w.controller.SetErr(w.controller.Context().Err())
 		if w.controller.cancelHook != nil {
 			w.controller.cancelHook()
 		}
@@ -120,8 +120,6 @@ func (a *NoRetAsyncController) SetOK() {
 	if a.status == 0 {
 		a.status = 1
 		close(a.w)
-	} else {
-		panic("double set async result")
 	}
 }
 
@@ -139,21 +137,6 @@ func (a *NoRetAsyncController) setErr(err error) {
 		a.err = err
 		a.status = 2
 		close(a.w)
-	} else {
-		panic("double set async err")
-	}
-}
-
-func (a *NoRetAsyncController) SetErrIfNo(err error) {
-	// when ret not set/an error is set, record
-	if a.status == 0 {
-		a.err = err
-		a.status = 2
-		close(a.w)
-	} else if a.status == 2 {
-		// do nothing
-	} else {
-		panic("set async err after result is set")
 	}
 }
 

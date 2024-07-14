@@ -246,7 +246,7 @@ func makeBotCreative(omegaCoreCtrl neomega.GameCtrl) {
 func disableCommandBlock(omegaCoreCtrl neomega.GameCtrl) {
 	omegaCoreCtrl.SendWOCmd("gamerule commandblocksenabled false")
 	//	waitor := make(chan struct{})
-	//	omegaCoreCtrl.SendPlayerCmdNeedResponse("gamerule commandblocksenabled false").AsyncGetResult(func(output *packet.CommandOutput) {
+	//	omegaCoreCtrl.SendPlayerCmdNeedResponse("gamerule commandblocksenabled false").AsyncGetResult(func(output *packet.CommandOutput, err error) {
 	fmt.Println(i18n.T(i18n.S_done_setting_commandblocksenabled_false))
 	//		close(waitor)
 	//	})

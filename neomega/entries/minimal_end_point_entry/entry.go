@@ -430,13 +430,13 @@ func Entry(args *Args) {
 	// 		}
 	// 		line = strings.TrimSpace(line)
 	// 		if strings.HasPrefix(line, "/") {
-	// 			omegaCore.GetGameControl().SendWebSocketCmdNeedResponse(line).AsyncGetResult(func(output *packet.CommandOutput) {
+	// 			omegaCore.GetGameControl().SendWebSocketCmdNeedResponse(line).AsyncGetResult(func(output *packet.CommandOutput, err error) {
 	// 				fmt.Println(output)
 	// 			})
 	// 			continue
 	// 		}
 	// 		if strings.HasPrefix(line, "player/") {
-	// 			omegaCore.GetGameControl().SendPlayerCmdNeedResponse(strings.TrimPrefix(line, "player/")).AsyncGetResult(func(output *packet.CommandOutput) {
+	// 			omegaCore.GetGameControl().SendPlayerCmdNeedResponse(strings.TrimPrefix(line, "player/")).AsyncGetResult(func(output *packet.CommandOutput, err error) {
 	// 				fmt.Println(output)
 	// 			})
 	// 			continue

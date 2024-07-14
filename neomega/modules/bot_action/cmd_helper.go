@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
 	"github.com/OmineDev/neomega-core/neomega"
 	"github.com/OmineDev/neomega-core/neomega/chunks/define"
+	"github.com/OmineDev/neomega-core/utils/async_wrapper"
 	"github.com/OmineDev/neomega-core/utils/string_wrapper"
 
 	"github.com/google/uuid"
@@ -44,7 +46,7 @@ func (c *wsCmd) Send() {
 	c.CmdSender.SendWebSocketCmdOmitResponse(c.cmd)
 }
 
-func (c *wsCmd) SendAndGetResponse() neomega.ResponseHandle {
+func (c *wsCmd) SendAndGetResponse() *async_wrapper.AsyncWrapper[*packet.CommandOutput] {
 	return c.CmdSender.SendWebSocketCmdNeedResponse(c.cmd)
 }
 
@@ -57,7 +59,7 @@ func (c *playerCmd) Send() {
 	c.CmdSender.SendPlayerCmdOmitResponse(c.cmd)
 }
 
-func (c *playerCmd) SendAndGetResponse() neomega.ResponseHandle {
+func (c *playerCmd) SendAndGetResponse() *async_wrapper.AsyncWrapper[*packet.CommandOutput] {
 	return c.CmdSender.SendPlayerCmdNeedResponse(c.cmd)
 }
 

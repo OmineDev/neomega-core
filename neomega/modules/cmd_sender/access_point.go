@@ -10,6 +10,7 @@ import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
 	"github.com/OmineDev/neomega-core/neomega"
 	"github.com/OmineDev/neomega-core/nodes/defines"
+	"github.com/OmineDev/neomega-core/utils/async_wrapper"
 
 	"github.com/google/uuid"
 )
@@ -133,42 +134,36 @@ func NewAccessPointCmdSender(node defines.APINode, reactable neomega.ReactCore, 
 	return c
 }
 
-func (c *AccessPointCmdSender) SendPlayerCmdNeedResponse(cmd string) neomega.ResponseHandle {
+func (c *AccessPointCmdSender) SendPlayerCmdNeedResponse(cmd string) *async_wrapper.AsyncWrapper[*packet.CommandOutput] {
 	ud, _ := uuid.NewUUID()
 	pkt := c.packCmdWithUUID(cmd, ud, false)
-	deferredAction := func() {
-		do := func() {
+	return async_wrapper.NewAsyncWrapper(func(ac *async_wrapper.AsyncController[*packet.CommandOutput]) {
+		c.cbByUUID.Set(ud.String(), func(co *packet.CommandOutput) {
+			ac.SetResult(co)
+		})
+		ac.SetCancelHook(func() {
+			c.cbByUUID.Delete(ud.String())
+		})
+		c.launchOrDeferPlayerCommand(func() {
 			c.SendPacket(pkt)
-		}
-		c.launchOrDeferPlayerCommand(do)
-	}
-	return &CmdResponseHandle{
-		deferredActon:         deferredAction,
-		timeoutSpecificResult: nil,
-		terminated:            false,
-		uuidStr:               ud.String(),
-		cbByUUID:              c.cbByUUID,
-		ctx:                   context.Background(),
-	}
+		})
+	}, false)
 }
 
-func (c *AccessPointCmdSender) SendAICommandNeedResponse(runtimeid string, cmd string) neomega.ResponseHandle {
+func (c *AccessPointCmdSender) SendAICommandNeedResponse(runtimeid string, cmd string) *async_wrapper.AsyncWrapper[*packet.CommandOutput] {
 	ud, _ := uuid.NewUUID()
 	pkt := c.packAICmdWithUUID(runtimeid, cmd, ud)
-	deferredAction := func() {
-		do := func() {
+	return async_wrapper.NewAsyncWrapper(func(ac *async_wrapper.AsyncController[*packet.CommandOutput]) {
+		c.cbByUUID.Set(ud.String(), func(co *packet.CommandOutput) {
+			ac.SetResult(co)
+		})
+		ac.SetCancelHook(func() {
+			c.cbByUUID.Delete(ud.String())
+		})
+		c.launchOrDeferPlayerCommand(func() {
 			c.SendPacket(pkt)
-		}
-		c.launchOrDeferPlayerCommand(do)
-	}
-	return &CmdResponseHandle{
-		deferredActon:         deferredAction,
-		timeoutSpecificResult: nil,
-		terminated:            false,
-		uuidStr:               ud.String(),
-		cbByUUID:              c.cbByUUID,
-		ctx:                   context.Background(),
-	}
+		})
+	}, false)
 }
 
 func (c *AccessPointCmdSender) launchOrDeferPlayerCommand(do func()) {

@@ -148,8 +148,8 @@ func (o *BotActionHighLevel) occupyBot(timeout time.Duration) (release func(), e
 func (o *BotActionHighLevel) highLevelEnsureBotNearby(pos define.CubePos, threshold float32) error {
 	botPos, _ := o.uq.GetBotPosition()
 	if botPos.Sub(mgl32.Vec3{float32(pos.X()), float32(pos.Y()), float32(pos.Z())}).Len() > threshold {
-		ret := o.cmdSender.SendWebSocketCmdNeedResponse(fmt.Sprintf("tp @s %v %v %v", pos.X(), pos.Y(), pos.Z())).SetTimeout(time.Second * 3).BlockGetResult()
-		if ret == nil {
+		ret, err := o.cmdSender.SendWebSocketCmdNeedResponse(fmt.Sprintf("tp @s %v %v %v", pos.X(), pos.Y(), pos.Z())).SetTimeout(time.Second * 3).BlockGetResult()
+		if ret == nil || err != nil {
 			return fmt.Errorf("cannot move to target pos")
 		}
 	}
@@ -197,8 +197,8 @@ func (o *BotActionHighLevel) highLevelGetAndRemoveSpecificBlockSideEffect(pos de
 	if foreGround == blocks.AIR_RUNTIMEID && backGround == blocks.AIR_RUNTIMEID {
 		isAir = true
 	} else {
-		ret := o.cmdHelper.BackupStructureWithGivenNameCmd(pos, define.CubePos{1, 1, 1}, backupName).SendAndGetResponse().SetTimeout(time.Second * 3).BlockGetResult()
-		if ret == nil {
+		ret, err := o.cmdHelper.BackupStructureWithGivenNameCmd(pos, define.CubePos{1, 1, 1}, backupName).SendAndGetResponse().SetTimeout(time.Second * 3).BlockGetResult()
+		if ret == nil || err != nil {
 			return nil, func() {}, fmt.Errorf("cannot backup block for revert")
 		}
 	}
@@ -471,14 +471,14 @@ func (o *BotActionHighLevel) highLevelRenameItemWithAnvil(pos define.CubePos, sl
 		if err != nil {
 			return err
 		}
-		if ret := o.cmdHelper.SetBlockCmd(pos.Add(define.CubePos{0, -1, 0}), "glass").AsWebSocket().SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult(); ret == nil {
+		if ret, err := o.cmdHelper.SetBlockCmd(pos.Add(define.CubePos{0, -1, 0}), "glass").AsWebSocket().SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult(); ret == nil || err != nil {
 			return fmt.Errorf("cannot place anvil for operation")
 		}
 		deferAction, err = o.highLevelRemoveSpecificBlockSideEffect(pos, false, "_temp_anvil"+o.nextCountName())
 		if err != nil {
 			return err
 		}
-		if ret := o.cmdHelper.SetBlockCmd(pos, "anvil").AsWebSocket().SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult(); ret == nil {
+		if ret, err := o.cmdHelper.SetBlockCmd(pos, "anvil").AsWebSocket().SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult(); ret == nil || err != nil {
 			return fmt.Errorf("cannot place anvil for operation")
 		}
 	}
@@ -516,7 +516,10 @@ func (o *BotActionHighLevel) highLevelEnchantItem(slot uint8, enchants map[strin
 	o.microAction.SleepTick(1)
 	results := make(chan *packet.CommandOutput, len(enchants))
 	for nameOrID, level := range enchants {
-		o.cmdSender.SendWebSocketCmdNeedResponse(fmt.Sprintf("enchant @s %v %v", nameOrID, level)).SetTimeout(time.Second * 3).AsyncGetResult(func(output *packet.CommandOutput) {
+		o.cmdSender.SendWebSocketCmdNeedResponse(fmt.Sprintf("enchant @s %v %v", nameOrID, level)).SetTimeout(time.Second * 3).AsyncGetResult(func(output *packet.CommandOutput, err error) {
+			if err != nil {
+				output = nil
+			}
 			results <- output
 		})
 	}
@@ -634,10 +637,10 @@ func (o *BotActionHighLevel) highLevelBlockBreakAndPickInHotBar(pos define.CubeP
 	if len(targetSlotsGetInfo) == 0 {
 		return
 	}
-	if o.cmdSender.SendWebSocketCmdNeedResponse(fmt.Sprintf("tp @s %v %v %v", pos.X(), pos.Y(), pos.Z())).SetTimeout(time.Second*3).BlockGetResult() == nil {
+	if ret, err := o.cmdSender.SendWebSocketCmdNeedResponse(fmt.Sprintf("tp @s %v %v %v", pos.X(), pos.Y(), pos.Z())).SetTimeout(time.Second * 3).BlockGetResult(); ret == nil || err != nil {
 		return targetSlotsGetInfo, fmt.Errorf("cannot make bot to target position")
 	}
-	if cleanResult := o.cmdSender.SendWebSocketCmdNeedResponse("tp @e[type=item,r=9] ~ -100 ~").SetTimeout(time.Second * 3).BlockGetResult(); cleanResult == nil {
+	if ret, err := o.cmdSender.SendWebSocketCmdNeedResponse("tp @e[type=item,r=9] ~ -100 ~").SetTimeout(time.Second * 3).BlockGetResult(); ret == nil || err != nil {
 		return targetSlotsGetInfo, fmt.Errorf("cannot clean bot nearby items")
 	}
 
@@ -750,7 +753,7 @@ func (o *BotActionHighLevel) highLevelBlockBreakAndPickInHotBar(pos define.CubeP
 		}
 		recoverAction()
 		if !thisTimeOk {
-			if cleanResult := o.cmdSender.SendWebSocketCmdNeedResponse("tp @e[type=item,r=9] ~ -100 ~").SetTimeout(time.Second * 3).BlockGetResult(); cleanResult == nil {
+			if ret, err := o.cmdSender.SendWebSocketCmdNeedResponse("tp @e[type=item,r=9] ~ -100 ~").SetTimeout(time.Second * 3).BlockGetResult(); ret == nil || err != nil {
 				return targetSlotsGetInfo, fmt.Errorf("cannot clean bot nearby items")
 			}
 			for k, v := range targetSlotsGetInfo {
@@ -775,8 +778,8 @@ func (o *BotActionHighLevel) HighLevelWriteBook(slotID uint8, pages []string) (e
 }
 
 func (o *BotActionHighLevel) highLevelWriteBook(slotID uint8, pages []string) (err error) {
-	rest := o.cmdHelper.ReplaceHotBarItemCmd(int32(slotID), "writable_book").SendAndGetResponse().SetTimeout(time.Second * 3).BlockGetResult()
-	if rest == nil {
+	rest, err := o.cmdHelper.ReplaceHotBarItemCmd(int32(slotID), "writable_book").SendAndGetResponse().SetTimeout(time.Second * 3).BlockGetResult()
+	if rest == nil || err != nil {
 		return fmt.Errorf("cannot get writable_book in slot")
 	}
 	o.microAction.SleepTick(1)
@@ -871,7 +874,7 @@ func (o *BotActionHighLevel) HighLevelGenContainer(pos define.CubePos, container
 	}
 	defer release()
 	o.highLevelEnsureBotNearby(pos, 8)
-	if ret := o.cmdHelper.SetBlockCmd(pos, block).AsWebSocket().SendAndGetResponse().SetTimeout(time.Second * 3).BlockGetResult(); ret == nil {
+	if ret, err := o.cmdHelper.SetBlockCmd(pos, block).AsWebSocket().SendAndGetResponse().SetTimeout(time.Second * 3).BlockGetResult(); ret == nil || err != nil {
 		return fmt.Errorf("cannot set container")
 	}
 	return o.highLevelSetContainerItems(pos, containerInfo)
@@ -898,7 +901,7 @@ func (o *BotActionHighLevel) highLevelMakeItem(item *neomega.Item, slotID uint8,
 				return err
 			}
 		} else {
-			if ret := o.cmdHelper.ReplaceBotHotBarItemFullCmd(int32(slotID), item.Name, 1, int32(item.Value), item.Components).SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult(); ret == nil {
+			if ret, err := o.cmdHelper.ReplaceBotHotBarItemFullCmd(int32(slotID), item.Name, 1, int32(item.Value), item.Components).SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult(); ret == nil || err != nil {
 				return fmt.Errorf("cannot put simple block/item in container %v %v %v %v", item.Name, 1, int32(item.Value), item.Components)
 			}
 		}
@@ -962,7 +965,7 @@ func (o *BotActionHighLevel) highLevelSetContainerItems(pos define.CubePos, cont
 	// put simple block/item in container first
 	for slot, stack := range containerInfo {
 		if stack.Item.GetTypeDescription().IsSimple() {
-			if ret := o.cmdHelper.ReplaceContainerItemFullCmd(targetContainerPos, int32(slot), stack.Item.Name, stack.Count, int32(stack.Item.Value), stack.Item.Components).SendAndGetResponse().BlockGetResult(); ret == nil {
+			if ret, err := o.cmdHelper.ReplaceContainerItemFullCmd(targetContainerPos, int32(slot), stack.Item.Name, stack.Count, int32(stack.Item.Value), stack.Item.Components).SendAndGetResponse().BlockGetResult(); ret == nil || err != nil {
 				updateErr(fmt.Errorf("cannot put simple block/item in container %v %v %v %v", stack.Item.Name, stack.Count, int32(stack.Item.Value), stack.Item.Components))
 			}
 		}
@@ -1020,7 +1023,7 @@ func (o *BotActionHighLevel) highLevelSetContainerItems(pos define.CubePos, cont
 			} else if typeDescription.KnownItem() == neomega.KnownItemWrittenBook {
 				updateErr(o.highLevelWriteBookAndClose(uint8(hotBarSlotID), stack.Item.RelatedKnownItemData.Pages, stack.Item.RelatedKnownItemData.BookName, stack.Item.RelatedKnownItemData.BookAuthor))
 			} else {
-				if ret := o.cmdHelper.ReplaceBotHotBarItemFullCmd(int32(hotBarSlotID), stack.Item.Name, stack.Count, int32(stack.Item.Value), stack.Item.Components).SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult(); ret == nil {
+				if ret, err := o.cmdHelper.ReplaceBotHotBarItemFullCmd(int32(hotBarSlotID), stack.Item.Name, stack.Count, int32(stack.Item.Value), stack.Item.Components).SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult(); ret == nil || err != nil {
 					updateErr(fmt.Errorf("cannot put simple block/item in container %v %v %v %v", stack.Item.Name, stack.Count, int32(stack.Item.Value), stack.Item.Components))
 				}
 			}

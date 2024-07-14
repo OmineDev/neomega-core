@@ -14,7 +14,7 @@ import (
 )
 
 func RefreshPosAndDimensionInfo(e *neomega.PosAndDimensionInfo, omega neomega.CmdSender) error {
-	if resp := omega.SendWebSocketCmdNeedResponse("querytarget @s").BlockGetResult(); resp == nil {
+	if resp, err := omega.SendWebSocketCmdNeedResponse("querytarget @s").BlockGetResult(); resp == nil || err != nil {
 		return fmt.Errorf("cannot get bot dimension info")
 	} else {
 		var QueryResults []neomega.QueryResult
