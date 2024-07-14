@@ -67,6 +67,9 @@ func UpdateLegacySetBlockCommand(command string) string {
 	if c.BlockValueIfAny == "" {
 		c.BlockValueIfAny = "0"
 	}
+	if strings.ContainsAny(c.BlockName, "[]") {
+		return command
+	}
 	blockStr, err := UpdateBlockDescribe(c.BlockName, c.BlockValueIfAny)
 	if err != nil {
 		fmt.Println(err)
@@ -90,6 +93,9 @@ func UpdateLegacyFillCommand(command string) string {
 	if c.BlockValueIfAny == "" {
 		c.BlockValueIfAny = "0"
 	}
+	if strings.ContainsAny(c.BlockName, "[]") {
+		return command
+	}
 	blockStr, err := UpdateBlockDescribe(c.BlockName, c.BlockValueIfAny)
 	if err != nil {
 		fmt.Println(err)
@@ -103,6 +109,9 @@ func UpdateLegacyFillCommand(command string) string {
 	} else {
 		if c.ReplaceBlockValueIfAny == "" {
 			c.ReplaceBlockValueIfAny = "-1"
+		}
+		if strings.ContainsAny(c.ReplaceBlockNameIfAny, "[]") {
+			return command
 		}
 		replaceBlockStr, err := UpdateBlockDescribe(c.ReplaceBlockNameIfAny, c.ReplaceBlockValueIfAny)
 		if err != nil {
@@ -133,6 +142,9 @@ func UpdateLegacyCloneCommand(command string) string {
 	if c.BlockValueIfFiltered == "" {
 		c.BlockValueIfFiltered = "-1"
 	}
+	if strings.ContainsAny(c.BlockNameIfFiltered, "[]") {
+		return command
+	}
 	blockStr, err := UpdateBlockDescribe(c.BlockNameIfFiltered, c.BlockValueIfFiltered)
 	if err != nil {
 		fmt.Println(err)
@@ -153,6 +165,9 @@ func UpdateLegacyTestForBlockCommand(command string) string {
 	newCommand := fmt.Sprintf("testforblock %v ", c.Pos)
 	if c.BlockValueIfAny == "" {
 		c.BlockValueIfAny = "-1"
+	}
+	if strings.ContainsAny(c.BlockName, "[]") {
+		return command
 	}
 	blockStr, err := UpdateBlockDescribe(c.BlockName, c.BlockValueIfAny)
 	if err != nil {
