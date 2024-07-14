@@ -117,7 +117,7 @@ type StructureResponse interface {
 type LowLevelAreaRequester interface {
 	// TODO: Auto Requester to chunkProvider
 	// Aim to support all dimensions (nbt translater should be in chunks.ChunkProvider)
-	// RequestArea(pos define.CubePos, size define.CubePos, target chunks.ChunkProvider) *async_wrapper.AsyncWrapper[bool]
+	// RequestArea(pos define.CubePos, size define.CubePos, target chunks.ChunkProvider) *async_wrapper.NoRetAsyncWrapper
 
 	LowLevelRequestStructure(pos define.CubePos, size define.CubePos, structureName string) *async_wrapper.AsyncWrapper[StructureResponse]
 	LowLevelRequestStructureWithAutoName(pos define.CubePos, size define.CubePos) *async_wrapper.AsyncWrapper[StructureResponse]
