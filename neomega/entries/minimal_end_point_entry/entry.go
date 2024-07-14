@@ -48,7 +48,7 @@ func Entry(args *Args) {
 	if err != nil {
 		panic(err)
 	}
-	ret := omegaCore.GetGameControl().SendWebSocketCmdNeedResponse("tp @s 1000 100 1000").BlockGetResult()
+	ret, _ := omegaCore.GetGameControl().SendWebSocketCmdNeedResponse("tp @s 1000 100 1000").BlockGetResult()
 	fmt.Println(ret)
 	chunk, err := omegaCore.GetLowLevelAreaRequester().LowLevelRequestChunk(define.ChunkPos{1000 >> 4, 1000 >> 4}).BlockGetResult()
 	fmt.Println(chunk)

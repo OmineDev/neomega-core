@@ -1,15 +1,14 @@
 package neomega
 
 import (
-	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
 	"github.com/OmineDev/neomega-core/neomega/blocks"
 	"github.com/OmineDev/neomega-core/neomega/chunks/define"
+	"github.com/OmineDev/neomega-core/utils/async_wrapper"
 
 	"github.com/google/uuid"
 )
@@ -48,24 +47,15 @@ type InteractCore interface {
 	GameIntractable
 }
 
-type ResponseHandle interface {
-	SetTimeoutResponse(timeoutResponse *packet.CommandOutput) ResponseHandle
-	SetTimeout(timeOut time.Duration) ResponseHandle
-	SetContext(ctx context.Context) ResponseHandle
-	BlockGetResult() *packet.CommandOutput
-	// callback will be call in a new goroutine, need more resource but safe
-	AsyncGetResult(func(output *packet.CommandOutput))
-}
-
 type CmdSender interface {
 	SendWOCmd(cmd string)
 	SendWebSocketCmdOmitResponse(cmd string)
 	SendPlayerCmdOmitResponse(cmd string)
 	SendAICommandOmitResponse(runtimeid string, cmd string)
 
-	SendWebSocketCmdNeedResponse(cmd string) ResponseHandle
-	SendPlayerCmdNeedResponse(cmd string) ResponseHandle
-	SendAICommandNeedResponse(runtimeid string, cmd string) ResponseHandle
+	SendWebSocketCmdNeedResponse(cmd string) *async_wrapper.AsyncWrapper[*packet.CommandOutput]
+	SendPlayerCmdNeedResponse(cmd string) *async_wrapper.AsyncWrapper[*packet.CommandOutput]
+	SendAICommandNeedResponse(runtimeid string, cmd string) *async_wrapper.AsyncWrapper[*packet.CommandOutput]
 }
 
 // type CmdSender interface {

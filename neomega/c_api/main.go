@@ -88,7 +88,10 @@ func ConsumeCommandResponseCB() *C.char {
 //export SendWebSocketCommandNeedResponse
 func SendWebSocketCommandNeedResponse(cmd *C.char, retrieverID *C.char) {
 	GoRetrieverID := C.GoString(retrieverID)
-	GOmegaCore.GetGameControl().SendWebSocketCmdNeedResponse(C.GoString(cmd)).AsyncGetResult(func(p *packet.CommandOutput) {
+	GOmegaCore.GetGameControl().SendWebSocketCmdNeedResponse(C.GoString(cmd)).AsyncGetResult(func(p *packet.CommandOutput, err error) {
+		if err != nil {
+			p = nil
+		}
 		GEventsChan <- &GEvent{EventTypeCommandResponseCB, GoRetrieverID, p}
 	})
 }
@@ -96,7 +99,10 @@ func SendWebSocketCommandNeedResponse(cmd *C.char, retrieverID *C.char) {
 //export SendPlayerCommandNeedResponse
 func SendPlayerCommandNeedResponse(cmd *C.char, retrieverID *C.char) {
 	GoRetrieverID := C.GoString(retrieverID)
-	GOmegaCore.GetGameControl().SendPlayerCmdNeedResponse(C.GoString(cmd)).AsyncGetResult(func(p *packet.CommandOutput) {
+	GOmegaCore.GetGameControl().SendPlayerCmdNeedResponse(C.GoString(cmd)).AsyncGetResult(func(p *packet.CommandOutput, err error) {
+		if err != nil {
+			p = nil
+		}
 		GEventsChan <- &GEvent{EventTypeCommandResponseCB, GoRetrieverID, p}
 	})
 }

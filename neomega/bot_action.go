@@ -10,6 +10,7 @@ import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
 	"github.com/OmineDev/neomega-core/neomega/chunks"
 	"github.com/OmineDev/neomega-core/neomega/chunks/define"
+	"github.com/OmineDev/neomega-core/utils/async_wrapper"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/lucasb-eyer/go-colorful"
@@ -83,7 +84,7 @@ type CmdCannotGetResponse interface {
 
 type CmdCanGetResponse interface {
 	CmdCannotGetResponse
-	SendAndGetResponse() ResponseHandle
+	SendAndGetResponse() *async_wrapper.AsyncWrapper[*packet.CommandOutput]
 }
 
 type GeneralCommand interface {

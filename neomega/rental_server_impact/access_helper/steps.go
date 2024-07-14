@@ -234,9 +234,11 @@ func reasonWithPrivilegeStuff(ctx context.Context, deadReason chan error, omegaC
 func makeBotCreative(omegaCoreCtrl neomega.GameCtrl) {
 	waitor := make(chan struct{})
 	fmt.Println(i18n.T(i18n.S_switching_bot_to_creative_mode))
-	omegaCoreCtrl.SendWebSocketCmdNeedResponse("gamemode c @s").SetTimeout(time.Second * 3).AsyncGetResult(func(output *packet.CommandOutput) {
-		fmt.Println(i18n.T(i18n.S_done_setting_bot_to_creative_mode))
-		close(waitor)
+	omegaCoreCtrl.SendWebSocketCmdNeedResponse("gamemode c @s").SetTimeout(time.Second * 3).AsyncGetResult(func(output *packet.CommandOutput, err error) {
+		if err == nil && output != nil {
+			fmt.Println(i18n.T(i18n.S_done_setting_bot_to_creative_mode))
+			close(waitor)
+		}
 	})
 	<-waitor
 }

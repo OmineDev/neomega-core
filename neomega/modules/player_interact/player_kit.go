@@ -53,8 +53,8 @@ func (p *PlayerKit) CheckCondition(onResult func(bool), conditions ...string) {
 	if condstr != "" {
 		condstr = "," + condstr
 	}
-	p.i.cmdSender.SendWebSocketCmdNeedResponse(fmt.Sprintf("testfor @a[name=\"%s\"%s]", p.userName, condstr)).AsyncGetResult(func(output *packet.CommandOutput) {
-		ok := output.SuccessCount != 0
+	p.i.cmdSender.SendWebSocketCmdNeedResponse(fmt.Sprintf("testfor @a[name=\"%s\"%s]", p.userName, condstr)).AsyncGetResult(func(output *packet.CommandOutput, err error) {
+		ok := (output.SuccessCount != 0) && err == nil
 		go onResult(ok)
 	})
 }
@@ -66,8 +66,8 @@ func (p *PlayerKit) Query(onResult func([]neomega.QueryResult), conditions ...st
 	}
 	var QueryResults []neomega.QueryResult
 
-	p.i.cmdSender.SendWebSocketCmdNeedResponse(fmt.Sprintf("querytarget @a[name=\"%s\"%s]", p.userName, condstr)).AsyncGetResult(func(output *packet.CommandOutput) {
-		if output.SuccessCount > 0 {
+	p.i.cmdSender.SendWebSocketCmdNeedResponse(fmt.Sprintf("querytarget @a[name=\"%s\"%s]", p.userName, condstr)).AsyncGetResult(func(output *packet.CommandOutput, err error) {
+		if err == nil && output != nil && output.SuccessCount > 0 {
 			for _, v := range output.OutputMessages {
 				for _, j := range v.Parameters {
 					err := json.Unmarshal([]byte(j), &QueryResults)

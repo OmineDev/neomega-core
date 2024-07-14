@@ -45,7 +45,7 @@ func Entry(args *access_helper.ImpactOption) {
 		for {
 			i++
 			time.Sleep(time.Second)
-			ret := omegaCore.GetGameControl().SendWebSocketCmdNeedResponse("tp @s ~~~").BlockGetResult()
+			ret, _ := omegaCore.GetGameControl().SendWebSocketCmdNeedResponse("tp @s ~~~").BlockGetResult()
 			if ret == nil || ret.SuccessCount == 0 {
 				panic(fmt.Errorf("tp @s ~~~ fail, recv: %v", ret))
 			}
@@ -61,7 +61,7 @@ func Entry(args *access_helper.ImpactOption) {
 			}
 			if strings.HasPrefix(line, "/") {
 				cmd := strings.TrimPrefix(line, "/")
-				ret := omegaCore.GetGameControl().SendWebSocketCmdNeedResponse(cmd).SetTimeout(time.Second).BlockGetResult()
+				ret, _ := omegaCore.GetGameControl().SendWebSocketCmdNeedResponse(cmd).SetTimeout(time.Second).BlockGetResult()
 				if ret == nil {
 					pterm.Error.Println("cmd not responsed")
 				} else {

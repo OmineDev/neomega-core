@@ -75,7 +75,7 @@ func (o *OperatorChallenge) WaitForPrivilege(ctx context.Context) (err error) {
 	for !o.hasOpPrivilege {
 		time.Sleep(1 * time.Second)
 		o.GetGameControl().SendWOCmd("changesetting allow-cheats true")
-		if o.GetGameControl().SendWebSocketCmdNeedResponse("tp @s ~~~").BlockGetResult().SuccessCount > 0 {
+		if ret, err := o.GetGameControl().SendWebSocketCmdNeedResponse("tp @s ~~~").BlockGetResult(); err == nil && ret != nil && ret.SuccessCount > 0 {
 			o.hasOpPrivilege = true
 			o.cheatOn = true
 		}
