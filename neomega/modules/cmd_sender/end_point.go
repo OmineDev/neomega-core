@@ -52,6 +52,6 @@ func (c *EndPointCmdSender) SendAICommandNeedResponse(runtimeid string, cmd stri
 		ac.SetCancelHook(func() {
 			c.cbByUUID.Delete(ud.String())
 		})
-		c.node.CallOmitResponse("send-player-command", args)
+		c.node.CallOmitResponse("send-ai-command", args)
 	}, false)
 }
