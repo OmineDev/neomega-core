@@ -133,6 +133,15 @@ func (a *AsyncController[T]) SetResult(r T) {
 	}
 }
 
+func (a *AsyncController[T]) SetResultAndErr(r T, err error) {
+	if err == nil {
+		a.SetResult(r)
+	} else {
+		a.ret = r
+		a.SetErrIfNo(err)
+	}
+}
+
 func (a *AsyncController[T]) SetErr(err error) {
 	// when ret not set/an error is set, record
 	if a.status == 0 {

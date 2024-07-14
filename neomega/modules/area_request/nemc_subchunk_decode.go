@@ -1,4 +1,4 @@
-package chunk_request
+package area_request
 
 import (
 	"bytes"

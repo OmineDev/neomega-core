@@ -50,8 +50,12 @@ func Entry(args *Args) {
 	}
 	ret := omegaCore.GetGameControl().SendWebSocketCmdNeedResponse("tp @s 1000 100 1000").BlockGetResult()
 	fmt.Println(ret)
-	chunk, err := omegaCore.GetLowLevelChunkRequester().LowLevelRequestChunk(define.ChunkPos{1000 >> 4, 1000 >> 4}).BlockGetResult()
+	chunk, err := omegaCore.GetLowLevelAreaRequester().LowLevelRequestChunk(define.ChunkPos{1000 >> 4, 1000 >> 4}).BlockGetResult()
 	fmt.Println(chunk)
+	fmt.Println(err)
+
+	structure, err := omegaCore.GetLowLevelAreaRequester().LowLevelRequestStructureWithAutoName(define.CubePos{1000, -64, 1000}, define.CubePos{16, 100, 16}).BlockGetResult()
+	fmt.Println(structure)
 	fmt.Println(err)
 	// omegaCore, err := bundle.NewEndPointMicroOmega(node)
 	// if err != nil {

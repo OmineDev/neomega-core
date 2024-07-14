@@ -12,11 +12,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/OmineDev/neomega-core/neomega/modules/area_request"
 	"github.com/OmineDev/neomega-core/neomega/modules/bot_action"
-	"github.com/OmineDev/neomega-core/neomega/modules/chunk_request"
 	"github.com/OmineDev/neomega-core/neomega/modules/info_sender"
 	"github.com/OmineDev/neomega-core/neomega/modules/player_interact"
-	"github.com/OmineDev/neomega-core/neomega/modules/structure"
 )
 
 func init() {
@@ -33,8 +32,7 @@ type MicroOmega struct {
 	neomega.MicroUQHolder
 	// neomega.BlockPlacer
 	neomega.PlayerInteract
-	neomega.StructureRequester
-	neomega.LowLevelChunkRequester
+	neomega.LowLevelAreaRequester
 	neomega.CommandHelper
 	neomega.BotAction
 	neomega.BotActionHighLevel
@@ -56,8 +54,7 @@ func NewMicroOmega(
 	infoSender := info_sender.NewInfoSender(interactCore, cmdSender, microUQHolder.GetBotBasicInfo())
 	playerInteract := player_interact.NewPlayerInteract(reactCore, microUQHolder.GetPlayersInfo(), microUQHolder.GetBotBasicInfo(), cmdSender, infoSender, interactCore)
 	// asyncNbtBlockPlacer := placer.NewAsyncNbtBlockPlacer(reactCore, cmdSender, interactCore)
-	structureRequester := structure.NewStructureRequester(interactCore, reactCore, microUQHolder)
-	chunkRequester := chunk_request.NewChunkRequester(interactCore, reactCore, microUQHolder)
+	areaRequester := area_request.NewAreaRequester(interactCore, reactCore, microUQHolder, microUQHolder)
 	cmdHelper := bot_action.NewCommandHelper(cmdSender, microUQHolder)
 	var botAction neomega.BotAction
 	if isAccessPoint {
@@ -66,7 +63,7 @@ func NewMicroOmega(
 		botAction = bot_action.NewEndPointBotAction(node, microUQHolder, interactCore)
 	}
 
-	botActionHighLevel := bot_action.NewBotActionHighLevel(microUQHolder, interactCore, reactCore, cmdSender, cmdHelper, structureRequester, botAction, node)
+	botActionHighLevel := bot_action.NewBotActionHighLevel(microUQHolder, interactCore, reactCore, cmdSender, cmdHelper, areaRequester, botAction, node)
 
 	omega := &MicroOmega{
 		reactCore,
@@ -76,8 +73,7 @@ func NewMicroOmega(
 		microUQHolder,
 		// asyncNbtBlockPlacer,
 		playerInteract,
-		structureRequester,
-		chunkRequester,
+		areaRequester,
 		cmdHelper,
 		botAction,
 		botActionHighLevel,
@@ -176,11 +172,7 @@ func (o *MicroOmega) GetMicroUQHolder() neomega.MicroUQHolder {
 	return o
 }
 
-func (o *MicroOmega) GetStructureRequester() neomega.StructureRequester {
-	return o
-}
-
-func (o *MicroOmega) GetLowLevelChunkRequester() neomega.LowLevelChunkRequester {
+func (o *MicroOmega) GetLowLevelAreaRequester() neomega.LowLevelAreaRequester {
 	return o
 }
 

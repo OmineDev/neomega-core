@@ -19,32 +19,38 @@ import (
 )
 
 type BotActionHighLevel struct {
-	uq                 neomega.MicroUQHolder
-	ctrl               neomega.InteractCore
-	cmdSender          neomega.CmdSender
-	cmdHelper          neomega.CommandHelper
-	structureRequester neomega.StructureRequester
-	microAction        neomega.BotAction
-	pickedItemChan     chan protocol.InventoryAction
-	playerHotBarChan   chan *packet.PlayerHotBar
-	muChan             chan struct{}
-	node               defines.Node
+	uq               neomega.MicroUQHolder
+	ctrl             neomega.InteractCore
+	cmdSender        neomega.CmdSender
+	cmdHelper        neomega.CommandHelper
+	areaRequester    neomega.LowLevelAreaRequester
+	microAction      neomega.BotAction
+	pickedItemChan   chan protocol.InventoryAction
+	playerHotBarChan chan *packet.PlayerHotBar
+	muChan           chan struct{}
+	node             defines.Node
 	// asyncNBTBlockPlacer neomega.AsyncNBTBlockPlacer
 	nameCount int
 }
 
 func NewBotActionHighLevel(
-	uq neomega.MicroUQHolder, ctrl neomega.InteractCore, react neomega.ReactCore, cmdSender neomega.CmdSender, cmdHelper neomega.CommandHelper, structureRequester neomega.StructureRequester, microAction neomega.BotAction,
+	uq neomega.MicroUQHolder,
+	ctrl neomega.InteractCore,
+	react neomega.ReactCore,
+	cmdSender neomega.CmdSender,
+	cmdHelper neomega.CommandHelper,
+	areaRequester neomega.LowLevelAreaRequester,
+	microAction neomega.BotAction,
 	node defines.Node,
 ) neomega.BotActionHighLevel {
 	muChan := make(chan struct{}, 1)
 	muChan <- struct{}{}
 	bah := &BotActionHighLevel{
-		uq:                 uq,
-		ctrl:               ctrl,
-		cmdSender:          cmdSender,
-		cmdHelper:          cmdHelper,
-		structureRequester: structureRequester,
+		uq:            uq,
+		ctrl:          ctrl,
+		cmdSender:     cmdSender,
+		cmdHelper:     cmdHelper,
+		areaRequester: areaRequester,
 		// asyncNBTBlockPlacer: asyncNBTBlockPlacer,
 		microAction: microAction,
 		muChan:      muChan,
@@ -178,7 +184,7 @@ func (o *BotActionHighLevel) highLevelRemoveSpecificBlockSideEffect(pos define.C
 
 func (o *BotActionHighLevel) highLevelGetAndRemoveSpecificBlockSideEffect(pos define.CubePos, wantAir bool, backupName string) (decodedStructure *neomega.DecodedStructure, deferFunc func(), err error) {
 	o.highLevelEnsureBotNearby(pos, 8)
-	structure, err := o.structureRequester.RequestStructure(pos, define.CubePos{1, 1, 1}, backupName).SetTimeout(time.Second * 3).BlockGetResult()
+	structure, err := o.areaRequester.LowLevelRequestStructure(pos, define.CubePos{1, 1, 1}, backupName).SetTimeout(time.Second * 3).BlockGetResult()
 	if err != nil {
 		return nil, func() {}, err
 	}
@@ -333,7 +339,7 @@ func (o *BotActionHighLevel) highLevelPlaceCommandBlock(option *neomega.PlaceCom
 		o.cmdSender.SendWebSocketCmdNeedResponse(cmd).SetTimeout(time.Second * 3).BlockGetResult()
 		o.ctrl.SendPacket(updateOption)
 		time.Sleep(100 * time.Millisecond)
-		r, err := o.structureRequester.RequestStructure(define.CubePos{option.X, option.Y, option.Z}, define.CubePos{1, 1, 1}, "_temp").BlockGetResult()
+		r, err := o.areaRequester.LowLevelRequestStructure(define.CubePos{option.X, option.Y, option.Z}, define.CubePos{1, 1, 1}, "_temp").BlockGetResult()
 		if err != nil {
 		} else {
 			d, err := r.Decode()
@@ -377,7 +383,7 @@ func (o *BotActionHighLevel) highLevelMoveItemToContainer(pos define.CubePos, mo
 	if err := o.highLevelEnsureBotNearby(pos, 8); err != nil {
 		return err
 	}
-	structureResponse, err := o.structureRequester.RequestStructure(pos, define.CubePos{1, 1, 1}, "_temp").BlockGetResult()
+	structureResponse, err := o.areaRequester.LowLevelRequestStructure(pos, define.CubePos{1, 1, 1}, "_temp").BlockGetResult()
 	if err != nil {
 		return err
 	}
@@ -477,7 +483,7 @@ func (o *BotActionHighLevel) highLevelRenameItemWithAnvil(pos define.CubePos, sl
 		}
 	}
 	// wait until anvil place then get runtime id
-	structureResponse, err := o.structureRequester.RequestStructure(pos, define.CubePos{1, 1, 1}, "_temp").BlockGetResult()
+	structureResponse, err := o.areaRequester.LowLevelRequestStructure(pos, define.CubePos{1, 1, 1}, "_temp").BlockGetResult()
 	if err != nil {
 		return err
 	}
@@ -823,7 +829,7 @@ func (o *BotActionHighLevel) HighLevelPlaceItemFrameItem(pos define.CubePos, slo
 
 func (o *BotActionHighLevel) highLevelPlaceItemFrameItem(pos define.CubePos, slotID uint8) (err error) {
 	o.highLevelEnsureBotNearby(pos, 0)
-	block, err := o.structureRequester.RequestStructure(pos, define.CubePos{1, 1, 1}, "_t").SetTimeout(time.Second * 3).BlockGetResult()
+	block, err := o.areaRequester.LowLevelRequestStructure(pos, define.CubePos{1, 1, 1}, "_t").SetTimeout(time.Second * 3).BlockGetResult()
 	if err != nil {
 		return err
 	}
@@ -1078,7 +1084,7 @@ func (o *BotActionHighLevel) highLevelRequestLargeArea(startPos define.CubePos, 
 				if err != nil {
 					time.Sleep(time.Second)
 				}
-				resp, err = o.structureRequester.RequestStructure(define.CubePos{startX, startPos.Y(), startZ}, define.CubePos{xRange[1], size.Y(), zRange[1]}, "_tmp"+o.nextCountName()).BlockGetResult()
+				resp, err = o.areaRequester.LowLevelRequestStructure(define.CubePos{startX, startPos.Y(), startZ}, define.CubePos{xRange[1], size.Y(), zRange[1]}, "_tmp"+o.nextCountName()).BlockGetResult()
 				if err != nil {
 					continue
 				}
