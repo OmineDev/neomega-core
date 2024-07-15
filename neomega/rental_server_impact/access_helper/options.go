@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-const DefaultAuthServer = "https://api.fastbuilder.pro"
+const DefaultAuthServer = "https://user.fastbuilder.pro"
 
 type PrivilegeStuffOptions struct {
 	DieOnLosingOpPrivilege     bool

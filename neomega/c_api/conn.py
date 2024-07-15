@@ -75,7 +75,7 @@ def ConnectOmega(address):
 
 @dataclass 
 class AccountOptions:
-    AuthServer:str="https://api.fastbuilder.pro"
+    AuthServer:str="https://user.fastbuilder.pro"
     UserToken:str=""
     UserName:str=""
     UserPassword:str=""

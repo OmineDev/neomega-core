@@ -96,7 +96,7 @@ func WriteFBToken(token string, tokenPath string) {
 }
 
 const (
-	AUTH_SERVER_FB_OFFICIAL = "https://api.fastbuilder.pro"
+	AUTH_SERVER_FB_OFFICIAL = "https://user.fastbuilder.pro"
 	AUTH_SERVER_LILIYA      = "https://liliya233.uk"
 )
 
