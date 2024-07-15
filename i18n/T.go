@@ -45,9 +45,6 @@ const (
 	S_error_parsing_auth_server_api_response                                                    = "error parsing auth server API response: %v"
 	S_cannot_establish_http_connection_with_auth_server_api                                     = "cannot establish http connection with auth server api"
 	S_auth_server_is_down_503                                                                   = "auth server is down (http code 503)"
-	S_fail_to_fetch_privateSigningKey_from_auth_server                                          = "failed to fetch private signing key from auth server"
-	S_fail_to_fetch_keyProve_from_auth_server                                                   = "failed to fetch private keyProve from auth server"
-	S_CertSigning_is_disabled_for_errors_above                                                  = "CertSigning is disabled for errors above"
 	S_fail_to_transfer_start_type                                                               = "failed to transfer start type: %s"
 	S_fail_to_transfer_check_num                                                                = "fail to transfer check num: %s"
 	S_fail_to_get_start_type_data                                                               = "failed to get start type data"
@@ -163,9 +160,6 @@ var I18nDict_zh_cn map[string]string = map[string]string{
 	S_error_parsing_auth_server_api_response:                   "无法解析验证服务器响应: %v  -> 请重试，若一直出现该错误请联系验证服务器维护者，你自己大概是修不了这个的",
 	S_cannot_establish_http_connection_with_auth_server_api:    "无法与验证服务器建立 http 连接 -> 检查是否选错验证服务器和你的网络状态，若重试还是不行，可能需要切换网络或者验证服务器挂了",
 	S_auth_server_is_down_503:                                  "验证服务器已宕机 (http 响应码: 503) -> 请联系验证服务器维护者，你大概是解决不了这个问题的",
-	S_fail_to_fetch_privateSigningKey_from_auth_server:         "无法从验证服务器获得 privateSigningKey -> 无所谓，反正你不用搞懂那个是个什么东西 （在给bdx签名时才用的到）",
-	S_fail_to_fetch_keyProve_from_auth_server:                  "无法从验证服务器获得 keyProve -> 无所谓，反正你不用搞懂那个是个什么东西 （在给bdx签名时才用的到）",
-	S_CertSigning_is_disabled_for_errors_above:                 "由于上述错误，已禁用 CertSigning -> 无所谓，反正你不用搞懂那个是个什么东西 （在给bdx签名时才用的到）",
 	S_fail_to_transfer_start_type:                              "无法向验证服务器转发网易要求的[start type]项目 ->  请重试，若一直出现该错误请联系验证服务器维护者，你自己大概是修不了这个的",
 	S_fail_to_transfer_check_num:                               "无法向验证服务器转发网易要求的机器人身份零知识证明的[check num]项目 ->  请重试，若一直出现该错误请联系验证服务器维护者，你自己大概是修不了这个的",
 	S_fail_to_get_start_type_data:                              "无法从网易服务器获得网易要求的[start type]挑战 -> 这是网易服务器问题导致的，请重启试试，若错误一直出现可能是因为协议发生变化需要开发者适配",

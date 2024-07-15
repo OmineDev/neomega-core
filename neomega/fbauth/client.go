@@ -10,8 +10,6 @@ import (
 	"regexp"
 
 	"github.com/OmineDev/neomega-core/i18n"
-
-	"github.com/pterm/pterm"
 )
 
 type secretLoadingTransport struct {
@@ -37,9 +35,6 @@ type ClientInfo struct {
 	BotName     string
 	GrowthLevel int
 	RespondTo   string
-	CertSigning bool
-	LocalKey    string
-	LocalCert   string
 }
 
 type Client struct {
@@ -145,24 +140,6 @@ func (client *Client) Auth(ctx context.Context, serverCode string, serverPasswor
 	client.BotUid = bot_uid
 	client.GrowthLevel = int(bot_level)
 	str, _ := resp["chainInfo"].(string)
-	client.CertSigning = true
-	if signingKey, success := resp["privateSigningKey"].(string); success {
-		client.LocalKey = signingKey
-	} else {
-		pterm.Error.Println(i18n.T(i18n.S_fail_to_fetch_privateSigningKey_from_auth_server))
-		client.CertSigning = false
-		client.LocalKey = ""
-	}
-	if keyProve, success := resp["prove"].(string); success {
-		client.LocalCert = keyProve
-	} else {
-		pterm.Error.Println(i18n.T(i18n.S_fail_to_fetch_keyProve_from_auth_server))
-		client.CertSigning = false
-		client.LocalCert = ""
-	}
-	if !client.CertSigning {
-		pterm.Error.Println(i18n.T(i18n.S_CertSigning_is_disabled_for_errors_above))
-	}
 	// If logged in by token, this field'd be empty
 	token, _ := resp["token"].(string)
 	respond_to, _ := resp["respond_to"].(string)
