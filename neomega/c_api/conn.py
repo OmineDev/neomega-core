@@ -192,7 +192,8 @@ class ClientMaintainedExtendInfo:
     GameRules:Optional[Dict[str,Any]]=None
 
 LIB.GetAllOnlinePlayers.restype=CString
-LIB.ReleaseBindPlayer.argtypes = [CString]
+LIB.AddGPlayerUsingCount.argtypes = [CString,CInt]
+LIB.ForceReleaseBindPlayer.argtypes = [CString]
 LIB.PlayerName.argtypes = [CString]
 LIB.PlayerName.restype=CString
 LIB.PlayerEntityUniqueID.argtypes = [CString]
@@ -404,6 +405,7 @@ class PlayerKit:
         self.parent=parent
         self._uuid=uuid
         self._c_uuid=toCString(self._uuid)
+        LIB.AddGPlayerUsingCount(self._c_uuid, 1)
 
     @property
     def uuid(self)->str:
@@ -629,7 +631,7 @@ class PlayerKit:
         return f"uuid={self.uuid},name={self.name},entity_unique_id={self.entity_unique_id},op={self.op},online={self.online}"
 
     def __del__(self):
-        LIB.ReleaseBindPlayer(toCString(self._uuid))
+        LIB.AddGPlayerUsingCount(toCString(self._uuid), -1)
 
 class ConnectType(enum.Enum):
     Remote="Remote" # 连接到一个 neOmega Access Point

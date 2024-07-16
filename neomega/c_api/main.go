@@ -11,6 +11,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"sync"
 	"time"
 	"unsafe"
 
@@ -22,7 +23,6 @@ import (
 	"github.com/OmineDev/neomega-core/nodes"
 	"github.com/OmineDev/neomega-core/nodes/defines"
 	"github.com/OmineDev/neomega-core/nodes/underlay_conn"
-	"github.com/OmineDev/neomega-core/utils/sync_wrapper"
 
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
@@ -296,16 +296,87 @@ func GetClientMaintainedExtendInfo() *C.char {
 	return C.CString(string(data))
 }
 
+// Player 描述单个的 neomega.PlayerKit
+type Player struct {
+	// 描述该结构体实际所携带的 PlayerKit 负载
+	GPlayer neomega.PlayerKit
+	// 描述该 Player 的引用计数
+	UsingCount int
+}
+
+// 描述多个玩家的 PlayerKit 。
+//
+// 对于使用者(Python 等)，它们会在初始化 PlayerKit 时，
+// 重新设置对应 Player 的引用计数，即 UsingCount 。
+//
+// 后续每尝试新增一个对应 Player 的使用者，
+// 对应 Player 的引用计数都会加一。
+//
+// 当使用者尝试释放一个 Player 时，
+// UsingCount 将减一，
+// 直到归零后，真正地被回收。
+//
+// 引用计数不在 Go 处控制，
+// 它们由使用者根据实际情况增加或减少
+type Players map[string]Player
+
 // players
-var GPlayers *sync_wrapper.SyncKVMap[string, neomega.PlayerKit]
+var GPlayers struct {
+	Players
+	sync.RWMutex
+}
+
+//export AddGPlayerUsingCount
+func AddGPlayerUsingCount(uuid *C.char, delta int) {
+	GPlayers.Lock()
+	defer GPlayers.Unlock()
+
+	uuidStr := C.GoString(uuid)
+	player, found := GPlayers.Players[uuidStr]
+	if !found {
+		return
+	}
+
+	player.UsingCount = player.UsingCount + delta
+	GPlayers.Players[uuidStr] = player
+
+	if player.UsingCount <= 0 {
+		new := make(map[string]Player)
+		delete(GPlayers.Players, uuidStr)
+		for key, value := range GPlayers.Players {
+			new[key] = value
+		}
+		GPlayers.Players = new
+	}
+}
+
+//export ForceReleaseBindPlayer
+func ForceReleaseBindPlayer(uuidStr *C.char) {
+	GPlayers.Lock()
+	defer GPlayers.Unlock()
+
+	new := make(map[string]Player)
+	delete(GPlayers.Players, C.GoString(uuidStr))
+	for key, value := range GPlayers.Players {
+		new[key] = value
+	}
+	GPlayers.Players = new
+}
 
 //export GetAllOnlinePlayers
 func GetAllOnlinePlayers() *C.char {
+	GPlayers.Lock()
+	defer GPlayers.Unlock()
+
 	players := GOmegaCore.GetPlayerInteract().ListAllPlayers()
 	retPlayers := []string{}
 	for _, player := range players {
 		uuidStr, _ := player.GetUUIDString()
-		GPlayers.Set(uuidStr, player)
+
+		p := GPlayers.Players[uuidStr]
+		p.GPlayer = player
+		GPlayers.Players[uuidStr] = p
+
 		retPlayers = append(retPlayers, uuidStr)
 	}
 	data, _ := json.Marshal(retPlayers)
@@ -314,10 +385,17 @@ func GetAllOnlinePlayers() *C.char {
 
 //export GetPlayerByName
 func GetPlayerByName(name *C.char) *C.char {
+	GPlayers.Lock()
+	defer GPlayers.Unlock()
+
 	player, found := GOmegaCore.GetPlayerInteract().GetPlayerKit(C.GoString(name))
 	if found {
 		uuidStr, _ := player.GetUUIDString()
-		GPlayers.Set(uuidStr, player)
+
+		p := GPlayers.Players[uuidStr]
+		p.GPlayer = player
+		GPlayers.Players[uuidStr] = p
+
 		return C.CString(uuidStr)
 	}
 	return C.CString("")
@@ -325,87 +403,119 @@ func GetPlayerByName(name *C.char) *C.char {
 
 //export GetPlayerByUUID
 func GetPlayerByUUID(uuid *C.char) *C.char {
+	GPlayers.Lock()
+	defer GPlayers.Unlock()
+
 	player, found := GOmegaCore.GetPlayerInteract().GetPlayerKitByUUIDString(C.GoString(uuid))
 	if found {
 		uuidStr, _ := player.GetUUIDString()
-		GPlayers.Set(uuidStr, player)
+
+		p := GPlayers.Players[uuidStr]
+		p.GPlayer = player
+		GPlayers.Players[uuidStr] = p
+
 		return C.CString(uuidStr)
 	}
 	return C.CString("")
 }
 
-//export ReleaseBindPlayer
-func ReleaseBindPlayer(uuidStr *C.char) {
-	GPlayers.Delete(C.GoString(uuidStr))
-}
-
 //export PlayerName
 func PlayerName(uuidStr *C.char) *C.char {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	name, _ := p.GetUsername()
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	name, _ := p.GPlayer.GetUsername()
 	return C.CString(name)
 }
 
 //export PlayerEntityUniqueID
 func PlayerEntityUniqueID(uuidStr *C.char) int64 {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	entityUniqueID, _ := p.GetEntityUniqueID()
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	entityUniqueID, _ := p.GPlayer.GetEntityUniqueID()
 	return entityUniqueID
 }
 
 //export PlayerLoginTime
 func PlayerLoginTime(uuidStr *C.char) int64 {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	loginTime, _ := p.GetLoginTime()
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	loginTime, _ := p.GPlayer.GetLoginTime()
 	return loginTime.Unix()
 }
 
 //export PlayerPlatformChatID
 func PlayerPlatformChatID(uuidStr *C.char) *C.char {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	name, _ := p.GetPlatformChatID()
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	name, _ := p.GPlayer.GetPlatformChatID()
 	return C.CString(name)
 }
 
 //export PlayerBuildPlatform
 func PlayerBuildPlatform(uuidStr *C.char) int32 {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	buildPlatform, _ := p.GetBuildPlatform()
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	buildPlatform, _ := p.GPlayer.GetBuildPlatform()
 	return buildPlatform
 }
 
 //export PlayerSkinID
 func PlayerSkinID(uuidStr *C.char) *C.char {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	SkinID, _ := p.GetSkinID()
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	SkinID, _ := p.GPlayer.GetSkinID()
 	return C.CString(SkinID)
 }
 
 // //export PlayerPropertiesFlag
 // func PlayerPropertiesFlag(uuidStr *C.char) uint32 {
-// 	p, _ := GPlayers.Get(C.GoString(uuidStr))
-// 	PropertiesFlag, _ := p.GetPropertiesFlag()
+// 	GPlayers.RLock()
+// 	defer GPlayers.RUnlock()
+//
+// 	p := GPlayers.Players[C.GoString(uuidStr)]
+// 	PropertiesFlag, _ := p.GPlayer.GetPropertiesFlag()
 // 	return PropertiesFlag
 // }
 
 // //export PlayerCommandPermissionLevel
 // func PlayerCommandPermissionLevel(uuidStr *C.char) uint32 {
-// 	p, _ := GPlayers.Get(C.GoString(uuidStr))
-// 	CommandPermissionLevel, _ := p.GetCommandPermissionLevel()
+// 	GPlayers.RLock()
+// 	defer GPlayers.RUnlock()
+//
+// 	p := GPlayers.Players[C.GoString(uuidStr)]
+// 	CommandPermissionLevel, _ := p.GPlayer.GetCommandPermissionLevel()
 // 	return CommandPermissionLevel
 // }
 
 // //export PlayerActionPermissions
 // func PlayerActionPermissions(uuidStr *C.char) uint32 {
-// 	p, _ := GPlayers.Get(C.GoString(uuidStr))
-// 	ActionPermissions, _ := p.GetActionPermissions()
+// 	GPlayers.RLock()
+// 	defer GPlayers.RUnlock()
+//
+// 	p := GPlayers.Players[C.GoString(uuidStr)]
+// 	ActionPermissions, _ := p.GPlayer.GetActionPermissions()
 // 	return ActionPermissions
 // }
 
 // //export PlayerGetAbilityString
 // func PlayerGetAbilityString(uuidStr *C.char) *C.char {
-// 	p, _ := GPlayers.Get(C.GoString(uuidStr))
-// 	adventureFlagsMap, actionPermissionMap, _ := p.GetAbilityString()
+// 	GPlayers.RLock()
+// 	defer GPlayers.RUnlock()
+//
+// 	p := GPlayers.Players[C.GoString(uuidStr)]
+// 	adventureFlagsMap, actionPermissionMap, _ := p.GPlayer.GetAbilityString()
 // 	abilityMap := map[string]map[string]bool{
 // 		"AdventureFlagsMap":   adventureFlagsMap,
 // 		"ActionPermissionMap": actionPermissionMap,
@@ -416,205 +526,289 @@ func PlayerSkinID(uuidStr *C.char) *C.char {
 
 // //export PlayerOPPermissionLevel
 // func PlayerOPPermissionLevel(uuidStr *C.char) uint32 {
-// 	p, _ := GPlayers.Get(C.GoString(uuidStr))
-// 	OPPermissionLevel, _ := p.GetOPPermissionLevel()
+// 	GPlayers.RLock()
+// 	defer GPlayers.RUnlock()
+//
+// 	p := GPlayers.Players[C.GoString(uuidStr)]
+// 	OPPermissionLevel, _ := p.GPlayer.GetOPPermissionLevel()
 // 	return OPPermissionLevel
 // }
 
 // //export PlayerCustomStoredPermissions
 // func PlayerCustomStoredPermissions(uuidStr *C.char) uint32 {
-// 	p, _ := GPlayers.Get(C.GoString(uuidStr))
-// 	CustomStoredPermissions, _ := p.GetCustomStoredPermissions()
+// 	GPlayers.RLock()
+// 	defer GPlayers.RUnlock()
+//
+// 	p := GPlayers.Players[C.GoString(uuidStr)]
+// 	CustomStoredPermissions, _ := p.GPlayer.GetCustomStoredPermissions()
 // 	return CustomStoredPermissions
 // }
 
 //export PlayerCanBuild
 func PlayerCanBuild(uuidStr *C.char) bool {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	hasAbility, _ := p.CanBuild()
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	hasAbility, _ := p.GPlayer.CanBuild()
 	return hasAbility
 }
 
 //export PlayerSetBuild
 func PlayerSetBuild(uuidStr *C.char, allow bool) {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	p.SetBuildAbility(allow)
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	p.GPlayer.SetBuildAbility(allow)
 }
 
 //export PlayerCanMine
 func PlayerCanMine(uuidStr *C.char) bool {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	hasAbility, _ := p.CanMine()
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	hasAbility, _ := p.GPlayer.CanMine()
 	return hasAbility
 }
 
 //export PlayerSetMine
 func PlayerSetMine(uuidStr *C.char, allow bool) {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	p.SetMineAbility(allow)
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	p.GPlayer.SetMineAbility(allow)
 }
 
 //export PlayerCanDoorsAndSwitches
 func PlayerCanDoorsAndSwitches(uuidStr *C.char) bool {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	hasAbility, _ := p.CanDoorsAndSwitches()
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	hasAbility, _ := p.GPlayer.CanDoorsAndSwitches()
 	return hasAbility
 }
 
 //export PlayerSetDoorsAndSwitches
 func PlayerSetDoorsAndSwitches(uuidStr *C.char, allow bool) {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	p.SetDoorsAndSwitchesAbility(allow)
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	p.GPlayer.SetDoorsAndSwitchesAbility(allow)
 }
 
 //export PlayerCanOpenContainers
 func PlayerCanOpenContainers(uuidStr *C.char) bool {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	hasAbility, _ := p.CanOpenContainers()
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	hasAbility, _ := p.GPlayer.CanOpenContainers()
 	return hasAbility
 }
 
 //export PlayerSetOpenContainers
 func PlayerSetOpenContainers(uuidStr *C.char, allow bool) {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	p.SetOpenContainersAbility(allow)
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	p.GPlayer.SetOpenContainersAbility(allow)
 }
 
 //export PlayerCanAttackPlayers
 func PlayerCanAttackPlayers(uuidStr *C.char) bool {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	hasAbility, _ := p.CanAttackPlayers()
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	hasAbility, _ := p.GPlayer.CanAttackPlayers()
 	return hasAbility
 }
 
 //export PlayerSetAttackPlayers
 func PlayerSetAttackPlayers(uuidStr *C.char, allow bool) {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	p.SetAttackPlayersAbility(allow)
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	p.GPlayer.SetAttackPlayersAbility(allow)
 }
 
 //export PlayerCanAttackMobs
 func PlayerCanAttackMobs(uuidStr *C.char) bool {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	hasAbility, _ := p.CanAttackMobs()
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	hasAbility, _ := p.GPlayer.CanAttackMobs()
 	return hasAbility
 }
 
 //export PlayerSetAttackMobs
 func PlayerSetAttackMobs(uuidStr *C.char, allow bool) {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	p.SetAttackMobsAbility(allow)
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	p.GPlayer.SetAttackMobsAbility(allow)
 }
 
 //export PlayerCanOperatorCommands
 func PlayerCanOperatorCommands(uuidStr *C.char) bool {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	hasAbility, _ := p.CanOperatorCommands()
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	hasAbility, _ := p.GPlayer.CanOperatorCommands()
 	return hasAbility
 }
 
 //export PlayerSetOperatorCommands
 func PlayerSetOperatorCommands(uuidStr *C.char, allow bool) {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	p.SetOperatorCommandsAbility(allow)
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	p.GPlayer.SetOperatorCommandsAbility(allow)
 }
 
 //export PlayerCanTeleport
 func PlayerCanTeleport(uuidStr *C.char) bool {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	hasAbility, _ := p.CanTeleport()
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	hasAbility, _ := p.GPlayer.CanTeleport()
 	return hasAbility
 }
 
 //export PlayerSetTeleport
 func PlayerSetTeleport(uuidStr *C.char, allow bool) {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	p.SetTeleportAbility(allow)
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	p.GPlayer.SetTeleportAbility(allow)
 }
 
 //export PlayerStatusInvulnerable
 func PlayerStatusInvulnerable(uuidStr *C.char) bool {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	hasAbility, _ := p.StatusInvulnerable()
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	hasAbility, _ := p.GPlayer.StatusInvulnerable()
 	return hasAbility
 }
 
 //export PlayerStatusFlying
 func PlayerStatusFlying(uuidStr *C.char) bool {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	hasAbility, _ := p.StatusFlying()
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	hasAbility, _ := p.GPlayer.StatusFlying()
 	return hasAbility
 }
 
 //export PlayerStatusMayFly
 func PlayerStatusMayFly(uuidStr *C.char) bool {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	hasAbility, _ := p.StatusMayFly()
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	hasAbility, _ := p.GPlayer.StatusMayFly()
 	return hasAbility
 }
 
 //export PlayerDeviceID
 func PlayerDeviceID(uuidStr *C.char) *C.char {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	name, _ := p.GetDeviceID()
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	name, _ := p.GPlayer.GetDeviceID()
 	return C.CString(name)
 }
 
 //export PlayerEntityRuntimeID
 func PlayerEntityRuntimeID(uuidStr *C.char) uint64 {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	if p == nil {
-		return 0
-	}
-	EntityRuntimeID, found := p.GetEntityRuntimeID()
-	if !found {
-		return 0
-	}
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	EntityRuntimeID, _ := p.GPlayer.GetEntityRuntimeID()
 	return EntityRuntimeID
 }
 
 //export PlayerEntityMetadata
 func PlayerEntityMetadata(uuidStr *C.char) *C.char {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	entityMetadata, _ := p.GetEntityMetadata()
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	entityMetadata, _ := p.GPlayer.GetEntityMetadata()
 	data, _ := json.Marshal(entityMetadata)
 	return C.CString(string(data))
 }
 
 //export PlayerIsOP
 func PlayerIsOP(uuidStr *C.char) bool {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	isOP, _ := p.IsOP()
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	isOP, _ := p.GPlayer.IsOP()
 	return isOP
 }
 
 //export PlayerOnline
 func PlayerOnline(uuidStr *C.char) bool {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	return p.StillOnline()
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	return p.GPlayer.StillOnline()
 }
 
 //export PlayerChat
 func PlayerChat(uuidStr *C.char, msg *C.char) {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	p.Say(C.GoString(msg))
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	p.GPlayer.Say(C.GoString(msg))
 }
 
 //export PlayerTitle
 func PlayerTitle(uuidStr *C.char, title, subTitle *C.char) {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	p.SubTitle(C.GoString(subTitle), C.GoString(title))
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	p.GPlayer.SubTitle(C.GoString(subTitle), C.GoString(title))
 }
 
 //export PlayerActionBar
 func PlayerActionBar(uuidStr *C.char, actionBar *C.char) {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
-	p.ActionBar(C.GoString(actionBar))
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
+	p.GPlayer.ActionBar(C.GoString(actionBar))
 }
 
 // //export SetPlayerAbility
 // func SetPlayerAbility(uuidStr *C.char, jsonFlags *C.char) {
-// 	p, _ := GPlayers.Get(C.GoString(uuidStr))
+// 	GPlayers.RLock()
+// 	defer GPlayers.RUnlock()
+//
+// 	p := GPlayers.Players[C.GoString(uuidStr)]
 // 	// abilityMap := map[string]map[string]bool{
 // 	// 	"AdventureFlagsMap":   adventureFlagsMap,
 // 	// 	"ActionPermissionMap": actionPermissionMap,
@@ -625,14 +819,17 @@ func PlayerActionBar(uuidStr *C.char, actionBar *C.char) {
 // 	actionPermissionMap := abilityMap["ActionPermissionMap"]
 // 	fmt.Println(adventureFlagsMap)
 // 	fmt.Println(actionPermissionMap)
-// 	p.SetAbilityString(adventureFlagsMap, actionPermissionMap)
+// 	p.GPlayer.SetAbilityString(adventureFlagsMap, actionPermissionMap)
 // }
 
 //export InterceptPlayerJustNextInput
 func InterceptPlayerJustNextInput(uuidStr *C.char, retrieverID *C.char) {
-	p, _ := GPlayers.Get(C.GoString(uuidStr))
+	GPlayers.RLock()
+	defer GPlayers.RUnlock()
+
+	p := GPlayers.Players[C.GoString(uuidStr)]
 	retrieverIDStr := C.GoString(retrieverID)
-	p.GetInput().AsyncGetResult(func(chat *neomega.GameChat, err error) {
+	p.GPlayer.GetInput().AsyncGetResult(func(chat *neomega.GameChat, err error) {
 		GEventsChan <- &GEvent{
 			EventType:   EventTypePlayerInterceptedInput,
 			RetrieverID: retrieverIDStr,
@@ -652,13 +849,20 @@ var GListenPlayerChangeListened = false
 
 //export ListenPlayerChange
 func ListenPlayerChange() {
+	GPlayers.Lock()
+	defer GPlayers.Unlock()
+
 	if GListenPlayerChangeListened {
 		panic("ListenPlayerChange should only called once")
 	}
 	GListenPlayerChangeListened = true
 	GOmegaCore.GetPlayerInteract().ListenPlayerChange(func(player neomega.PlayerKit, action string) {
 		uuidStr, _ := player.GetUUIDString()
-		GPlayers.Set(uuidStr, player)
+
+		p := GPlayers.Players[uuidStr]
+		p.GPlayer = player
+		GPlayers.Players[uuidStr] = p
+
 		GEventsChan <- &GEvent{
 			EventType:   EventTypePlayerChange,
 			RetrieverID: uuidStr,
@@ -728,7 +932,7 @@ func prepareOmegaAPIs(omegaCore neomega.MicroOmega) {
 			err,
 		}
 	}()
-	GPlayers = sync_wrapper.NewSyncKVMap[string, neomega.PlayerKit]()
+	GPlayers.Players = make(Players)
 }
 
 //export ConnectOmega
