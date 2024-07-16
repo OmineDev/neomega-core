@@ -335,7 +335,11 @@ func AddGPlayerUsingCount(uuid *C.char, delta int) {
 	uuidStr := C.GoString(uuid)
 	player, found := GPlayers.Players[uuidStr]
 	if !found {
-		return
+		playerKit, found := GOmegaCore.GetPlayerInteract().GetPlayerKitByUUIDString(uuidStr)
+		if !found {
+			return
+		}
+		player = Player{GPlayer: playerKit}
 	}
 
 	player.UsingCount = player.UsingCount + delta
@@ -373,11 +377,6 @@ func GetAllOnlinePlayers() *C.char {
 	retPlayers := []string{}
 	for _, player := range players {
 		uuidStr, _ := player.GetUUIDString()
-
-		p := GPlayers.Players[uuidStr]
-		p.GPlayer = player
-		GPlayers.Players[uuidStr] = p
-
 		retPlayers = append(retPlayers, uuidStr)
 	}
 	data, _ := json.Marshal(retPlayers)
@@ -392,11 +391,6 @@ func GetPlayerByName(name *C.char) *C.char {
 	player, found := GOmegaCore.GetPlayerInteract().GetPlayerKit(C.GoString(name))
 	if found {
 		uuidStr, _ := player.GetUUIDString()
-
-		p := GPlayers.Players[uuidStr]
-		p.GPlayer = player
-		GPlayers.Players[uuidStr] = p
-
 		return C.CString(uuidStr)
 	}
 	return C.CString("")
@@ -410,11 +404,6 @@ func GetPlayerByUUID(uuid *C.char) *C.char {
 	player, found := GOmegaCore.GetPlayerInteract().GetPlayerKitByUUIDString(C.GoString(uuid))
 	if found {
 		uuidStr, _ := player.GetUUIDString()
-
-		p := GPlayers.Players[uuidStr]
-		p.GPlayer = player
-		GPlayers.Players[uuidStr] = p
-
 		return C.CString(uuidStr)
 	}
 	return C.CString("")
@@ -859,11 +848,6 @@ func ListenPlayerChange() {
 	GListenPlayerChangeListened = true
 	GOmegaCore.GetPlayerInteract().ListenPlayerChange(func(player neomega.PlayerKit, action string) {
 		uuidStr, _ := player.GetUUIDString()
-
-		p := GPlayers.Players[uuidStr]
-		p.GPlayer = player
-		GPlayers.Players[uuidStr] = p
-
 		GEventsChan <- &GEvent{
 			EventType:   EventTypePlayerChange,
 			RetrieverID: uuidStr,
