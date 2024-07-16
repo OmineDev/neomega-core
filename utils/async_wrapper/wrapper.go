@@ -140,6 +140,11 @@ func (a *AsyncController[T]) SetResult(r T) {
 	}
 }
 
+func (a *AsyncController[T]) SetUnfinishedResult(r T) {
+	// will not make async progress in finish status, but can set an result with error
+	a.ret = r
+}
+
 func (a *AsyncController[T]) SetResultAndErr(r T, err error) {
 	if err == nil {
 		a.SetResult(r)

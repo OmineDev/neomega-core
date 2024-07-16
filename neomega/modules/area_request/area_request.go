@@ -3,18 +3,16 @@ package area_request
 import (
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
 	"github.com/OmineDev/neomega-core/neomega"
 	"github.com/OmineDev/neomega-core/neomega/blocks"
-	"github.com/OmineDev/neomega-core/neomega/chunks"
 	"github.com/OmineDev/neomega-core/neomega/chunks/chunk"
 	"github.com/OmineDev/neomega-core/neomega/chunks/define"
 	"github.com/OmineDev/neomega-core/utils/async_wrapper"
 	"github.com/OmineDev/neomega-core/utils/string_wrapper"
-
+	"github.com/OmineDev/neomega-core/utils/sync_wrapper"
 	"github.com/google/uuid"
 )
 
@@ -25,8 +23,7 @@ type AreaRequester struct {
 	extendInfo         neomega.ExtendInfo
 	structuresMu       sync.Mutex
 	structureListeners map[string][]func(neomega.StructureResponse)
-	chunkMu            sync.Mutex
-	chunkListeners     map[define.ChunkPos][]func(cd *chunks.ChunkWithAuxInfo, err error)
+	subChunkListeners  *sync_wrapper.HybridListener[neomega.SubChunkResult]
 }
 
 func (a *AreaRequester) onStructureResponse(pk *packet.StructureTemplateDataResponse) {
@@ -85,90 +82,44 @@ func (o *AreaRequester) LowLevelRequestStructureWithAutoName(pos define.CubePos,
 	return o.LowLevelRequestStructure(pos, size, name)
 }
 
-func (c *AreaRequester) onSubChunk(pk *packet.SubChunk) {
-	cp := define.ChunkPos{pk.Position.X(), pk.Position.Z()}
-	cd := &chunks.ChunkWithAuxInfo{
-		Chunk:     chunk.New(blocks.AIR_RUNTIMEID, define.WorldRange),
-		BlockNbts: make(map[define.CubePos]map[string]interface{}),
-		SyncTime:  time.Now().Unix(),
-		ChunkPos:  cp,
+func (c *AreaRequester) onSubChunkPacket(pk *packet.SubChunk) {
+	if c.subChunkListeners.Len() == 0 {
+		return
 	}
-	var err error
 	for _, entry := range pk.SubChunkEntries {
-		index := entry.Offset[1]
+		xOff, yOff, zOff := entry.Offset[0], entry.Offset[1], entry.Offset[2]
+		subChunkPos := protocol.SubChunkPos{pk.Position.X() + int32(xOff), pk.Position.Y() + int32(yOff), pk.Position.Z() + int32(zOff)}
+		ret := &SubChunkResult{
+			resultCode: entry.Result,
+			pos:        subChunkPos,
+			nbtsInMap:  make(map[define.CubePos]map[string]interface{}),
+			subChunk:   chunk.NewSubChunk(blocks.AIR_RUNTIMEID),
+		}
 		if entry.Result == protocol.SubChunkResultSuccessAllAir {
+			c.subChunkListeners.Call(ret)
 			continue
 		}
 		if entry.Result != protocol.SubChunkResultSuccess {
-			err = fmt.Errorf("subchunk result unsuccessful: %v", entry.Result)
-			break
+			c.subChunkListeners.Call(ret)
+			continue
 		}
 
 		subIndex, subChunk, nbts, subChunkDecodeErr := SubChunkDecode(entry.RawPayload)
-		if index != subIndex {
-			err = fmt.Errorf("subchunk index mismatch: %v!=%v", index, subIndex)
-			break
+		if int8(pk.Position.Y())+yOff != subIndex {
+			panic(fmt.Errorf("subchunk index mismatch: (%v+%v)!=%v", pk.Position.Y(), yOff, subIndex))
 		}
-
-		if subChunkDecodeErr == nil {
-			cd.Chunk.AssignSub(int(subIndex+4), subChunk)
-			for _, nbt := range nbts {
-				x, y, z, ok := define.GetPosFromNBT(nbt)
-				if ok {
-					cd.BlockNbts[define.CubePos{x, y, z}] = nbt
-				}
-			}
-		} else {
-			err = subChunkDecodeErr
-		}
-	}
-	c.chunkMu.Lock()
-	if listeners, found := c.chunkListeners[cp]; found {
-		delete(c.chunkListeners, cp)
-		c.chunkMu.Unlock()
-		for _, l := range listeners {
-			if err != nil {
-				l(nil, err)
-			} else {
-				l(cd, nil)
-			}
-		}
-	} else {
-		c.chunkMu.Unlock()
+		ret.subChunk = subChunk
+		ret.nbtsInMap = nbts
+		ret.decodeErr = subChunkDecodeErr
+		c.subChunkListeners.Call(ret)
 	}
 }
 
-func (c *AreaRequester) requestSubChunk(chunkPos define.ChunkPos) {
-	subChunkOffsets := make([]protocol.SubChunkOffset, 0, 24)
-	for i := int8(-4); i <= 19; i++ {
-		subChunkOffsets = append(subChunkOffsets, [3]int8{0, i, 0})
-	}
-	// TODO: auto decide offsets base on dimension
-	dim, found := c.extendInfo.GetBotDimension()
-	if !found {
-		dim = 0
-	}
-	dim = 0 // TODO: auto decide offsets base on dimension
-	c.ctrl.SendPacket(&packet.SubChunkRequest{
-		Dimension: dim,
-		Position:  protocol.SubChunkPos{chunkPos.X(), 0, chunkPos.Z()},
-		Offsets:   subChunkOffsets,
-	})
+func (c *AreaRequester) SetOnSubChunkResult(nonBlockingCallback func(neomega.SubChunkResult)) {
+	c.subChunkListeners.SetNonBlockingFixListener(nonBlockingCallback)
 }
-
-func (o *AreaRequester) LowLevelRequestChunk(chunkPos define.ChunkPos) *async_wrapper.AsyncWrapper[*chunks.ChunkWithAuxInfo] {
-	return async_wrapper.NewAsyncWrapper[*chunks.ChunkWithAuxInfo](func(ac *async_wrapper.AsyncController[*chunks.ChunkWithAuxInfo]) {
-		o.chunkMu.Lock()
-		_, ok := o.chunkListeners[chunkPos]
-		if !ok {
-			o.chunkListeners[chunkPos] = make([]func(*chunks.ChunkWithAuxInfo, error), 0, 1)
-		}
-		o.chunkListeners[chunkPos] = append(o.chunkListeners[chunkPos], func(cd *chunks.ChunkWithAuxInfo, err error) {
-			ac.SetResultAndErr(cd, err)
-		})
-		o.chunkMu.Unlock()
-		o.requestSubChunk(chunkPos)
-	}, false)
+func (c *AreaRequester) AttachSubChunkResultListener(nonBlockingCallback func(neomega.SubChunkResult)) (detachFn func()) {
+	return c.subChunkListeners.AttachNonBlockingDetachableListener(nonBlockingCallback)
 }
 
 func NewAreaRequester(ctrl neomega.GameIntractable, react neomega.PacketDispatcher, uq neomega.MicroUQHolder, info neomega.ExtendInfo) *AreaRequester {
@@ -179,8 +130,7 @@ func NewAreaRequester(ctrl neomega.GameIntractable, react neomega.PacketDispatch
 		extendInfo:         info,
 		structuresMu:       sync.Mutex{},
 		structureListeners: make(map[string][]func(neomega.StructureResponse)),
-		chunkMu:            sync.Mutex{},
-		chunkListeners:     make(map[define.ChunkPos][]func(cd *chunks.ChunkWithAuxInfo, err error)),
+		subChunkListeners:  sync_wrapper.NewHybridListener[neomega.SubChunkResult](),
 	}
 	d.react.SetTypedPacketCallBack(packet.IDStructureTemplateDataResponse, func(p packet.Packet) {
 		pk := p.(*packet.StructureTemplateDataResponse)
@@ -188,7 +138,7 @@ func NewAreaRequester(ctrl neomega.GameIntractable, react neomega.PacketDispatch
 	}, true)
 	react.SetTypedPacketCallBack(packet.IDSubChunk, func(p packet.Packet) {
 		pk := p.(*packet.SubChunk)
-		d.onSubChunk(pk)
+		d.onSubChunkPacket(pk)
 	}, true)
 	return d
 }

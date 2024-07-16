@@ -2,20 +2,27 @@ package area_request
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 
 	standard_nbt "github.com/OmineDev/neomega-core/minecraft/nbt"
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/neomega/blocks"
 	"github.com/OmineDev/neomega-core/neomega/chunks/chunk"
+	"github.com/OmineDev/neomega-core/neomega/chunks/define"
 	"github.com/pterm/pterm"
 )
 
+var ErrCannotGetPosFromNBT = errors.New("cannot get pos from nbt")
+
 // SubChunkDecode no longer need rtid translate since blocks has already align nemc and standard rtid
-func SubChunkDecode(data []byte) (subChunkIndex int8, subChunk *chunk.SubChunk, nbts []map[string]interface{}, err error) {
+func SubChunkDecode(data []byte) (subChunkIndex int8, subChunk *chunk.SubChunk, nbts map[define.CubePos]map[string]interface{}, err error) {
 	buf := bytes.NewBuffer(data)
 	subChunkIndex, subChunk, err = SubChunkBlockDecode(buf)
-	nbts = make([]map[string]interface{}, 0)
+	nbts = make(map[define.CubePos]map[string]interface{}, 0)
+	if err != nil {
+		return
+	}
 	if buf.Len() > 0 {
 		nbtDecoder := standard_nbt.NewDecoder(buf)
 		blockData := make(map[string]interface{})
@@ -25,7 +32,12 @@ func SubChunkDecode(data []byte) (subChunkIndex int8, subChunk *chunk.SubChunk, 
 				break
 			}
 			//fmt.Println(blockData)
-			nbts = append(nbts, blockData)
+			p, ok := define.GetCubePosFromNBT(blockData)
+			if ok {
+				nbts[p] = blockData
+			} else {
+				err = ErrCannotGetPosFromNBT
+			}
 		}
 	}
 	return subChunkIndex, subChunk, nbts, err
@@ -113,4 +125,40 @@ func decodePalette(buf *bytes.Buffer, blockSize chunk.PaletteSize) (*chunk.Palet
 		blocks[i] = uint32(temp)
 	}
 	return &chunk.Palette{Values: blocks, Size: blockSize}, nil
+}
+
+type SubChunkResult struct {
+	resultCode byte
+	pos        protocol.SubChunkPos
+	nbtsInMap  map[define.CubePos]map[string]interface{}
+	subChunk   *chunk.SubChunk
+	decodeErr  error
+}
+
+func (sr *SubChunkResult) ChunkPos() define.ChunkPos {
+	return define.ChunkPos{sr.pos.X(), sr.pos.Z()}
+}
+
+func (sr *SubChunkResult) SubCunkPos() protocol.SubChunkPos {
+	return sr.pos
+}
+
+func (sr *SubChunkResult) ResultCode() byte {
+	return sr.resultCode
+}
+
+func (sr *SubChunkResult) Error() error {
+	if sr.resultCode == protocol.SubChunkResultSuccessAllAir || sr.resultCode == protocol.SubChunkResultSuccess {
+		return sr.decodeErr
+	} else {
+		return fmt.Errorf("server sub chunk response  err: %v", sr.resultCode)
+	}
+}
+
+func (sr *SubChunkResult) SubChunk() *chunk.SubChunk {
+	return sr.subChunk
+}
+
+func (sr *SubChunkResult) NBTsInAbsolutePos() map[define.CubePos]map[string]interface{} {
+	return sr.nbtsInMap
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/OmineDev/neomega-core/neomega/chunks/define"
 	"github.com/OmineDev/neomega-core/nodes/defines"
 	"github.com/OmineDev/neomega-core/utils/string_wrapper"
+	"github.com/OmineDev/neomega-core/utils/structure/pos_operations"
 
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -182,7 +183,7 @@ func (o *BotActionHighLevel) highLevelRemoveSpecificBlockSideEffect(pos define.C
 	return deferFunc, err
 }
 
-func (o *BotActionHighLevel) highLevelGetAndRemoveSpecificBlockSideEffect(pos define.CubePos, wantAir bool, backupName string) (decodedStructure *neomega.DecodedStructure, deferFunc func(), err error) {
+func (o *BotActionHighLevel) highLevelGetAndRemoveSpecificBlockSideEffect(pos define.CubePos, wantAir bool, backupName string) (decodedStructure neomega.DecodedStructure, deferFunc func(), err error) {
 	o.highLevelEnsureBotNearby(pos, 8)
 	structure, err := o.areaRequester.LowLevelRequestStructure(pos, define.CubePos{1, 1, 1}, backupName).SetTimeout(time.Second * 3).BlockGetResult()
 	if err != nil {
@@ -192,7 +193,7 @@ func (o *BotActionHighLevel) highLevelGetAndRemoveSpecificBlockSideEffect(pos de
 	if err != nil {
 		return nil, func() {}, err
 	}
-	foreGround, backGround := decodedStructure.BlockOf(define.CubePos{0, 0, 0})
+	foreGround, backGround := decodedStructure.BlockOfRelativePos(define.CubePos{0, 0, 0})
 	isAir := false
 	if foreGround == blocks.AIR_RUNTIMEID && backGround == blocks.AIR_RUNTIMEID {
 		isAir = true
@@ -344,8 +345,8 @@ func (o *BotActionHighLevel) highLevelPlaceCommandBlock(option *neomega.PlaceCom
 		} else {
 			d, err := r.Decode()
 			if err == nil {
-				if len(d.Nbts) > 0 {
-					for _, tnbt := range d.Nbts {
+				if len(d.NBTsInAbsolutePos()) > 0 {
+					for _, tnbt := range d.NBTsInAbsolutePos() {
 						ok := true
 						if tnbt["id"].(string) != "CommandBlock" {
 							ok = false
@@ -391,7 +392,7 @@ func (o *BotActionHighLevel) highLevelMoveItemToContainer(pos define.CubePos, mo
 	if err != nil {
 		return err
 	}
-	containerRuntimeID := structure.ForeGround[0]
+	containerRuntimeID := structure.ForeGroundRtidNested()[0]
 	// containerNEMCRuntimeID := chunk.StandardRuntimeIDToNEMCRuntimeID(containerRuntimeID)
 	if containerRuntimeID == blocks.AIR_RUNTIMEID {
 		return fmt.Errorf("block of %v (nemc) not found", containerRuntimeID)
@@ -411,8 +412,8 @@ func (o *BotActionHighLevel) highLevelMoveItemToContainer(pos define.CubePos, mo
 	if strings.Contains(block.ShortName(), "shulker_box") {
 		blockerPos := pos
 		face := byte(255)
-		if len(structure.Nbts[pos]) > 0 {
-			if facing_origin, ok := structure.Nbts[pos]["facing"]; ok {
+		if len(structure.NBTsInAbsolutePos()[pos]) > 0 {
+			if facing_origin, ok := structure.NBTsInAbsolutePos()[pos]["facing"]; ok {
 				face, ok = facing_origin.(byte)
 				if !ok {
 					face = 255
@@ -491,7 +492,7 @@ func (o *BotActionHighLevel) highLevelRenameItemWithAnvil(pos define.CubePos, sl
 	if err != nil {
 		return err
 	}
-	containerRuntimeID := structure.ForeGround[0]
+	containerRuntimeID := structure.ForeGroundRtidNested()[0]
 	// containerNEMCRuntimeID := chunk.StandardRuntimeIDToNEMCRuntimeID(containerRuntimeID)
 	if containerRuntimeID == blocks.AIR_RUNTIMEID {
 		return fmt.Errorf("block of %v @ %v (nemc) not found, should be anvil", pos, containerRuntimeID)
@@ -654,7 +655,7 @@ func (o *BotActionHighLevel) highLevelBlockBreakAndPickInHotBar(pos define.CubeP
 	if err != nil {
 		return targetSlotsGetInfo, err
 	}
-	if currentBlock.ForeGround[0] == blocks.AIR_RUNTIMEID && currentBlock.BackGround[0] == blocks.AIR_RUNTIMEID {
+	if currentBlock.ForeGroundRtidNested()[0] == blocks.AIR_RUNTIMEID && currentBlock.BackGroundRtidNested()[0] == blocks.AIR_RUNTIMEID {
 		return targetSlotsGetInfo, fmt.Errorf("block is air")
 	}
 	defer func() {
@@ -840,9 +841,9 @@ func (o *BotActionHighLevel) highLevelPlaceItemFrameItem(pos define.CubePos, slo
 	if err != nil {
 		panic(err)
 	}
-	runtimeID := decoded.ForeGround[0]
+	runtimeID := decoded.ForeGroundRtidNested()[0]
 	// nemcRuntimeID := chunk.StandardRuntimeIDToNEMCRuntimeID(runtimeID)
-	_, states, _ := blocks.RuntimeIDToState(decoded.ForeGround[0])
+	_, states, _ := blocks.RuntimeIDToState(decoded.ForeGroundRtidNested()[0])
 	face, ok := states["facing_direction"]
 	if !ok {
 		return fmt.Errorf("facing not found")
@@ -1071,8 +1072,8 @@ func (o *BotActionHighLevel) HighLevelRequestLargeArea(startPos define.CubePos, 
 }
 
 func (o *BotActionHighLevel) highLevelRequestLargeArea(startPos define.CubePos, size define.CubePos, dst chunks.ChunkProvider, withMove bool) error {
-	chunkRangesX := neomega.RangeSplits(startPos.X(), size.X(), 16)
-	chunkRangesZ := neomega.RangeSplits(startPos.Z(), size.Z(), 16)
+	chunkRangesX := pos_operations.RangeSplits(startPos.X(), size.X(), 16)
+	chunkRangesZ := pos_operations.RangeSplits(startPos.Z(), size.Z(), 16)
 	for _, xRange := range chunkRangesX {
 		startX := xRange[0]
 		for _, zRange := range chunkRangesZ {
@@ -1083,7 +1084,7 @@ func (o *BotActionHighLevel) highLevelRequestLargeArea(startPos define.CubePos, 
 			var err error
 			for i := 0; i < 3; i++ {
 				var resp neomega.StructureResponse
-				var structure *neomega.DecodedStructure
+				var structure neomega.DecodedStructure
 				if err != nil {
 					time.Sleep(time.Second)
 				}
@@ -1095,7 +1096,7 @@ func (o *BotActionHighLevel) highLevelRequestLargeArea(startPos define.CubePos, 
 				if err != nil {
 					continue
 				}
-				err = structure.DumpToChunkProvider(dst)
+				err = structure.DumpToChunkProviderAbsolutePos(dst)
 				if err != nil {
 					return err
 				}
