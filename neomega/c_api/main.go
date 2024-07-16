@@ -306,18 +306,19 @@ type Player struct {
 
 // 描述多个玩家的 PlayerKit 。
 //
-// 对于使用者(Python 等)，它们会在初始化 PlayerKit 时，
-// 重新设置对应 Player 的引用计数，即 UsingCount 。
-//
-// 后续每尝试新增一个对应 Player 的使用者，
+// 每当一个 Player 每新增一个使用者(如 Python 等)，
 // 对应 Player 的引用计数都会加一。
 //
-// 当使用者尝试释放一个 Player 时，
+// 当相应的使用者尝试释放一个 Player 时，
 // UsingCount 将减一，
 // 直到归零后，真正地被回收。
 //
-// 引用计数不在 Go 处控制，
-// 它们由使用者根据实际情况增加或减少
+// 如果必要，可以考虑使用 ForceReleaseBindPlayer
+// 进行强制回收，但这是危险的。
+//
+// 相关的引用计数不在 Go 处控制，
+// 它们由使用者根据实际情况增加或减少，
+// Go 处仅在引用计数归零后释放数据
 type Players map[string]Player
 
 // players
