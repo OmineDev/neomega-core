@@ -53,7 +53,7 @@ const (
 	S_neomega_access_point_starting                                                             = "neOmega access point starting..."
 	S_neomega_access_point_ready                                                                = "neOmega access point ready"
 	S_fail_to_dispatch_packet_to_remote                                                         = "fail to remote dispatch packets"
-	S_no_response_after_a_long_time_bot_is_down                                                 = "no response after %v, bot is down (alive %v)"
+	S_no_response_after_a_long_time_bot_is_down                                                 = "no response after %v, bot is down (alive %vs)"
 	S_bot_operator_privilege_granted                                                            = "bot operator privilege granted"
 	S_please_grant_bot_operator_privilege                                                       = "please grant bot operator privilege"
 	S_bot_operator_privilege_timeout                                                            = "bot operator privilege granting timed out"
