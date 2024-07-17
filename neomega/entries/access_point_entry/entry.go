@@ -2,6 +2,7 @@ package access_point
 
 import (
 	"context"
+	"crypto/md5"
 	"fmt"
 
 	"github.com/OmineDev/neomega-core/i18n"
@@ -45,9 +46,27 @@ func Entry(args *Args) {
 	if err != nil {
 		panic(err)
 	}
+	huid := defines.Empty
+	if args.UserToken != "" {
+		huid = defines.FromString(StrMD5Str(args.UserToken))
+	}
+	node.SetValue("HashedUserID", huid)
+	hserverCode := defines.Empty
+	if args.ServerCode != "" {
+		hserverCode = defines.FromString(StrMD5Str(args.ServerCode))
+	}
+	node.SetValue("HashedServerCode", hserverCode)
 	node.SetTags("access-point-ready")
 	node.PublishMessage("reboot", defines.FromString("reboot to refresh data"))
 	fmt.Println(i18n.T(i18n.S_neomega_access_point_ready))
 
 	panic(<-omegaCore.Dead())
+}
+
+func StrMD5Str(data string) string {
+	return BytesMD5Str([]byte(data))
+}
+
+func BytesMD5Str(data []byte) string {
+	return fmt.Sprintf("%x", md5.Sum(data))
 }
