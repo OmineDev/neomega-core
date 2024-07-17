@@ -46,7 +46,7 @@ https://github.com/Tnze/go-mc
 
  
 - PhoenixBuilder  
-https://github.com/LNSSPsd/PhoenixBuilder  
+https://github.com/bouldev/PhoenixBuilder  
 PhoenixBuilder主要用于网易版MC的建筑导入导出，几何体构建等。neomega 前身由 PhoenixBuilder 分叉出来
 
 ## nodes
