@@ -104,7 +104,7 @@ type AuthRequest struct {
 }
 
 // Ret: chain, ip, token, error
-func (client *Client) Auth(ctx context.Context, serverCode string, serverPassword string, key string, fbtoken string, username string, password string) (string, string, string, error) {
+func (client *Client) Auth(ctx context.Context, serverCode string, serverPassword string, key string, fbtoken string, username string, password string) (map[string]any, error) {
 	authreq := map[string]interface{}{}
 	if len(fbtoken) != 0 {
 		authreq["login_token"] = fbtoken
@@ -120,34 +120,20 @@ func (client *Client) Auth(ctx context.Context, serverCode string, serverPasswor
 	if err != nil {
 		panic(err)
 	}
-	resp, err := jsonDecodeResp(r)
+	authResp, err := jsonDecodeResp(r)
 	if err != nil {
-		return "", "", "", err
+		return nil, err
 	}
-	succ, _ := resp["success"].(bool)
+	succ, _ := authResp["success"].(bool)
 	if !succ {
-		err, _ := resp["message"].(string)
-		trans, hasTranslation := resp["translation"].(float64)
+		err, _ := authResp["message"].(string)
+		trans, hasTranslation := authResp["translation"].(float64)
 		if hasTranslation && int(trans) != -1 {
 			err = i18n.CT(int(trans))
 		}
-		return "", "", "", fmt.Errorf("%s", err)
+		return nil, fmt.Errorf("%s", err)
 	}
-	bot_name, _ := resp["username"].(string)
-	bot_uid, _ := resp["uid"].(string)
-	bot_level, _ := resp["growth_level"].(float64)
-	client.BotName = bot_name
-	client.BotUid = bot_uid
-	client.GrowthLevel = int(bot_level)
-	str, _ := resp["chainInfo"].(string)
-	// If logged in by token, this field'd be empty
-	token, _ := resp["token"].(string)
-	respond_to, _ := resp["respond_to"].(string)
-	if len(respond_to) != 0 && client.RespondTo == "" {
-		client.RespondTo = respond_to
-	}
-	ip, _ := resp["ip_address"].(string)
-	return str, ip, token, nil
+	return authResp, nil
 }
 
 func (client *Client) TransferData(content string) (string, error) {

@@ -42,10 +42,12 @@ func loginMCServer(ctx context.Context, authenticator Authenticator) (conn minec
 	publicKey, _ := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
 
 	fmt.Println(i18n.T(i18n.S_retrieving_client_information_from_auth_server))
-	address, chainData, botUid, growthLevel, err := authenticator.GetAccess(ctx, publicKey)
+	authResp, err := authenticator.GetAccess(ctx, publicKey)
 	if err != nil {
 		return nil, err
 	}
+	address, _ := authResp["ip_address"].(string)
+	botUid, _ := authResp["uid"].(string)
 
 	fmt.Println(i18n.T(i18n.S_establishing_raknet_connection))
 	rakNetConn, err := base_net.RakNet.DialContext(ctx, address)
@@ -60,7 +62,7 @@ func loginMCServer(ctx context.Context, authenticator Authenticator) (conn minec
 	packetConn := packet_conn.NewPacketConn(byteFrameConn, false)
 
 	fmt.Println(i18n.T(i18n.S_generating_key_login_request))
-	opt := options.NewDefaultOptions(address, chainData, growthLevel, privateKey)
+	opt := options.NewDefaultOptions(address, authResp, privateKey)
 
 	fmt.Println(i18n.T(i18n.S_exchanging_login_data))
 	readQueue := NewInfinityQueue()

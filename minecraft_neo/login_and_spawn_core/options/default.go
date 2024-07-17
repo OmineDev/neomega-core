@@ -16,8 +16,8 @@ import (
 )
 
 func NewDefaultOptions(
-	address, chainData string,
-	growthLevel int,
+	address string,
+	authResp map[string]any,
 	PrivateKey *ecdsa.PrivateKey,
 
 ) *Options {
@@ -28,7 +28,8 @@ func NewDefaultOptions(
 		ErrorLog:   log.New(os.Stderr, "", log.LstdFlags),
 	}
 	_, _ = rand.Read(opt.Salt)
-	opt.ClientData = defaultClientData(address, growthLevel)
+	opt.ClientData = defaultClientData(address, authResp)
+	chainData, _ := authResp["chainInfo"].(string)
 	opt.Request = login.Encode(chainData, opt.ClientData, PrivateKey)
 	opt.IdentityData, _, _, err = login.Parse(opt.Request)
 	if err != nil {
@@ -51,7 +52,11 @@ var skinResourcePatch []byte
 var skinGeometry []byte
 
 // defaultClientData edits the ClientData passed to have defaults set to all fields that were left unchanged.
-func defaultClientData(address string, growthLevel int) login.ClientData {
+func defaultClientData(address string, authResp map[string]any) login.ClientData {
+	bot_name, _ := authResp["username"].(string)
+	bot_level, _ := authResp["growth_level"].(float64)
+	growthLevel := int(bot_level)
+
 	d := login.ClientData{}
 	d.ServerAddress = address
 	d.DeviceOS = protocol.DeviceAndroid
@@ -65,10 +70,16 @@ func defaultClientData(address string, growthLevel int) login.ClientData {
 	d.PieceTintColours = make([]login.PersonaPieceTintColour, 0)
 	d.SelfSignedID = uuid.New().String()
 	d.SkinID = uuid.New().String()
-	d.SkinData = base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{0, 0, 0, 255}, 32*64))
 	d.SkinImageHeight = 32
 	d.SkinImageWidth = 64
+	d.SkinData = base64.StdEncoding.EncodeToString(
+		bytes.Repeat(
+			[]byte{0, 0, 0, 255},
+			d.SkinImageHeight*d.SkinImageWidth,
+		),
+	)
 	d.SkinResourcePatch = base64.StdEncoding.EncodeToString(skinResourcePatch)
 	d.SkinGeometry = base64.StdEncoding.EncodeToString(skinGeometry)
+	d.ThirdPartyName = bot_name
 	return d
 }

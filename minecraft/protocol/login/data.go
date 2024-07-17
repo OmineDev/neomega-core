@@ -72,6 +72,11 @@ type ClientData struct {
 	// AnimatedImageData is a list of image data for animations. Each of the elements in this slice holds the
 	// image data of a single frame of the animation.
 	AnimatedImageData []SkinAnimation
+	// ArmSize is the size of the arms of the player's model. This is either 'wide' (generally for male skins)
+	// or 'slim' (generally for female skins).
+	ArmSize string
+	// ...
+	BloomData string
 	// CapeData is a base64 encoded string of cape data. This is usually an empty string, as skins typically
 	// don't carry capes themselves.
 	CapeData string
@@ -86,19 +91,22 @@ type ClientData struct {
 	// ClientRandomID is a random client ID number generated for the client. It usually remains consistent
 	// through sessions and through game restarts.
 	ClientRandomID int64 `json:"ClientRandomId"`
+	// CompatibleWithClientSideChunkGen is a boolean indicating if the client's hardware is capable of using the client
+	// side chunk generation system.
+	CompatibleWithClientSideChunkGen bool
 	// CurrentInputMode is the input mode used by the client. It is 1 for mobile and win10, but is different
 	// for console input.
 	CurrentInputMode int
 	// DefaultInputMode is the default input mode used by the device.
 	DefaultInputMode int
+	// DeviceID is usually a UUID specific to the device. A different user will have the same UUID for this.
+	// DeviceID is not guaranteed to always be a UUID. It is a base64 encoded string under some circumstances.
+	DeviceID string `json:"DeviceId"`
 	// DeviceModel is a string indicating the device model used by the player. At the moment, it appears that
 	// this name is always '(Standard system devices) System devices'.
 	DeviceModel string
 	// DeviceOS is a numerical ID indicating the OS of the device.
 	DeviceOS protocol.DeviceOS
-	// DeviceID is usually a UUID specific to the device. A different user will have the same UUID for this.
-	// DeviceID is not guaranteed to always be a UUID. It is a base64 encoded string under some circumstances.
-	DeviceID string `json:"DeviceId"`
 	// GameVersion is the game version of the player that attempted to join, for example '1.11.0'.
 	GameVersion string
 	// Netease: launcher level
@@ -108,12 +116,21 @@ type ClientData struct {
 	GUIScale int `json:"GuiScale"`
 	// IsEditorMode is a value to dictate if the player is in editor mode.
 	IsEditorMode bool
+	// ...
+	IsReconnect bool
 	// LanguageCode is the language code of the player. It looks like 'en_UK'. It follows the ISO language
 	// codes, but hyphens ('-') are replaced with underscores. ('_')
 	LanguageCode string
+	// OverrideSkin is a boolean that does not make sense to be here. The current usage of this field is unknown.
+	OverrideSkin bool
+	// PersonaPieces is a list of all persona pieces that the skin is composed of.
+	PersonaPieces []PersonaPiece
 	// PersonaSkin specifies if the skin was a persona skin, meaning that it was created through the in-game
 	// skin creator.
 	PersonaSkin bool
+	// PieceTintColours is a list of specific tint colours for (some of) the persona pieces found in the list
+	// above.
+	PieceTintColours []PersonaPieceTintColour `json:"PieceTintColors"`
 	// PlatformOfflineID is either a UUID or an empty string ...
 	PlatformOfflineID string `json:"PlatformOfflineId"`
 	// PlatformOnlineID is either a uint64 or an empty string ...
@@ -121,6 +138,10 @@ type ClientData struct {
 	// PlatformUserID holds a UUID which is only sent if the DeviceOS is of type device.XBOX. Its function
 	// is not exactly clear.
 	PlatformUserID string `json:"PlatformUserId,omitempty"`
+	// PlayFabID is the PlayFab ID produced for the player's skin. PlayFab is the company that hosts the
+	// Marketplace, skins and other related features from the game. This ID is the ID of the skin used to
+	// store the skin inside of PlayFab.
+	PlayFabID string `json:"PlayFabId"`
 	// PremiumSkin indicates if the skin the player held was a premium skin, meaning it was obtained through
 	// payment.
 	PremiumSkin bool
@@ -132,6 +153,9 @@ type ClientData struct {
 	ServerAddress string
 	// TODO: Find out what value SkinAnimationData holds and when it does hold something.
 	SkinAnimationData string
+	// SkinColour is a hex representation (including #) of the base colour of the skin. An example of the
+	// colour sent here is '#b37b62'.
+	SkinColour string `json:"SkinColor"`
 	// SkinData is a base64 encoded byte slice of 64*32*4, 64*64*4 or 128*128*4 bytes. It is a RGBA ordered
 	// byte representation of the skin colours.
 	SkinData string
@@ -140,13 +164,11 @@ type ClientData struct {
 	SkinGeometry string `json:"SkinGeometryData"`
 	// SkinGeometryVersion is the version for SkinGeometry.
 	SkinGeometryVersion string `json:"SkinGeometryDataEngineVersion"`
+	// Netease: skin item id
+	SkinItemID string `json:"SkinIID"`
 	// SkinID is a unique ID produced for the skin, for example 'c18e65aa-7b21-4637-9b63-8ad63622ef01_Alex'
 	// for the default Alex skin.
 	SkinID string `json:"SkinId"`
-	// PlayFabID is the PlayFab ID produced for the player's skin. PlayFab is the company that hosts the
-	// Marketplace, skins and other related features from the game. This ID is the ID of the skin used to
-	// store the skin inside of PlayFab.
-	PlayFabID string `json:"PlayFabId"`
 	// SkinImageHeight and SkinImageWidth are the dimensions of the skin's image data.
 	SkinImageHeight, SkinImageWidth int
 	// SkinResourcePatch is a base64 encoded string which holds JSON data. The content of the JSON data points
@@ -161,17 +183,6 @@ type ClientData struct {
 	// A skin resource patch must be present at all times. The minimum required data that the field must hold
 	// is {"geometry": {"default": "geometry.persona_d1625e47f4c9399f_0_1"}}
 	SkinResourcePatch string
-	// SkinColour is a hex representation (including #) of the base colour of the skin. An example of the
-	// colour sent here is '#b37b62'.
-	SkinColour string `json:"SkinColor"`
-	// ArmSize is the size of the arms of the player's model. This is either 'wide' (generally for male skins)
-	// or 'slim' (generally for female skins).
-	ArmSize string
-	// PersonaPieces is a list of all persona pieces that the skin is composed of.
-	PersonaPieces []PersonaPiece
-	// PieceTintColours is a list of specific tint colours for (some of) the persona pieces found in the list
-	// above.
-	PieceTintColours []PersonaPieceTintColour `json:"PieceTintColors"`
 	// ThirdPartyName is the username of the player. This username should not be used however. The DisplayName
 	// sent in the IdentityData should be preferred over this.
 	ThirdPartyName string
@@ -181,15 +192,10 @@ type ClientData struct {
 	// Although this field is obviously here for a reason, allowing this is too dangerous and should never be
 	// done.
 	ThirdPartyNameOnly bool
-	// UIProfile is the UI profile used. For the 'Pocket' UI, this is 1. For the 'Classic' UI, this is 0.
-	UIProfile int
 	// TrustedSkin is a boolean indicating if the skin the client is using is trusted.
 	TrustedSkin bool
-	// OverrideSkin is a boolean that does not make sense to be here. The current usage of this field is unknown.
-	OverrideSkin bool
-	// CompatibleWithClientSideChunkGen is a boolean indicating if the client's hardware is capable of using the client
-	// side chunk generation system.
-	CompatibleWithClientSideChunkGen bool
+	// UIProfile is the UI profile used. For the 'Pocket' UI, this is 1. For the 'Classic' UI, this is 0.
+	UIProfile int
 }
 
 // PersonaPiece represents a piece of a persona skin. All pieces are sent separately.

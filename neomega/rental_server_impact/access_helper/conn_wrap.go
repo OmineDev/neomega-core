@@ -11,7 +11,7 @@ import (
 )
 
 type Authenticator interface {
-	GetAccess(ctx context.Context, publicKey []byte) (address, chainInfo, botUid string, growthLevel int, err error)
+	GetAccess(ctx context.Context, publicKey []byte) (authResp map[string]any, err error)
 }
 
 type InfinityQueue struct {
