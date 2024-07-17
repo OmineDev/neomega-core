@@ -12,7 +12,6 @@ import (
 
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/login"
-
 	"github.com/google/uuid"
 )
 
@@ -22,6 +21,7 @@ func NewDefaultOptions(
 	PrivateKey *ecdsa.PrivateKey,
 
 ) *Options {
+	var err error
 	opt := &Options{
 		Salt:       make([]byte, 16),
 		PrivateKey: PrivateKey,
@@ -30,7 +30,10 @@ func NewDefaultOptions(
 	_, _ = rand.Read(opt.Salt)
 	opt.ClientData = defaultClientData(address, growthLevel)
 	opt.Request = login.Encode(chainData, opt.ClientData, PrivateKey)
-	opt.IdentityData, _, _, _ = login.Parse(opt.Request)
+	opt.IdentityData, _, _, err = login.Parse(opt.Request)
+	if err != nil {
+		panic(err)
+	}
 	opt.ClientData.ThirdPartyName = opt.IdentityData.DisplayName
 	if opt.IdentityData.DisplayName == "" {
 		panic("invalid identity data: display name")
