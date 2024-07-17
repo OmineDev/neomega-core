@@ -1,36 +1,27 @@
 package defines
 
 import (
-	"context"
-	"time"
-
 	"github.com/OmineDev/neomega-core/minecraft_neo/can_close"
+	"github.com/OmineDev/neomega-core/utils/async_wrapper"
 )
 
-type ZMQCaller string
+type NewMasterNodeCaller string
 
-type ZMQClientAPI func(args Values) Values
-type ZMQServerAPI func(caller ZMQCaller, args Values) Values
+type NewMasterNodeClientAPI func(args Values) (ret Values, err error)
+type NewMasterNodeServerAPI func(caller NewMasterNodeCaller, args Values) (ret Values, err error)
 
-type ZMQResultHandler interface {
-	SetContext(ctx context.Context) ZMQResultHandler
-	SetTimeout(timeout time.Duration) ZMQResultHandler
-	BlockGetResponse() Values
-	AsyncGetResponse(callback func(Values))
-}
-
-type ZMQAPIClient interface {
+type NewMasterNodeAPIClient interface {
 	CallOmitResponse(api string, args Values)
-	CallWithResponse(api string, args Values) ZMQResultHandler
-	ExposeAPI(apiName string, api ZMQClientAPI, newGoroutine bool)
+	CallWithResponse(api string, args Values) *async_wrapper.AsyncWrapper[Values]
+	ExposeAPI(apiName string, api NewMasterNodeClientAPI, newGoroutine bool)
 	can_close.CanClose
 }
 
-type ZMQAPIServer interface {
-	ExposeAPI(apiName string, api ZMQServerAPI, newGoroutine bool)
+type NewMasterNodeAPIServer interface {
+	ExposeAPI(apiName string, api NewMasterNodeServerAPI, newGoroutine bool)
 	ConcealAPI(apiName string)
-	CallOmitResponse(callee ZMQCaller, api string, args Values)
-	CallWithResponse(callee ZMQCaller, api string, args Values) ZMQResultHandler
-	SetOnCloseCleanUp(callee ZMQCaller, cb func())
+	CallOmitResponse(callee NewMasterNodeCaller, api string, args Values)
+	CallWithResponse(callee NewMasterNodeCaller, api string, args Values) *async_wrapper.AsyncWrapper[Values]
+	SetOnCloseCleanUp(callee NewMasterNodeCaller, cb func())
 	can_close.CanClose
 }

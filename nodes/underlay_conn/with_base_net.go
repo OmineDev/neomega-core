@@ -30,7 +30,7 @@ func NewBasicNetClient(addr string, timeout time.Duration) (net.Conn, error) {
 	return net.DialTimeout(frags[0], frags[1], timeout)
 }
 
-func NewClientFromBasicNet(addr string, timeout time.Duration) (defines.ZMQAPIClient, error) {
+func NewClientFromBasicNet(addr string, timeout time.Duration) (defines.NewMasterNodeAPIClient, error) {
 	conn, err := NewBasicNetClient(addr, timeout)
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func NewClientFromBasicNet(addr string, timeout time.Duration) (defines.ZMQAPICl
 	return client, nil
 }
 
-func NewServerFromBasicNet(addr string) (defines.ZMQAPIServer, error) {
+func NewServerFromBasicNet(addr string) (defines.NewMasterNodeAPIServer, error) {
 	listen, err := NewBasicNetServer(addr)
 	if err != nil {
 		return nil, err

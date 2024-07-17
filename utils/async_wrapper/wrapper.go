@@ -31,14 +31,6 @@ func (w *AsyncWrapper[T]) SetTimeout(timeout time.Duration) *AsyncWrapper[T] {
 	return w
 }
 
-func (w *AsyncWrapper[T]) AsyncOmitResult() {
-	if w.launched {
-		panic("double launch async func")
-	}
-	w.launched = true
-	go w.do()
-}
-
 func (w *AsyncWrapper[T]) AsyncGetResult(callback func(ret T, err error)) {
 	if w.launched {
 		panic("double launch async func")

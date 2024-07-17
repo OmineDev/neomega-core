@@ -2,10 +2,8 @@ package defines
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/OmineDev/neomega-core/neomega/encoding/little_endian"
-
 	"github.com/google/uuid"
 )
 
@@ -164,26 +162,4 @@ func FromStrings(vals ...string) Values {
 		rets[i] = []byte(v)
 	}
 	return rets
-}
-
-var errorNoResult = errors.New("no result")
-
-func UnwrapOutput(rets Values) (Values, error) {
-	if rets.IsEmpty() {
-		return Empty, errorNoResult
-	} else {
-		if rets.EqualString("ok") {
-			return rets.ConsumeHead(), nil
-		} else {
-			return Empty, fmt.Errorf(rets.ConsumeHead().ToString())
-		}
-	}
-}
-
-func WrapOutput(rets Values, err error) Values {
-	if err != nil {
-		return FromStrings("err", err.Error())
-	} else {
-		return FromString("ok").Extend(rets)
-	}
 }

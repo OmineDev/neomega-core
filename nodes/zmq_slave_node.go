@@ -1,65 +1,52 @@
 package nodes
 
 import (
-	"context"
 	"fmt"
 	"time"
 
 	"github.com/OmineDev/neomega-core/minecraft_neo/can_close"
 	"github.com/OmineDev/neomega-core/nodes/defines"
+	"github.com/OmineDev/neomega-core/utils/async_wrapper"
 )
 
-type ZMQSlaveNode struct {
-	client        defines.ZMQAPIClient
+type NewMasterNodeSlaveNode struct {
+	client        defines.NewMasterNodeAPIClient
 	localAPI      *LocalAPINode
 	localTags     *LocalTags
 	localTopicNet *LocalTopicNet
 	can_close.CanCloseWithError
 }
 
-func (n *ZMQSlaveNode) IsMaster() bool {
+func (n *NewMasterNodeSlaveNode) IsMaster() bool {
 	return false
 }
 
-// func (n *ZMQSlaveNode) heatBeat() {
-// 	go func() {
-// 		for {
-// 			if !n.client.CallWithResponse("/ping", defines.Empty).SetTimeout(time.Second).BlockGetResponse().EqualString("pong") {
-// 				n.CloseWithError(fmt.Errorf("disconnected"))
-// 				break
-// 			}
-// 			time.Sleep(time.Second * 5)
-// 		}
-// 	}()
-// }
-
-func (n *ZMQSlaveNode) ListenMessage(topic string, listener defines.MsgListener, newGoroutine bool) {
-	n.client.CallWithResponse("/subscribe", defines.FromString(topic)).BlockGetResponse()
+func (n *NewMasterNodeSlaveNode) ListenMessage(topic string, listener defines.MsgListener, newGoroutine bool) {
+	n.client.CallWithResponse("/subscribe", defines.FromString(topic)).BlockGetResult()
 	n.localTopicNet.ListenMessage(topic, listener, newGoroutine)
 }
 
-func (n *ZMQSlaveNode) PublishMessage(topic string, msg defines.Values) {
+func (n *NewMasterNodeSlaveNode) PublishMessage(topic string, msg defines.Values) {
 	n.client.CallOmitResponse("/publish", defines.FromString(topic).Extend(msg))
 	n.localTopicNet.publishMessage(topic, msg)
 }
 
-func (n *ZMQSlaveNode) ExposeAPI(apiName string, api defines.API, newGoroutine bool) error {
-	r := n.client.CallWithResponse("/reg_api", defines.FromString(apiName)).SetTimeout(time.Second).BlockGetResponse()
-	if r.EqualString("ok") {
+func (n *NewMasterNodeSlaveNode) ExposeAPI(apiName string, api defines.API, newGoroutine bool) error {
+	_, err := n.client.CallWithResponse("/reg_api", defines.FromString(apiName)).SetTimeout(time.Second).BlockGetResult()
+	if err == nil {
 		// salve to master & salve (other call)
-		n.client.ExposeAPI(apiName, func(args defines.Values) defines.Values {
-			result, err := api(args)
-			return defines.WrapOutput(result, err)
+		n.client.ExposeAPI(apiName, func(args defines.Values) (defines.Values, error) {
+			return api(args)
 		}, false)
 		// salve to salve (self) call
 		n.localAPI.ExposeAPI(apiName, api, newGoroutine)
 		return nil
 	} else {
-		return fmt.Errorf(r.ToString())
+		return err
 	}
 }
 
-func (c *ZMQSlaveNode) CallOmitResponse(api string, args defines.Values) {
+func (c *NewMasterNodeSlaveNode) CallOmitResponse(api string, args defines.Values) {
 	if c.localAPI.HasAPI(api) {
 		c.localAPI.CallOmitResponse(api, args)
 	} else {
@@ -67,42 +54,16 @@ func (c *ZMQSlaveNode) CallOmitResponse(api string, args defines.Values) {
 	}
 }
 
-type salveResultUpdateHandler struct {
-	defines.ZMQResultHandler
-}
-
-func (h *salveResultUpdateHandler) SetContext(ctx context.Context) defines.RemoteResultHandler {
-	h.ZMQResultHandler.SetContext(ctx)
-	return h
-}
-
-func (h *salveResultUpdateHandler) SetTimeout(timeout time.Duration) defines.RemoteResultHandler {
-	h.ZMQResultHandler.SetTimeout(timeout)
-	return h
-}
-
-func (h *salveResultUpdateHandler) BlockGetResponse() (defines.Values, error) {
-	nestedRet := h.ZMQResultHandler.BlockGetResponse()
-	return defines.UnwrapOutput(nestedRet)
-}
-
-func (h *salveResultUpdateHandler) AsyncGetResponse(callback func(defines.Values, error)) {
-	h.ZMQResultHandler.AsyncGetResponse(func(nestedRet defines.Values) {
-		rets, err := defines.UnwrapOutput(nestedRet)
-		callback(rets, err)
-	})
-}
-
-func (c *ZMQSlaveNode) CallWithResponse(api string, args defines.Values) defines.RemoteResultHandler {
+func (c *NewMasterNodeSlaveNode) CallWithResponse(api string, args defines.Values) *async_wrapper.AsyncWrapper[defines.Values] {
 	if c.localAPI.HasAPI(api) {
 		return c.localAPI.CallWithResponse(api, args)
 	} else {
-		return &salveResultUpdateHandler{c.client.CallWithResponse(api, args)}
+		return c.client.CallWithResponse(api, args)
 	}
 }
 
-func (c *ZMQSlaveNode) GetValue(key string) (val defines.Values, found bool) {
-	v, err := c.CallWithResponse("/get-value", defines.FromString(key)).BlockGetResponse()
+func (c *NewMasterNodeSlaveNode) GetValue(key string) (val defines.Values, found bool) {
+	v, err := c.CallWithResponse("/get-value", defines.FromString(key)).BlockGetResult()
 	if err != nil || v.IsEmpty() {
 		return nil, false
 	} else {
@@ -110,20 +71,20 @@ func (c *ZMQSlaveNode) GetValue(key string) (val defines.Values, found bool) {
 	}
 }
 
-func (c *ZMQSlaveNode) SetValue(key string, val defines.Values) {
+func (c *NewMasterNodeSlaveNode) SetValue(key string, val defines.Values) {
 	c.CallOmitResponse("/set-value", defines.FromString(key).Extend(val))
 }
 
-func (c *ZMQSlaveNode) SetTags(tags ...string) {
+func (c *NewMasterNodeSlaveNode) SetTags(tags ...string) {
 	c.CallOmitResponse("/set-tags", defines.FromStrings(tags...))
 	c.localTags.SetTags(tags...)
 }
 
-func (c *ZMQSlaveNode) CheckNetTag(tag string) bool {
+func (c *NewMasterNodeSlaveNode) CheckNetTag(tag string) bool {
 	if c.localTags.CheckLocalTag(tag) {
 		return true
 	}
-	rest, err := c.CallWithResponse("/check-tag", defines.FromString(tag)).BlockGetResponse()
+	rest, err := c.CallWithResponse("/check-tag", defines.FromString(tag)).BlockGetResult()
 	if err != nil || rest.IsEmpty() {
 		return false
 	}
@@ -134,12 +95,12 @@ func (c *ZMQSlaveNode) CheckNetTag(tag string) bool {
 	return hasTag
 }
 
-func (n *ZMQSlaveNode) CheckLocalTag(tag string) bool {
+func (n *NewMasterNodeSlaveNode) CheckLocalTag(tag string) bool {
 	return n.localTags.CheckLocalTag(tag)
 }
 
-func (c *ZMQSlaveNode) TryLock(name string, acquireTime time.Duration) bool {
-	rest, err := c.CallWithResponse("/try-lock", defines.FromString(name).Extend(defines.FromInt64(acquireTime.Milliseconds()))).BlockGetResponse()
+func (c *NewMasterNodeSlaveNode) TryLock(name string, acquireTime time.Duration) bool {
+	rest, err := c.CallWithResponse("/try-lock", defines.FromString(name).Extend(defines.FromInt64(acquireTime.Milliseconds()))).BlockGetResult()
 	if err != nil || rest.IsEmpty() {
 		return false
 	}
@@ -150,8 +111,8 @@ func (c *ZMQSlaveNode) TryLock(name string, acquireTime time.Duration) bool {
 	return locked
 }
 
-func (c *ZMQSlaveNode) ResetLockTime(name string, acquireTime time.Duration) bool {
-	rest, err := c.CallWithResponse("/reset-lock-time", defines.FromString(name).Extend(defines.FromInt64(acquireTime.Milliseconds()))).BlockGetResponse()
+func (c *NewMasterNodeSlaveNode) ResetLockTime(name string, acquireTime time.Duration) bool {
+	rest, err := c.CallWithResponse("/reset-lock-time", defines.FromString(name).Extend(defines.FromInt64(acquireTime.Milliseconds()))).BlockGetResult()
 	if err != nil || rest.IsEmpty() {
 		return false
 	}
@@ -162,29 +123,34 @@ func (c *ZMQSlaveNode) ResetLockTime(name string, acquireTime time.Duration) boo
 	return locked
 }
 
-func (c *ZMQSlaveNode) Unlock(name string) {
+func (c *NewMasterNodeSlaveNode) Unlock(name string) {
 	c.CallOmitResponse("/unlock", defines.FromString(name))
 }
 
-func NewZMQSlaveNode(client defines.ZMQAPIClient) (defines.Node, error) {
-	slave := &ZMQSlaveNode{
+func NewSlaveNode(client defines.NewMasterNodeAPIClient) (defines.Node, error) {
+	slave := &NewMasterNodeSlaveNode{
 		client:            client,
 		localAPI:          NewLocalAPINode(),
 		localTags:         NewLocalTags(),
 		localTopicNet:     NewLocalTopicNet(),
 		CanCloseWithError: can_close.NewClose(client.Close),
 	}
-	client.ExposeAPI("/ping", func(args defines.Values) defines.Values {
-		return defines.Values{[]byte("pong")}
+	client.ExposeAPI("/ping", func(args defines.Values) (defines.Values, error) {
+		return defines.Values{[]byte("pong")}, nil
 	}, false)
-	client.ExposeAPI("/on_new_msg", func(args defines.Values) defines.Values {
+	client.ExposeAPI("/on_new_msg", func(args defines.Values) (defines.Values, error) {
 		topic, err := args.ToString()
 		if err != nil {
-			return defines.Empty
+			return defines.Empty, nil
 		}
 		msg := args.ConsumeHead()
 		slave.localTopicNet.PublishMessage(topic, msg)
-		return defines.Empty
+		return defines.Empty, nil
+	}, false)
+	client.ExposeAPI("/suppress-api", func(args defines.Values) (ret defines.Values, err error) {
+		apiName, _ := args.ToString()
+		fmt.Printf("an api is suppress by net api with same name: %v\n", apiName)
+		return defines.Empty, nil
 	}, false)
 
 	go func() {
@@ -192,8 +158,8 @@ func NewZMQSlaveNode(client defines.ZMQAPIClient) (defines.Node, error) {
 	}()
 	// go slave.heatBeat()
 
-	if !slave.client.CallWithResponse("/new_client", defines.Empty).BlockGetResponse().EqualString("ok") {
-		return nil, fmt.Errorf("version mismatch")
+	if _, err := slave.client.CallWithResponse("/new_client", defines.Empty).BlockGetResult(); err != nil {
+		return nil, fmt.Errorf("fail to reg new client to master: " + err.Error())
 	} else {
 		return slave, nil
 	}

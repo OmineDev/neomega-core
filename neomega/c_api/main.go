@@ -932,7 +932,7 @@ func ConnectOmega(address *C.char) (Cerr *C.char) {
 		if err != nil {
 			return C.CString(err.Error())
 		}
-		slave, err := nodes.NewZMQSlaveNode(client)
+		slave, err := nodes.NewSlaveNode(client)
 		if err != nil {
 			return C.CString(err.Error())
 		}
@@ -974,8 +974,8 @@ func StartOmega(address *C.char, impactOptionsJson *C.char) (Cerr *C.char) {
 			if err != nil {
 				panic(err)
 			}
-			// server := nodes.NewSimpleZMQServer(socket)
-			master := nodes.NewZMQMasterNode(server)
+			// server := nodes.NewSimpleNewMasterNodeServer(socket)
+			master := nodes.NewMasterNode(server)
 			node = nodes.NewGroup("neomega", master, false)
 		}
 	}

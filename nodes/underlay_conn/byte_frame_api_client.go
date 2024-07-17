@@ -3,11 +3,11 @@ package underlay_conn
 import (
 	"context"
 	"strings"
-	"time"
 
 	"github.com/OmineDev/neomega-core/minecraft_neo/can_close"
 	conn_defines "github.com/OmineDev/neomega-core/minecraft_neo/cascade_conn/defines"
 	"github.com/OmineDev/neomega-core/nodes/defines"
+	"github.com/OmineDev/neomega-core/utils/async_wrapper"
 	"github.com/OmineDev/neomega-core/utils/sync_wrapper"
 
 	"github.com/google/uuid"
@@ -15,9 +15,9 @@ import (
 
 type FrameAPIClient struct {
 	can_close.CanCloseWithError
-	FrameConn conn_defines.ByteFrameConnBase
-	cbs       *sync_wrapper.SyncKVMap[string, func(defines.Values)]
-	apis      *sync_wrapper.SyncKVMap[string, func(defines.Values, func(defines.Values))]
+	FrameConn       conn_defines.ByteFrameConnBase
+	cbs             *sync_wrapper.SyncKVMap[string, func(defines.Values, error)]
+	nonBlockingApis *sync_wrapper.SyncKVMap[string, func(defines.Values, func(defines.Values, error))]
 }
 
 func NewFrameAPIClient(conn conn_defines.ByteFrameConnBase) *FrameAPIClient {
@@ -25,8 +25,8 @@ func NewFrameAPIClient(conn conn_defines.ByteFrameConnBase) *FrameAPIClient {
 		// close underlay conn on err
 		CanCloseWithError: can_close.NewClose(conn.Close),
 		FrameConn:         conn,
-		cbs:               sync_wrapper.NewSyncKVMap[string, func(defines.Values)](),
-		apis:              sync_wrapper.NewSyncKVMap[string, func(defines.Values, func(defines.Values))](),
+		cbs:               sync_wrapper.NewSyncKVMap[string, func(defines.Values, error)](),
+		nonBlockingApis:   sync_wrapper.NewSyncKVMap[string, func(defines.Values, func(defines.Values, error))](),
 	}
 	go func() {
 		// close when underlay err
@@ -47,19 +47,19 @@ func NewFrameAPIClientWithCtx(conn conn_defines.ByteFrameConnBase, ctx context.C
 	return c
 }
 
-func (c *FrameAPIClient) ExposeAPI(apiName string, api defines.ZMQClientAPI, newGoroutine bool) {
+func (c *FrameAPIClient) ExposeAPI(apiName string, api defines.NewMasterNodeClientAPI, newGoroutine bool) {
 	if !strings.HasPrefix(apiName, "/") {
 		apiName = "/" + apiName
 	}
-	c.apis.Set(apiName, func(args defines.Values, setResult func(defines.Values)) {
+	c.nonBlockingApis.Set(apiName, func(args defines.Values, setResult func(defines.Values, error)) {
 		if newGoroutine {
 			go func() {
-				ret := api(args)
-				setResult(ret)
+				ret, err := api(args)
+				setResult(ret, err)
 			}()
 		} else {
-			ret := api(args)
-			setResult(ret)
+			ret, err := api(args)
+			setResult(ret, err)
 		}
 	})
 }
@@ -70,18 +70,19 @@ func (c *FrameAPIClient) Run() (err error) {
 		indexOrApi := string(frames[0])
 		if strings.HasPrefix(indexOrApi, "/") {
 			index := frames[1]
-			if apiFn, ok := c.apis.Get(indexOrApi); ok {
-				apiFn(frames[2:], func(z defines.Values) {
+			if apiFn, ok := c.nonBlockingApis.Get(indexOrApi); ok {
+				apiFn(frames[2:], func(z defines.Values, err error) {
 					if len(index) == 0 {
 						return
 					}
-					frames := append([][]byte{index}, z...)
+					frames := append([][]byte{index}, defines.WrapError(z, err)...)
 					c.FrameConn.WriteBytePacket(byteSlicesToBytes(frames))
 				})
 			}
 		} else {
 			if cb, ok := c.cbs.GetAndDelete(indexOrApi); ok {
-				cb(frames[1:])
+				ret, err := defines.ValueWithErr(frames[1:]).Unwrap()
+				cb(ret, err)
 			}
 		}
 	})
@@ -96,77 +97,94 @@ func (c *FrameAPIClient) CallOmitResponse(api string, args defines.Values) {
 	c.FrameConn.WriteBytePacket(byteSlicesToBytes(frames))
 }
 
-type clientRespHandler struct {
-	idx    string
-	frames [][]byte
-	c      *FrameAPIClient
-	ctx    context.Context
-}
-
-func (h *clientRespHandler) doSend() {
-	h.c.FrameConn.WriteBytePacket(byteSlicesToBytes(h.frames))
-}
-
-func (h *clientRespHandler) SetContext(ctx context.Context) defines.ZMQResultHandler {
-	h.ctx = ctx
-	return h
-}
-
-func (h *clientRespHandler) SetTimeout(timeout time.Duration) defines.ZMQResultHandler {
-	if h.ctx == nil {
-		h.ctx = context.Background()
-	}
-	h.ctx, _ = context.WithTimeout(h.ctx, timeout)
-	return h
-}
-
-func (h *clientRespHandler) BlockGetResponse() defines.Values {
-	resolver := make(chan defines.Values, 1)
-	h.c.cbs.Set(h.idx, func(ret defines.Values) {
-		resolver <- ret
-	})
-	h.doSend()
-	if h.ctx == nil {
-		return <-resolver
-	}
-	select {
-	case ret := <-resolver:
-		return ret
-	case <-h.ctx.Done():
-		h.c.cbs.Delete(h.idx)
-		return defines.Empty
-	}
-}
-
-func (h *clientRespHandler) AsyncGetResponse(callback func(defines.Values)) {
-	if h.ctx == nil {
-		h.c.cbs.Set(h.idx, callback)
-	} else {
-		resolver := make(chan defines.Values, 1)
-		h.c.cbs.Set(h.idx, func(ret defines.Values) {
-			resolver <- ret
-		})
-		go func() {
-			select {
-			case ret := <-resolver:
-				callback(ret)
-			case <-h.ctx.Done():
-				h.c.cbs.Delete(h.idx)
-				callback(defines.Empty)
-				return
-			}
-		}()
-	}
-	h.doSend()
-}
-
-func (c *FrameAPIClient) CallWithResponse(api string, args defines.Values) defines.ZMQResultHandler {
+func (c *FrameAPIClient) CallWithResponse(api string, args defines.Values) *async_wrapper.AsyncWrapper[defines.Values] {
 	if !strings.HasPrefix(api, "/") {
 		api = "/" + api
 	}
 	idx := uuid.New().String()
 	frames := append([][]byte{[]byte(api), []byte(idx)}, args...)
-	return &clientRespHandler{
-		idx, frames, c, nil,
-	}
+	return async_wrapper.NewAsyncWrapper(func(ac *async_wrapper.AsyncController[defines.Values]) {
+		c.cbs.Set(idx, func(v defines.Values, err error) {
+			ac.SetResultAndErr(v, err)
+		})
+		ac.SetCancelHook(func() {
+			c.cbs.Delete(idx)
+		})
+		c.FrameConn.WriteBytePacket(byteSlicesToBytes(frames))
+	}, false)
 }
+
+// type clientRespHandler struct {
+// 	idx    string
+// 	frames [][]byte
+// 	c      *FrameAPIClient
+// 	ctx    context.Context
+// }
+
+// func (h *clientRespHandler) doSend() {
+// 	h.c.FrameConn.WriteBytePacket(byteSlicesToBytes(h.frames))
+// }
+
+// func (h *clientRespHandler) SetContext(ctx context.Context) defines.NewMasterNodeResultHandler {
+// 	h.ctx = ctx
+// 	return h
+// }
+
+// func (h *clientRespHandler) SetTimeout(timeout time.Duration) defines.NewMasterNodeResultHandler {
+// 	if h.ctx == nil {
+// 		h.ctx = context.Background()
+// 	}
+// 	h.ctx, _ = context.WithTimeout(h.ctx, timeout)
+// 	return h
+// }
+
+// func (h *clientRespHandler) BlockGetResponse() defines.Values {
+// 	resolver := make(chan defines.Values, 1)
+// 	h.c.cbs.Set(h.idx, func(ret defines.Values) {
+// 		resolver <- ret
+// 	})
+// 	h.doSend()
+// 	if h.ctx == nil {
+// 		return <-resolver
+// 	}
+// 	select {
+// 	case ret := <-resolver:
+// 		return ret
+// 	case <-h.ctx.Done():
+// 		h.c.cbs.Delete(h.idx)
+// 		return defines.Empty
+// 	}
+// }
+
+// func (h *clientRespHandler) AsyncGetResponse(callback func(defines.Values)) {
+// 	if h.ctx == nil {
+// 		h.c.cbs.Set(h.idx, callback)
+// 	} else {
+// 		resolver := make(chan defines.Values, 1)
+// 		h.c.cbs.Set(h.idx, func(ret defines.Values) {
+// 			resolver <- ret
+// 		})
+// 		go func() {
+// 			select {
+// 			case ret := <-resolver:
+// 				callback(ret)
+// 			case <-h.ctx.Done():
+// 				h.c.cbs.Delete(h.idx)
+// 				callback(defines.Empty)
+// 				return
+// 			}
+// 		}()
+// 	}
+// 	h.doSend()
+// }
+
+// func (c *FrameAPIClient) CallWithResponse(api string, args defines.Values) defines.NewMasterNodeResultHandler {
+// 	if !strings.HasPrefix(api, "/") {
+// 		api = "/" + api
+// 	}
+// 	idx := uuid.New().String()
+// 	frames := append([][]byte{[]byte(api), []byte(idx)}, args...)
+// 	return &clientRespHandler{
+// 		idx, frames, c, nil,
+// 	}
+// }

@@ -48,7 +48,7 @@ func NewAccessPointMicroUQHolder(node defines.APINode, conn minecraft_conn.Conn,
 }
 
 func NewEndPointMicroUQHolder(node defines.APINode, reactCore neomega.ReactCore) (uq *MicroUQHolder, err error) {
-	rets, err := node.CallWithResponse("get-uqholder", defines.Empty).SetTimeout(time.Second * 3).BlockGetResponse()
+	rets, err := node.CallWithResponse("get-uqholder", defines.Empty).SetTimeout(time.Second * 3).BlockGetResult()
 	if err != nil {
 		return nil, err
 	}

@@ -24,7 +24,7 @@ func Entry(args *Args) {
 		if err != nil {
 			panic(err)
 		}
-		slave, err := nodes.NewZMQSlaveNode(client)
+		slave, err := nodes.NewSlaveNode(client)
 		if err != nil {
 			panic(err)
 		}

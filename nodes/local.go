@@ -8,39 +8,22 @@ import (
 
 	"github.com/OmineDev/neomega-core/minecraft_neo/can_close"
 	"github.com/OmineDev/neomega-core/nodes/defines"
+	"github.com/OmineDev/neomega-core/utils/async_wrapper"
 	"github.com/OmineDev/neomega-core/utils/sync_wrapper"
 )
 
-type alwaysErrorResultHandler struct{ error }
-
-func (h *alwaysErrorResultHandler) SetContext(ctx context.Context) defines.RemoteResultHandler {
-	return h
-}
-
-func (h *alwaysErrorResultHandler) SetTimeout(timeout time.Duration) defines.RemoteResultHandler {
-	return h
-}
-
-func (h *alwaysErrorResultHandler) BlockGetResponse() (defines.Values, error) {
-	return defines.Empty, h
-}
-
-func (h *alwaysErrorResultHandler) AsyncGetResponse(callback func(defines.Values, error)) {
-	go func() { callback(defines.Empty, h) }()
-}
-
 type LocalAPINode struct {
-	RegedApi *sync_wrapper.SyncKVMap[string, defines.AsyncAPI]
+	RegednonBlockingApi *sync_wrapper.SyncKVMap[string, defines.AsyncAPI]
 }
 
 var ErrAPIExist = errors.New("defines.API already exposed")
 var ErrAPINotExist = errors.New("defines.API not exist")
 
 func (n *LocalAPINode) ExposeAPI(apiName string, api defines.API, newGoroutine bool) error {
-	if n.HasAPI(apiName) {
-		return ErrAPIExist
+	if _, found := n.RegednonBlockingApi.Get(apiName); found {
+		fmt.Printf("an new api shadow an exist api with same name: %v\n", apiName)
 	}
-	n.RegedApi.Set(apiName, func(args defines.Values, setResult func(defines.Values, error)) {
+	n.RegednonBlockingApi.Set(apiName, func(args defines.Values, setResult func(defines.Values, error)) {
 		if newGoroutine {
 			go func() {
 				rets, err := api(args)
@@ -55,90 +38,37 @@ func (n *LocalAPINode) ExposeAPI(apiName string, api defines.API, newGoroutine b
 }
 
 func (n *LocalAPINode) RemoveAPI(apiName string) {
-	n.RegedApi.Delete(apiName)
+	n.RegednonBlockingApi.Delete(apiName)
 }
 
 func (n *LocalAPINode) HasAPI(apiName string) bool {
-	_, found := n.RegedApi.Get(apiName)
+	_, found := n.RegednonBlockingApi.Get(apiName)
 	return found
 }
 
-type remoteRespHandler struct {
-	asyncAPI defines.AsyncAPI
-	args     defines.Values
-	ctx      context.Context
-}
-
-func (h *remoteRespHandler) SetContext(ctx context.Context) defines.RemoteResultHandler {
-	h.ctx = ctx
-	return h
-}
-
-func (h *remoteRespHandler) SetTimeout(timeout time.Duration) defines.RemoteResultHandler {
-	h.ctx, _ = context.WithTimeout(h.ctx, timeout)
-	return h
-}
-
-func (h *remoteRespHandler) BlockGetResponse() (defines.Values, error) {
-	w := make(chan struct {
-		defines.Values
-		error
-	})
-	h.AsyncGetResponse(func(ret defines.Values, err error) {
-		w <- struct {
-			defines.Values
-			error
-		}{
-			ret, err,
-		}
-	})
-	r := <-w
-	return r.Values, r.error
-}
-
-func (h *remoteRespHandler) AsyncGetResponse(callback func(defines.Values, error)) {
-	resolver := make(chan struct {
-		defines.Values
-		error
-	}, 1)
-	h.asyncAPI(h.args, func(ret defines.Values, err error) {
-		resolver <- struct {
-			defines.Values
-			error
-		}{
-			ret, err,
-		}
-	})
-	go func() {
-		select {
-		case ret := <-resolver:
-			callback(ret.Values, ret.error)
-		case <-h.ctx.Done():
-			callback(defines.Empty, fmt.Errorf("timeout"))
-			return
-		}
-	}()
-}
-
-func (c *LocalAPINode) CallWithResponse(api string, args defines.Values) defines.RemoteResultHandler {
-	if asyncAPI, ok := c.RegedApi.Get(api); ok {
-		return &remoteRespHandler{
-			asyncAPI, args, context.Background(),
-		}
+func (c *LocalAPINode) CallWithResponse(api string, args defines.Values) *async_wrapper.AsyncWrapper[defines.Values] {
+	if asyncAPI, ok := c.RegednonBlockingApi.Get(api); ok {
+		return async_wrapper.NewAsyncWrapper(func(ac *async_wrapper.AsyncController[defines.Values]) {
+			asyncAPI(args, func(ret defines.Values, err error) {
+				ac.SetResultAndErr(ret, err)
+			})
+		}, false)
 	} else {
-		return &alwaysErrorResultHandler{ErrAPINotExist}
+		return async_wrapper.NewAsyncWrapper(func(ac *async_wrapper.AsyncController[defines.Values]) {
+			ac.SetErr(ErrAPINotExist)
+		}, false)
 	}
 }
 
 func (c *LocalAPINode) CallOmitResponse(api string, args defines.Values) {
-	if asyncAPI, ok := c.RegedApi.Get(api); ok {
+	if asyncAPI, ok := c.RegednonBlockingApi.Get(api); ok {
 		asyncAPI(args, func(defines.Values, error) {})
 	}
 }
 
 func NewLocalAPINode() *LocalAPINode {
 	return &LocalAPINode{
-		RegedApi: sync_wrapper.NewSyncKVMap[string, defines.AsyncAPI](),
+		RegednonBlockingApi: sync_wrapper.NewSyncKVMap[string, defines.AsyncAPI](),
 	}
 }
 

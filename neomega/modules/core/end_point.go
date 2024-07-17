@@ -43,7 +43,7 @@ type canNotifyShieldIDChange interface {
 }
 
 func NewEndPointInteractCore(node defines.Node, shieldIDProvider canNotifyShieldIDChange) (neomega.InteractCore, error) {
-	result, err := node.CallWithResponse("get-shield-id", defines.Empty).SetTimeout(time.Second * 3).BlockGetResponse()
+	result, err := node.CallWithResponse("get-shield-id", defines.Empty).SetTimeout(time.Second * 3).BlockGetResult()
 	if err != nil {
 		return nil, err
 	}

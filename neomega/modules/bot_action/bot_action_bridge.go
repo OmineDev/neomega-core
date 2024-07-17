@@ -56,7 +56,7 @@ func (a *AccessPointBotActionWithPersistData) ExposeInventoryContent() {
 
 func (e *EndPointBotAction) GetInventoryContent(windowID uint32, slotID uint8) (*protocol.ItemInstance, bool) {
 	args := (&ArgsChain{}).SetUint32(windowID).SetUint8(slotID).Done()
-	ret, err := e.node.CallWithResponse("get_inventory_content", args).SetTimeout(time.Second * 30).BlockGetResponse()
+	ret, err := e.node.CallWithResponse("get_inventory_content", args).SetTimeout(time.Second * 30).BlockGetResult()
 	if err != nil || ret.IsEmpty() {
 		return nil, false
 	}
@@ -102,13 +102,13 @@ func (a *AccessPointBotActionWithPersistData) ExposeUseHotBarItemOnBlockWithOffs
 
 func (e *EndPointBotAction) UseHotBarItemOnBlock(blockPos define.CubePos, blockNEMCRuntimeID uint32, face int32, slot uint8) (err error) {
 	args := (&ArgsChain{}).SetPos(blockPos).SetUint32(blockNEMCRuntimeID).SetInt32(face).SetUint8(slot).Done()
-	_, err = e.node.CallWithResponse("use_hot_bar_item_on_block", args).SetTimeout(time.Second * 30).BlockGetResponse()
+	_, err = e.node.CallWithResponse("use_hot_bar_item_on_block", args).SetTimeout(time.Second * 30).BlockGetResult()
 	return err
 }
 
 func (e *EndPointBotAction) UseHotBarItemOnBlockWithBotOffset(blockPos define.CubePos, botOffset define.CubePos, blockNEMCRuntimeID uint32, face int32, slot uint8) (err error) {
 	args := (&ArgsChain{}).SetPos(blockPos).SetPos(botOffset).SetUint32(blockNEMCRuntimeID).SetInt32(face).SetUint8(slot).Done()
-	_, err = e.node.CallWithResponse("use_hot_bar_item_on_block_with_offset", args).SetTimeout(time.Second * 30).BlockGetResponse()
+	_, err = e.node.CallWithResponse("use_hot_bar_item_on_block_with_offset", args).SetTimeout(time.Second * 30).BlockGetResult()
 	return err
 }
 
@@ -125,7 +125,7 @@ func (a *AccessPointBotActionWithPersistData) ExposeSelectHotBar() {
 
 func (e *EndPointBotAction) SelectHotBar(slotID uint8) error {
 	args := (&ArgsChain{}).SetUint8(slotID).Done()
-	_, err := e.node.CallWithResponse("select_hot_bar", args).SetTimeout(time.Second * 30).BlockGetResponse()
+	_, err := e.node.CallWithResponse("select_hot_bar", args).SetTimeout(time.Second * 30).BlockGetResult()
 	return err
 }
 
@@ -157,7 +157,7 @@ func (e *EndPointBotAction) MoveItemFromInventoryToEmptyContainerSlots(pos defin
 	for k, v := range switchOperations {
 		args.SetUint8(k).SetUint8(v)
 	}
-	_, err := e.node.CallWithResponse("move_item_from_inventory_slot_to_empty_container_slots", args.Done()).SetTimeout(time.Second * 30).BlockGetResponse()
+	_, err := e.node.CallWithResponse("move_item_from_inventory_slot_to_empty_container_slots", args.Done()).SetTimeout(time.Second * 30).BlockGetResult()
 	return err
 }
 
@@ -177,7 +177,7 @@ func (a *AccessPointBotActionWithPersistData) ExposeUseAnvil() {
 
 func (e *EndPointBotAction) UseAnvil(pos define.CubePos, blockNemcRtid uint32, slot uint8, newName string) error {
 	args := (&ArgsChain{}).SetPos(pos).SetUint32(blockNemcRtid).SetUint8(slot).SetString(newName).Done()
-	_, err := e.node.CallWithResponse("use_anvil", args).SetTimeout(time.Second * 30).BlockGetResponse()
+	_, err := e.node.CallWithResponse("use_anvil", args).SetTimeout(time.Second * 30).BlockGetResult()
 	return err
 }
 
@@ -194,7 +194,7 @@ func (a *AccessPointBotActionWithPersistData) ExposeDropItemFromHotBar() {
 
 func (e *EndPointBotAction) DropItemFromHotBar(slot uint8) error {
 	args := (&ArgsChain{}).SetUint8(slot).Done()
-	_, err := e.node.CallWithResponse("drop_item_from_hot_bar", args).SetTimeout(time.Second * 30).BlockGetResponse()
+	_, err := e.node.CallWithResponse("drop_item_from_hot_bar", args).SetTimeout(time.Second * 30).BlockGetResult()
 	return err
 }
 
@@ -211,7 +211,7 @@ func (a *AccessPointBotActionWithPersistData) ExposeMoveItemInsideHotBarOrInvent
 
 func (e *EndPointBotAction) MoveItemInsideHotBarOrInventory(sourceSlot, targetSlot, count uint8) error {
 	args := (&ArgsChain{}).SetUint8(sourceSlot).SetUint8(targetSlot).SetUint8(count).Done()
-	_, err := e.node.CallWithResponse("move_item_inside_hotbar_or_inventory", args).SetTimeout(time.Second * 30).BlockGetResponse()
+	_, err := e.node.CallWithResponse("move_item_inside_hotbar_or_inventory", args).SetTimeout(time.Second * 30).BlockGetResult()
 	return err
 }
 
@@ -228,7 +228,7 @@ func (a *AccessPointBotActionWithPersistData) ExposeUseHotBarItem() {
 
 func (e *EndPointBotAction) UseHotBarItem(slot uint8) (err error) {
 	args := (&ArgsChain{}).SetUint8(slot).Done()
-	_, err = e.node.CallWithResponse("use_hotbar_item", args).SetTimeout(time.Second * 30).BlockGetResponse()
+	_, err = e.node.CallWithResponse("use_hotbar_item", args).SetTimeout(time.Second * 30).BlockGetResult()
 	return err
 }
 

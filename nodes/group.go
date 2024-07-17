@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/OmineDev/neomega-core/nodes/defines"
+	"github.com/OmineDev/neomega-core/utils/async_wrapper"
 )
 
 type group struct {
@@ -28,7 +29,7 @@ func (n *group) ExposeAPI(apiName string, api defines.API, newGoroutine bool) er
 func (n *group) CallOmitResponse(api string, args defines.Values) {
 	n.Node.CallOmitResponse(n.translateName(api), args)
 }
-func (n *group) CallWithResponse(api string, args defines.Values) defines.RemoteResultHandler {
+func (n *group) CallWithResponse(api string, args defines.Values) *async_wrapper.AsyncWrapper[defines.Values] {
 	return n.Node.CallWithResponse(n.translateName(api), args)
 }
 func (n *group) PublishMessage(topic string, msg defines.Values) {

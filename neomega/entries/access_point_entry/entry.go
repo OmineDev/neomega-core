@@ -38,7 +38,7 @@ func Entry(args *Args) {
 		if err != nil {
 			panic(err)
 		}
-		master := nodes.NewZMQMasterNode(server)
+		master := nodes.NewMasterNode(server)
 		node = nodes.NewGroup("neomega", master, false)
 	}
 	omegaCore, err = access_helper.ImpactServer(ctx, node, accessOption)

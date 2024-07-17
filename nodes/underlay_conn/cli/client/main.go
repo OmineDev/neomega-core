@@ -14,14 +14,14 @@ func Server() {
 	if err != nil {
 		panic(err)
 	}
-	server.ExposeAPI("echo", func(caller defines.ZMQCaller, args defines.Values) defines.Values {
+	server.ExposeAPI("echo", func(caller defines.NewMasterNodeCaller, args defines.Values) (defines.Values, error) {
 		fmt.Println("server recv:", caller, args.ToStrings())
 		go func() {
-			ret := server.CallWithResponse(caller, "client-echo", defines.FromStrings("server", "hi")).BlockGetResponse()
-			fmt.Println("server get response ", ret.ToStrings())
+			ret, err := server.CallWithResponse(caller, "client-echo", defines.FromStrings("server", "hi")).BlockGetResult()
+			fmt.Println("server get response ", ret.ToStrings(), err)
 			server.CallOmitResponse(caller, "client-echo", defines.FromStrings("server", "hi", "no resp"))
 		}()
-		return defines.FromString("server echo").Extend(args)
+		return defines.FromString("server echo").Extend(args), nil
 	}, false)
 	<-server.WaitClosed()
 	fmt.Println("server closed")
@@ -34,13 +34,13 @@ func Client(id string) {
 		panic(err)
 	}
 	go func() {
-		ret := client.CallWithResponse("echo", defines.FromStrings("hello", "world")).BlockGetResponse()
-		fmt.Println("client get response ", ret.ToStrings())
+		ret, err := client.CallWithResponse("echo", defines.FromStrings("hello", "world")).BlockGetResult()
+		fmt.Println("client get response ", ret.ToStrings(), err)
 		client.CallOmitResponse("echo", defines.FromStrings("hello", "world", "no resp"))
 	}()
-	client.ExposeAPI("client-echo", func(args defines.Values) defines.Values {
+	client.ExposeAPI("client-echo", func(args defines.Values) (defines.Values, error) {
 		fmt.Println(fmt.Sprintf("client %v recv:", id), args.ToStrings())
-		return defines.FromString(fmt.Sprintf("client %v echo", id)).Extend(args)
+		return defines.FromString(fmt.Sprintf("client %v echo", id)).Extend(args), nil
 	}, false)
 	<-client.WaitClosed()
 	fmt.Printf("client %v closed\n", id)
