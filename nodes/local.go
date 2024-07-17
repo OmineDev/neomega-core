@@ -46,7 +46,7 @@ func (n *LocalAPINode) HasAPI(apiName string) bool {
 	return found
 }
 
-func (c *LocalAPINode) CallWithResponse(api string, args defines.Values) *async_wrapper.AsyncWrapper[defines.Values] {
+func (c *LocalAPINode) CallWithResponse(api string, args defines.Values) async_wrapper.AsyncResult[defines.Values] {
 	if asyncAPI, ok := c.RegednonBlockingApi.Get(api); ok {
 		return async_wrapper.NewAsyncWrapper(func(ac *async_wrapper.AsyncController[defines.Values]) {
 			asyncAPI(args, func(ret defines.Values, err error) {

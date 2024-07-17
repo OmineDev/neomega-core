@@ -107,7 +107,7 @@ func (c *FrameAPIServer) CallOmitResponse(callee defines.NewMasterNodeCaller, ap
 	conn.CallOmitResponse(api, args)
 }
 
-func (c *FrameAPIServer) CallWithResponse(callee defines.NewMasterNodeCaller, api string, args defines.Values) *async_wrapper.AsyncWrapper[defines.Values] {
+func (c *FrameAPIServer) CallWithResponse(callee defines.NewMasterNodeCaller, api string, args defines.Values) async_wrapper.AsyncResult[defines.Values] {
 	conn, ok := c.conns.Get(string(callee))
 	if !ok {
 		return async_wrapper.NewAsyncWrapper(func(ac *async_wrapper.AsyncController[defines.Values]) {
@@ -149,7 +149,7 @@ func (c *FrameAPIServerConn) CallOmitResponse(api string, args defines.Values) {
 	c.FrameConn.WriteBytePacket(byteSlicesToBytes(frames))
 }
 
-func (c *FrameAPIServerConn) CallWithResponse(api string, args defines.Values) *async_wrapper.AsyncWrapper[defines.Values] {
+func (c *FrameAPIServerConn) CallWithResponse(api string, args defines.Values) async_wrapper.AsyncResult[defines.Values] {
 	if !strings.HasPrefix(api, "/") {
 		api = "/" + api
 	}

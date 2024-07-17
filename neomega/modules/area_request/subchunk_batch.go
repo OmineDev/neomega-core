@@ -163,7 +163,7 @@ func newSubChunkBatchResult(dim int32, slots []protocol.SubChunkPos) *SubChunkBa
 	}
 }
 
-func (h *SubChunkBatchReqHandler) GetResult() *async_wrapper.AsyncWrapper[neomega.SubChunkBatchResult] {
+func (h *SubChunkBatchReqHandler) GetResult() async_wrapper.AsyncResult[neomega.SubChunkBatchResult] {
 	return async_wrapper.NewAsyncWrapper(func(ac *async_wrapper.AsyncController[neomega.SubChunkBatchResult]) {
 		if h.finalDim == nil {
 			d := h.getDim()

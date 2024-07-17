@@ -28,7 +28,7 @@ func NewEndPointCmdSender(node defines.APINode, reactable neomega.ReactCore, int
 	return c
 }
 
-func (c *EndPointCmdSender) SendPlayerCmdNeedResponse(cmd string) *async_wrapper.AsyncWrapper[*packet.CommandOutput] {
+func (c *EndPointCmdSender) SendPlayerCmdNeedResponse(cmd string) async_wrapper.AsyncResult[*packet.CommandOutput] {
 	ud, _ := uuid.NewUUID()
 	args := defines.FromString(cmd).Extend(defines.FromUUID(ud))
 	return async_wrapper.NewAsyncWrapper(func(ac *async_wrapper.AsyncController[*packet.CommandOutput]) {
@@ -42,7 +42,7 @@ func (c *EndPointCmdSender) SendPlayerCmdNeedResponse(cmd string) *async_wrapper
 	}, false)
 }
 
-func (c *EndPointCmdSender) SendAICommandNeedResponse(runtimeid string, cmd string) *async_wrapper.AsyncWrapper[*packet.CommandOutput] {
+func (c *EndPointCmdSender) SendAICommandNeedResponse(runtimeid string, cmd string) async_wrapper.AsyncResult[*packet.CommandOutput] {
 	ud, _ := uuid.NewUUID()
 	args := defines.FromString(runtimeid).Extend(defines.FromString(cmd), defines.FromUUID(ud))
 	return async_wrapper.NewAsyncWrapper(func(ac *async_wrapper.AsyncController[*packet.CommandOutput]) {

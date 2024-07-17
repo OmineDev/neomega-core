@@ -62,7 +62,7 @@ func (o *AreaRequester) requestStructure(pos define.CubePos, size define.CubePos
 	})
 }
 
-func (o *AreaRequester) LowLevelRequestStructure(pos define.CubePos, size define.CubePos, structureName string) *async_wrapper.AsyncWrapper[neomega.StructureResponse] {
+func (o *AreaRequester) LowLevelRequestStructure(pos define.CubePos, size define.CubePos, structureName string) async_wrapper.AsyncResult[neomega.StructureResponse] {
 	return async_wrapper.NewAsyncWrapper(func(ac *async_wrapper.AsyncController[neomega.StructureResponse]) {
 		o.structuresMu.Lock()
 		_, ok := o.structureListeners[structureName]
@@ -77,7 +77,7 @@ func (o *AreaRequester) LowLevelRequestStructure(pos define.CubePos, size define
 	}, false)
 }
 
-func (o *AreaRequester) LowLevelRequestStructureWithAutoName(pos define.CubePos, size define.CubePos) *async_wrapper.AsyncWrapper[neomega.StructureResponse] {
+func (o *AreaRequester) LowLevelRequestStructureWithAutoName(pos define.CubePos, size define.CubePos) async_wrapper.AsyncResult[neomega.StructureResponse] {
 	name := string_wrapper.ReplaceWithUnfilteredLetter(uuid.New().String())
 	return o.LowLevelRequestStructure(pos, size, name)
 }

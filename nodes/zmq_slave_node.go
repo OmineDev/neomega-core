@@ -54,7 +54,7 @@ func (c *NewMasterNodeSlaveNode) CallOmitResponse(api string, args defines.Value
 	}
 }
 
-func (c *NewMasterNodeSlaveNode) CallWithResponse(api string, args defines.Values) *async_wrapper.AsyncWrapper[defines.Values] {
+func (c *NewMasterNodeSlaveNode) CallWithResponse(api string, args defines.Values) async_wrapper.AsyncResult[defines.Values] {
 	if c.localAPI.HasAPI(api) {
 		return c.localAPI.CallWithResponse(api, args)
 	} else {

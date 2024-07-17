@@ -59,7 +59,7 @@ func (i *PlayerInteract) SetOnSpecificItemMsgCallBack(itemName string, cb func(c
 	i.specificItemMsgCbs[itemName] = append(i.specificItemMsgCbs[itemName], cb)
 }
 
-func (i *PlayerInteract) GetInput(playerName string) *async_wrapper.AsyncWrapper[*neomega.GameChat] {
+func (i *PlayerInteract) GetInput(playerName string) async_wrapper.AsyncResult[*neomega.GameChat] {
 	return async_wrapper.NewAsyncWrapper(func(ac *async_wrapper.AsyncController[*neomega.GameChat]) {
 		var c chan *neomega.GameChat
 		i.mu.Lock()

@@ -43,7 +43,7 @@ type APINode interface {
 	// Point-to-Point Remote Process Call
 	ExposeAPI(apiName string, api API, newGoroutine bool) error
 	CallOmitResponse(api string, args Values)
-	CallWithResponse(api string, args Values) *async_wrapper.AsyncWrapper[Values]
+	CallWithResponse(api string, args Values) async_wrapper.AsyncResult[Values]
 }
 
 type TopicNetNode interface {

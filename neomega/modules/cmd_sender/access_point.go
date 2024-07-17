@@ -134,7 +134,7 @@ func NewAccessPointCmdSender(node defines.APINode, reactable neomega.ReactCore, 
 	return c
 }
 
-func (c *AccessPointCmdSender) SendPlayerCmdNeedResponse(cmd string) *async_wrapper.AsyncWrapper[*packet.CommandOutput] {
+func (c *AccessPointCmdSender) SendPlayerCmdNeedResponse(cmd string) async_wrapper.AsyncResult[*packet.CommandOutput] {
 	ud, _ := uuid.NewUUID()
 	pkt := c.packCmdWithUUID(cmd, ud, false)
 	return async_wrapper.NewAsyncWrapper(func(ac *async_wrapper.AsyncController[*packet.CommandOutput]) {
@@ -150,7 +150,7 @@ func (c *AccessPointCmdSender) SendPlayerCmdNeedResponse(cmd string) *async_wrap
 	}, false)
 }
 
-func (c *AccessPointCmdSender) SendAICommandNeedResponse(runtimeid string, cmd string) *async_wrapper.AsyncWrapper[*packet.CommandOutput] {
+func (c *AccessPointCmdSender) SendAICommandNeedResponse(runtimeid string, cmd string) async_wrapper.AsyncResult[*packet.CommandOutput] {
 	ud, _ := uuid.NewUUID()
 	pkt := c.packAICmdWithUUID(runtimeid, cmd, ud)
 	return async_wrapper.NewAsyncWrapper(func(ac *async_wrapper.AsyncController[*packet.CommandOutput]) {

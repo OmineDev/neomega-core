@@ -46,7 +46,7 @@ func (c *wsCmd) Send() {
 	c.CmdSender.SendWebSocketCmdOmitResponse(c.cmd)
 }
 
-func (c *wsCmd) SendAndGetResponse() *async_wrapper.AsyncWrapper[*packet.CommandOutput] {
+func (c *wsCmd) SendAndGetResponse() async_wrapper.AsyncResult[*packet.CommandOutput] {
 	return c.CmdSender.SendWebSocketCmdNeedResponse(c.cmd)
 }
 
@@ -59,7 +59,7 @@ func (c *playerCmd) Send() {
 	c.CmdSender.SendPlayerCmdOmitResponse(c.cmd)
 }
 
-func (c *playerCmd) SendAndGetResponse() *async_wrapper.AsyncWrapper[*packet.CommandOutput] {
+func (c *playerCmd) SendAndGetResponse() async_wrapper.AsyncResult[*packet.CommandOutput] {
 	return c.CmdSender.SendPlayerCmdNeedResponse(c.cmd)
 }
 

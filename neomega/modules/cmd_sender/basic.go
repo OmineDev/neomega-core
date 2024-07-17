@@ -182,7 +182,7 @@ func (c *CmdSenderBasic) SendPlayerCmdOmitResponse(cmd string) {
 	c.SendPacket(pkt)
 }
 
-func (c *CmdSenderBasic) SendWebSocketCmdNeedResponse(cmd string) *async_wrapper.AsyncWrapper[*packet.CommandOutput] {
+func (c *CmdSenderBasic) SendWebSocketCmdNeedResponse(cmd string) async_wrapper.AsyncResult[*packet.CommandOutput] {
 	ud, _ := uuid.NewUUID()
 	pkt := c.packCmdWithUUID(cmd, ud, true)
 	return async_wrapper.NewAsyncWrapper(func(ac *async_wrapper.AsyncController[*packet.CommandOutput]) {

@@ -53,9 +53,9 @@ type CmdSender interface {
 	SendPlayerCmdOmitResponse(cmd string)
 	SendAICommandOmitResponse(runtimeid string, cmd string)
 
-	SendWebSocketCmdNeedResponse(cmd string) *async_wrapper.AsyncWrapper[*packet.CommandOutput]
-	SendPlayerCmdNeedResponse(cmd string) *async_wrapper.AsyncWrapper[*packet.CommandOutput]
-	SendAICommandNeedResponse(runtimeid string, cmd string) *async_wrapper.AsyncWrapper[*packet.CommandOutput]
+	SendWebSocketCmdNeedResponse(cmd string) async_wrapper.AsyncResult[*packet.CommandOutput]
+	SendPlayerCmdNeedResponse(cmd string) async_wrapper.AsyncResult[*packet.CommandOutput]
+	SendAICommandNeedResponse(runtimeid string, cmd string) async_wrapper.AsyncResult[*packet.CommandOutput]
 }
 
 // type CmdSender interface {
@@ -247,7 +247,7 @@ type GameChat struct {
 }
 
 type PlayerMsgListener interface {
-	GetInput(playerName string) *async_wrapper.AsyncWrapper[*GameChat]
+	GetInput(playerName string) async_wrapper.AsyncResult[*GameChat]
 	SetOnChatCallBack(func(chat *GameChat))
 	SetOnSpecificCommandBlockTellCallBack(commandBlockName string, cb func(chat *GameChat))
 	SetOnSpecificItemMsgCallBack(itemName string, cb func(chat *GameChat))
@@ -281,7 +281,7 @@ type PlayerKit interface {
 	ActionBar(msg string)
 	Title(msg string)
 	SubTitle(subTitle string, title string)
-	GetInput() *async_wrapper.AsyncWrapper[*GameChat]
+	GetInput() async_wrapper.AsyncResult[*GameChat]
 	// e.g. CheckCondition(func(ok),"m=c","tag=op")
 	CheckCondition(onResult func(bool), conditions ...string)
 	Query(onResult func([]QueryResult), conditions ...string)

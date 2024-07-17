@@ -97,7 +97,7 @@ func (c *FrameAPIClient) CallOmitResponse(api string, args defines.Values) {
 	c.FrameConn.WriteBytePacket(byteSlicesToBytes(frames))
 }
 
-func (c *FrameAPIClient) CallWithResponse(api string, args defines.Values) *async_wrapper.AsyncWrapper[defines.Values] {
+func (c *FrameAPIClient) CallWithResponse(api string, args defines.Values) async_wrapper.AsyncResult[defines.Values] {
 	if !strings.HasPrefix(api, "/") {
 		api = "/" + api
 	}

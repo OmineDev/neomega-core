@@ -44,7 +44,7 @@ type SubChunkBatchResult interface {
 
 type SubChunkBatchReqHandler interface {
 	OmitResult()
-	GetResult() *async_wrapper.AsyncWrapper[SubChunkBatchResult]
+	GetResult() async_wrapper.AsyncResult[SubChunkBatchResult]
 	AutoDimension() SubChunkBatchReqHandler
 	InDimension(dim int32) SubChunkBatchReqHandler
 	X(xOffset int8) SubChunkBatchReqHandler
@@ -62,8 +62,8 @@ type SubChunkBatchReqHandler interface {
 // no size control
 // no translation or any other assemble control
 type LowLevelAreaRequester interface {
-	LowLevelRequestStructure(pos define.CubePos, size define.CubePos, structureName string) *async_wrapper.AsyncWrapper[StructureResponse]
-	LowLevelRequestStructureWithAutoName(pos define.CubePos, size define.CubePos) *async_wrapper.AsyncWrapper[StructureResponse]
+	LowLevelRequestStructure(pos define.CubePos, size define.CubePos, structureName string) async_wrapper.AsyncResult[StructureResponse]
+	LowLevelRequestStructureWithAutoName(pos define.CubePos, size define.CubePos) async_wrapper.AsyncResult[StructureResponse]
 
 	LowLevelRequestChunk(baseChunkPos define.ChunkPos) SubChunkBatchReqHandler
 	SetOnSubChunkResult(nonBlockingCallback func(SubChunkResult))

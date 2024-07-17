@@ -84,7 +84,7 @@ type CmdCannotGetResponse interface {
 
 type CmdCanGetResponse interface {
 	CmdCannotGetResponse
-	SendAndGetResponse() *async_wrapper.AsyncWrapper[*packet.CommandOutput]
+	SendAndGetResponse() async_wrapper.AsyncResult[*packet.CommandOutput]
 }
 
 type GeneralCommand interface {

@@ -12,7 +12,7 @@ type AsyncWrapper[T any] struct {
 	launched         bool
 }
 
-func (w *AsyncWrapper[T]) SetContext(ctx context.Context) *AsyncWrapper[T] {
+func (w *AsyncWrapper[T]) SetContext(ctx context.Context) AsyncResult[T] {
 	if w.launched {
 		panic("set ctx after async func launched")
 	} else {
@@ -21,7 +21,7 @@ func (w *AsyncWrapper[T]) SetContext(ctx context.Context) *AsyncWrapper[T] {
 	return w
 }
 
-func (w *AsyncWrapper[T]) SetTimeout(timeout time.Duration) *AsyncWrapper[T] {
+func (w *AsyncWrapper[T]) SetTimeout(timeout time.Duration) AsyncResult[T] {
 	if w.launched {
 		panic("set ctx after async func launched")
 	} else {
@@ -155,7 +155,7 @@ func (a *AsyncController[T]) SetErr(err error) {
 	}
 }
 
-func NewAsyncWrapper[T any](doFunc func(*AsyncController[T]), runInGotoutine bool) *AsyncWrapper[T] {
+func NewAsyncWrapper[T any](doFunc func(*AsyncController[T]), runInGotoutine bool) AsyncResult[T] {
 	ctx := context.Background()
 	controller := &AsyncController[T]{
 		w:      make(chan struct{}),

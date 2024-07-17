@@ -45,7 +45,7 @@ func (p *PlayerKit) SubTitle(subTitle string, title string) {
 	p.i.info.SubTitleTo(p.userName, subTitle, title)
 }
 
-func (p *PlayerKit) GetInput() *async_wrapper.AsyncWrapper[*neomega.GameChat] {
+func (p *PlayerKit) GetInput() async_wrapper.AsyncResult[*neomega.GameChat] {
 	return p.i.GetInput(p.userName)
 }
 
