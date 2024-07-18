@@ -31,19 +31,14 @@ func (n *NewMasterNodeSlaveNode) PublishMessage(topic string, msg defines.Values
 	n.localTopicNet.publishMessage(topic, msg)
 }
 
-func (n *NewMasterNodeSlaveNode) ExposeAPI(apiName string, api defines.API, newGoroutine bool) error {
-	_, err := n.client.CallWithResponse("/reg_api", defines.FromString(apiName)).SetTimeout(time.Second).BlockGetResult()
-	if err == nil {
+func (n *NewMasterNodeSlaveNode) ExposeAPI(apiName string) async_wrapper.AsyncAPISetHandler[defines.Values, defines.Values] {
+	n.client.CallOmitResponse("/reg_api", defines.FromString(apiName))
+	return async_wrapper.NewApiSetter(func(f func(in defines.Values, setResult func(defines.Values, error))) {
 		// salve to master & salve (other call)
-		n.client.ExposeAPI(apiName, func(args defines.Values) (defines.Values, error) {
-			return api(args)
-		}, false)
+		n.client.ExposeAPI(apiName).CallBackAPI(f)
 		// salve to salve (self) call
-		n.localAPI.ExposeAPI(apiName, api, newGoroutine)
-		return nil
-	} else {
-		return err
-	}
+		n.localAPI.ExposeAPI(apiName).CallBackAPI(f)
+	}, false)
 }
 
 func (c *NewMasterNodeSlaveNode) CallOmitResponse(api string, args defines.Values) {
@@ -135,10 +130,10 @@ func NewSlaveNode(client defines.NewMasterNodeAPIClient) (defines.Node, error) {
 		localTopicNet:     NewLocalTopicNet(),
 		CanCloseWithError: can_close.NewClose(client.Close),
 	}
-	client.ExposeAPI("/ping", func(args defines.Values) (defines.Values, error) {
+	client.ExposeAPI("/ping").InstantAPI(func(args defines.Values) (defines.Values, error) {
 		return defines.Values{[]byte("pong")}, nil
-	}, false)
-	client.ExposeAPI("/on_new_msg", func(args defines.Values) (defines.Values, error) {
+	})
+	client.ExposeAPI("/on_new_msg").InstantAPI(func(args defines.Values) (defines.Values, error) {
 		topic, err := args.ToString()
 		if err != nil {
 			return defines.Empty, nil
@@ -146,12 +141,12 @@ func NewSlaveNode(client defines.NewMasterNodeAPIClient) (defines.Node, error) {
 		msg := args.ConsumeHead()
 		slave.localTopicNet.PublishMessage(topic, msg)
 		return defines.Empty, nil
-	}, false)
-	client.ExposeAPI("/suppress-api", func(args defines.Values) (ret defines.Values, err error) {
+	})
+	client.ExposeAPI("/suppress-api").InstantAPI(func(args defines.Values) (defines.Values, error) {
 		apiName, _ := args.ToString()
 		fmt.Printf("an api is suppress by net api with same name: %v\n", apiName)
 		return defines.Empty, nil
-	}, false)
+	})
 
 	go func() {
 		slave.CloseWithError(<-client.WaitClosed())

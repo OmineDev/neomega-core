@@ -9,6 +9,7 @@ import (
 
 	"github.com/OmineDev/neomega-core/minecraft_neo/can_close"
 	"github.com/OmineDev/neomega-core/nodes/defines"
+	"github.com/OmineDev/neomega-core/utils/async_wrapper"
 	"github.com/OmineDev/neomega-core/utils/sync_wrapper"
 )
 
@@ -119,16 +120,17 @@ func (n *NewMasterNodeMasterNode) suppressClientApiIfAny(apiName string, newProv
 	n.server.CallOmitResponse(defines.NewMasterNodeCaller(provider), "/suppress-api", defines.FromString(apiName))
 }
 
-func (n *NewMasterNodeMasterNode) ExposeAPI(apiName string, api defines.API, newGoroutine bool) error {
+func (n *NewMasterNodeMasterNode) ExposeAPI(apiName string) async_wrapper.AsyncAPISetHandler[defines.Values, defines.Values] {
 	n.suppressClientApiIfAny(apiName, "")
-	// master to master call
-	n.LocalAPINode.ExposeAPI(apiName, api, newGoroutine)
-	// slave to master call
-	n.server.ExposeAPI(apiName, func(caller defines.NewMasterNodeCaller, args defines.Values) (ret defines.Values, err error) {
-		// slave info is omitted
-		return api(args)
-	}, newGoroutine)
-	return nil
+	return async_wrapper.NewApiSetter[defines.Values, defines.Values](func(f func(in defines.Values, setResult func(defines.Values, error))) {
+		// master to master call
+		n.LocalAPINode.ExposeAPI(apiName).CallBackAPI(f)
+		// slave to master call
+		n.server.ExposeAPI(apiName).CallBackAPI(func(in defines.ArgWithCaller, setResult func(defines.Values, error)) {
+			// slave info is omitted
+			f(in.Args, setResult)
+		})
+	}, false)
 }
 
 func (c *NewMasterNodeMasterNode) GetValue(key string) (val defines.Values, found bool) {
@@ -181,13 +183,14 @@ func (c *NewMasterNodeMasterNode) unlock(name string, owner string) {
 }
 
 func (master *NewMasterNodeMasterNode) exposePingFunc() {
-	master.server.ExposeAPI("/ping", func(caller defines.NewMasterNodeCaller, args defines.Values) (defines.Values, error) {
+	master.server.ExposeAPI("/ping").InstantAPI(func(argsWithCaller defines.ArgWithCaller) (defines.Values, error) {
 		return defines.Values{[]byte("pong")}, nil
-	}, false)
+	})
 }
 
 func (master *NewMasterNodeMasterNode) exposeNewClientFunc() {
-	master.server.ExposeAPI("/new_client", func(caller defines.NewMasterNodeCaller, args defines.Values) (defines.Values, error) {
+	master.server.ExposeAPI("/new_client").InstantAPI(func(argsWithCaller defines.ArgWithCaller) (defines.Values, error) {
+		caller := argsWithCaller.Caller
 		nodeInfo := master.onNewNode(string(caller))
 		master.server.SetOnCloseCleanUp(caller, func() {
 			master.onNodeOffline(string(caller), nodeInfo)
@@ -203,11 +206,13 @@ func (master *NewMasterNodeMasterNode) exposeNewClientFunc() {
 			}
 		}()
 		return defines.Empty, nil
-	}, false)
+	})
 }
 
 func (master *NewMasterNodeMasterNode) exposeTopicFunc() {
-	master.server.ExposeAPI("/subscribe", func(caller defines.NewMasterNodeCaller, args defines.Values) (defines.Values, error) {
+	master.server.ExposeAPI("/subscribe").InstantAPI(func(argsWithCaller defines.ArgWithCaller) (defines.Values, error) {
+		caller := argsWithCaller.Caller
+		args := argsWithCaller.Args
 		slaveInfo, ok := master.slaves.Get(string(caller))
 		if !ok {
 			return defines.Empty, fmt.Errorf("must call new client first")
@@ -228,8 +233,10 @@ func (master *NewMasterNodeMasterNode) exposeTopicFunc() {
 		master.subscribeMu.Unlock()
 
 		return defines.Empty, nil
-	}, false)
-	master.server.ExposeAPI("/publish", func(caller defines.NewMasterNodeCaller, args defines.Values) (defines.Values, error) {
+	})
+	master.server.ExposeAPI("/publish").InstantAPI(func(argsWithCaller defines.ArgWithCaller) (defines.Values, error) {
+		caller := argsWithCaller.Caller
+		args := argsWithCaller.Args
 		topic, err := args.ToString()
 		if err != nil {
 			return defines.Empty, fmt.Errorf("cannot get topic name")
@@ -237,12 +244,14 @@ func (master *NewMasterNodeMasterNode) exposeTopicFunc() {
 		msg := args.ConsumeHead()
 		master.publishMessage(string(caller), topic, msg)
 		return defines.Empty, nil
-	}, false)
+	})
 }
 
 func (master *NewMasterNodeMasterNode) exposeRegApiFunc() {
-	master.server.ExposeAPI("/reg_api", func(provider defines.NewMasterNodeCaller, args defines.Values) (defines.Values, error) {
-		apiName, err := args.ToString()
+	master.server.ExposeAPI("/reg_api").InstantAPI(func(argsWithProvider defines.ArgWithCaller) (defines.Values, error) {
+		provider := argsWithProvider.Caller
+		apiArgs := argsWithProvider.Args
+		apiName, err := apiArgs.ToString()
 		if err != nil {
 			return defines.Empty, fmt.Errorf("cannot get api name")
 		}
@@ -255,36 +264,36 @@ func (master *NewMasterNodeMasterNode) exposeRegApiFunc() {
 		slaveInfo.ExposedApis.Set(apiName, struct{}{})
 		master.ApiProvider.Set(apiName, string(provider))
 		// master to slave call
-		master.LocalAPINode.ExposeAPI(apiName, func(args defines.Values) (result defines.Values, err error) {
-			callerInfo, ok := master.slaves.Get(string(provider))
+		master.LocalAPINode.ExposeAPI(apiName).CallBackAPI(func(in defines.Values, onResult func(defines.Values, error)) {
+			providerInfo, ok := master.slaves.Get(string(provider))
 			if !ok {
-				return defines.Empty, fmt.Errorf("not found")
+				onResult(defines.Empty, fmt.Errorf("not found"))
 			} else {
-				return master.server.CallWithResponse(provider, apiName, args).SetContext(callerInfo.Ctx).BlockGetResult()
+				master.server.CallWithResponse(provider, apiName, in).SetContext(providerInfo.Ctx).AsyncGetResult(onResult)
 			}
-		}, true)
+		})
 		// slave to salve call
-		master.server.ExposeAPI(apiName, func(caller defines.NewMasterNodeCaller, args defines.Values) (defines.Values, error) {
-			callerInfo, ok := master.slaves.Get(string(provider))
+		master.server.ExposeAPI(apiName).CallBackAPI(func(inAndCaller defines.ArgWithCaller, onResult func(defines.Values, error)) {
+			providerInfo, ok := master.slaves.Get(string(provider))
 			if !ok {
-				return defines.Empty, fmt.Errorf("not found")
+				onResult(defines.Empty, fmt.Errorf("not found"))
 			}
-			return master.server.CallWithResponse(provider, apiName, args).SetContext(callerInfo.Ctx).BlockGetResult()
-		}, true)
+			master.server.CallWithResponse(provider, apiName, inAndCaller.Args).SetContext(providerInfo.Ctx).AsyncGetResult(onResult)
+		})
 		return defines.Empty, nil
-	}, false)
+	})
 }
 
 func (master *NewMasterNodeMasterNode) exposeNetValueFunc() {
-	master.ExposeAPI("/set-value", func(args defines.Values) (result defines.Values, err error) {
+	master.ExposeAPI("/set-value").InstantAPI(func(args defines.Values) (defines.Values, error) {
 		key, err := args.ToString()
 		if err != nil {
 			return defines.Empty, err
 		}
 		master.values.Set(key, args.ConsumeHead())
 		return defines.Empty, nil
-	}, false)
-	master.ExposeAPI("/get-value", func(args defines.Values) (result defines.Values, err error) {
+	})
+	master.ExposeAPI("/get-value").InstantAPI(func(args defines.Values) (defines.Values, error) {
 		key, err := args.ToString()
 		if err != nil {
 			return defines.Empty, err
@@ -295,13 +304,13 @@ func (master *NewMasterNodeMasterNode) exposeNetValueFunc() {
 		} else {
 			return defines.Empty, nil
 		}
-	}, false)
+	})
 }
 
 func (master *NewMasterNodeMasterNode) exposeNetTagFunc() {
-	master.server.ExposeAPI("/set-tags", func(caller defines.NewMasterNodeCaller, args defines.Values) (defines.Values, error) {
-		tags := args.ToStrings()
-		slaveInfo, ok := master.slaves.Get(string(caller))
+	master.server.ExposeAPI("/set-tags").InstantAPI(func(callerAndArgs defines.ArgWithCaller) (defines.Values, error) {
+		tags := callerAndArgs.Args.ToStrings()
+		slaveInfo, ok := master.slaves.Get(string(callerAndArgs.Caller))
 		if !ok {
 			return defines.Empty, fmt.Errorf("need reg first")
 		}
@@ -309,52 +318,52 @@ func (master *NewMasterNodeMasterNode) exposeNetTagFunc() {
 			slaveInfo.Tags.Set(tag, struct{}{})
 		}
 		return defines.Empty, nil
-	}, false)
-	master.server.ExposeAPI("/check-tag", func(caller defines.NewMasterNodeCaller, args defines.Values) (defines.Values, error) {
-		tag, err := args.ToString()
+	})
+	master.server.ExposeAPI("/check-tag").InstantAPI(func(callerAndArgs defines.ArgWithCaller) (defines.Values, error) {
+		tag, err := callerAndArgs.Args.ToString()
 		if err != nil {
 			return defines.Empty, err
 		}
 		has := master.CheckNetTag(tag)
 		return defines.FromBool(has), nil
-	}, false)
+	})
 }
 
 func (master *NewMasterNodeMasterNode) exposeNetLockFunc() {
-	master.server.ExposeAPI("/try-lock", func(caller defines.NewMasterNodeCaller, args defines.Values) (defines.Values, error) {
-		lockName, err := args.ToString()
+	master.server.ExposeAPI("/try-lock").InstantAPI(func(callerAndArgs defines.ArgWithCaller) (defines.Values, error) {
+		lockName, err := callerAndArgs.Args.ToString()
 		if err != nil {
 			return defines.Empty, err
 		}
-		ms, err := args.ConsumeHead().ToInt64()
-		if err != nil {
-			return defines.Empty, err
-		}
-		lockTime := time.Duration(ms * int64(time.Millisecond))
-		has := master.tryLock(lockName, lockTime, string(caller))
-		return defines.FromBool(has), nil
-	}, false)
-	master.server.ExposeAPI("/reset-lock-time", func(caller defines.NewMasterNodeCaller, args defines.Values) (defines.Values, error) {
-		lockName, err := args.ToString()
-		if err != nil {
-			return defines.Empty, err
-		}
-		ms, err := args.ConsumeHead().ToInt64()
+		ms, err := callerAndArgs.Args.ConsumeHead().ToInt64()
 		if err != nil {
 			return defines.Empty, err
 		}
 		lockTime := time.Duration(ms * int64(time.Millisecond))
-		has := master.resetLockTime(lockName, lockTime, string(caller))
+		has := master.tryLock(lockName, lockTime, string(callerAndArgs.Caller))
 		return defines.FromBool(has), nil
-	}, false)
-	master.server.ExposeAPI("/unlock", func(caller defines.NewMasterNodeCaller, args defines.Values) (defines.Values, error) {
-		lockName, err := args.ToString()
+	})
+	master.server.ExposeAPI("/reset-lock-time").InstantAPI(func(callerAndArgs defines.ArgWithCaller) (defines.Values, error) {
+		lockName, err := callerAndArgs.Args.ToString()
 		if err != nil {
 			return defines.Empty, err
 		}
-		master.unlock(lockName, string(caller))
+		ms, err := callerAndArgs.Args.ConsumeHead().ToInt64()
+		if err != nil {
+			return defines.Empty, err
+		}
+		lockTime := time.Duration(ms * int64(time.Millisecond))
+		has := master.resetLockTime(lockName, lockTime, string(callerAndArgs.Caller))
+		return defines.FromBool(has), nil
+	})
+	master.server.ExposeAPI("/unlock").InstantAPI(func(callerAndArgs defines.ArgWithCaller) (defines.Values, error) {
+		lockName, err := callerAndArgs.Args.ToString()
+		if err != nil {
+			return defines.Empty, err
+		}
+		master.unlock(lockName, string(callerAndArgs.Caller))
 		return defines.Empty, nil
-	}, false)
+	})
 }
 
 func NewMasterNode(server defines.NewMasterNodeAPIServer) defines.Node {

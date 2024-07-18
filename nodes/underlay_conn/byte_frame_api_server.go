@@ -14,7 +14,7 @@ import (
 )
 
 type FrameAPIServer struct {
-	nonBlockingApis *sync_wrapper.SyncKVMap[string, func(defines.NewMasterNodeCaller, defines.Values, func(defines.Values, error))]
+	nonBlockingApis async_wrapper.AsyncAPIGroup[defines.ArgWithCaller, defines.Values]
 	conns           *sync_wrapper.SyncKVMap[string, *FrameAPIServerConn]
 	onClose         *sync_wrapper.SyncKVMap[string, func()]
 	can_close.CanCloseWithError
@@ -22,7 +22,7 @@ type FrameAPIServer struct {
 
 func NewFrameAPIServer(onCloseHook func()) *FrameAPIServer {
 	return &FrameAPIServer{
-		nonBlockingApis:   sync_wrapper.NewSyncKVMap[string, func(defines.NewMasterNodeCaller, defines.Values, func(defines.Values, error))](),
+		nonBlockingApis:   async_wrapper.NewAsyncAPIGroup[defines.ArgWithCaller, defines.Values](),
 		conns:             sync_wrapper.NewSyncKVMap[string, *FrameAPIServerConn](),
 		onClose:           sync_wrapper.NewSyncKVMap[string, func()](),
 		CanCloseWithError: can_close.NewClose(onCloseHook),
@@ -79,24 +79,14 @@ func (s *FrameAPIServer) NewFrameAPIServerWithCtx(conn conn_defines.ByteFrameCon
 }
 
 func (c *FrameAPIServer) ConcealAPI(apiName string) {
-	c.nonBlockingApis.Delete(apiName)
+	c.nonBlockingApis.RemoveAPI(apiName)
 }
 
-func (c *FrameAPIServer) ExposeAPI(apiName string, api defines.NewMasterNodeServerAPI, newGoroutine bool) {
+func (c *FrameAPIServer) ExposeAPI(apiName string) async_wrapper.AsyncAPISetHandler[defines.ArgWithCaller, defines.Values] {
 	if !strings.HasPrefix(apiName, "/") {
 		apiName = "/" + apiName
 	}
-	c.nonBlockingApis.Set(apiName, func(caller defines.NewMasterNodeCaller, args defines.Values, setResult func(defines.Values, error)) {
-		if newGoroutine {
-			go func() {
-				ret, err := api(caller, args)
-				setResult(ret, err)
-			}()
-		} else {
-			ret, err := api(caller, args)
-			setResult(ret, err)
-		}
-	})
+	return c.nonBlockingApis.AddAPI(apiName)
 }
 
 func (c *FrameAPIServer) CallOmitResponse(callee defines.NewMasterNodeCaller, api string, args defines.Values) {
@@ -123,15 +113,16 @@ func (c *FrameAPIServerConn) Run() {
 		indexOrApi := string(frames[0])
 		if strings.HasPrefix(indexOrApi, "/") {
 			index := frames[1]
-			if apiFn, ok := c.nonBlockingApis.Get(indexOrApi); ok {
-				apiFn(defines.NewMasterNodeCaller(c.identity), frames[2:], func(z defines.Values, err error) {
+			c.nonBlockingApis.CallAPI(
+				indexOrApi,
+				defines.ArgWithCaller{defines.NewMasterNodeCaller(c.identity), frames[2:]},
+				func(z defines.Values, err error) {
 					if len(index) == 0 {
 						return
 					}
 					frames := append([][]byte{index}, defines.WrapError(z, err)...)
 					c.FrameConn.WriteBytePacket(byteSlicesToBytes(frames))
 				})
-			}
 		} else {
 			if cb, ok := c.cbs.GetAndDelete(indexOrApi); ok {
 				ret, err := defines.ValueWithErr(frames[1:]).Unwrap()

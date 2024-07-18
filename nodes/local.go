@@ -13,62 +13,42 @@ import (
 )
 
 type LocalAPINode struct {
-	RegednonBlockingApi *sync_wrapper.SyncKVMap[string, defines.AsyncAPI]
+	RegednonBlockingApi async_wrapper.AsyncAPIGroup[defines.Values, defines.Values]
 }
 
 var ErrAPIExist = errors.New("defines.API already exposed")
 var ErrAPINotExist = errors.New("defines.API not exist")
 
-func (n *LocalAPINode) ExposeAPI(apiName string, api defines.API, newGoroutine bool) error {
-	if _, found := n.RegednonBlockingApi.Get(apiName); found {
+func (n *LocalAPINode) ExposeAPI(apiName string) async_wrapper.AsyncAPISetHandler[defines.Values, defines.Values] {
+	if n.RegednonBlockingApi.Exist(apiName) {
 		fmt.Printf("an new api shadow an exist api with same name: %v\n", apiName)
 	}
-	n.RegednonBlockingApi.Set(apiName, func(args defines.Values, setResult func(defines.Values, error)) {
-		if newGoroutine {
-			go func() {
-				rets, err := api(args)
-				setResult(rets, err)
-			}()
-		} else {
-			rets, err := api(args)
-			setResult(rets, err)
-		}
-	})
-	return nil
+	return n.RegednonBlockingApi.AddAPI(apiName)
 }
 
 func (n *LocalAPINode) RemoveAPI(apiName string) {
-	n.RegednonBlockingApi.Delete(apiName)
+	n.RegednonBlockingApi.RemoveAPI(apiName)
 }
 
 func (n *LocalAPINode) HasAPI(apiName string) bool {
-	_, found := n.RegednonBlockingApi.Get(apiName)
-	return found
+	return n.RegednonBlockingApi.Exist(apiName)
 }
 
 func (c *LocalAPINode) CallWithResponse(api string, args defines.Values) async_wrapper.AsyncResult[defines.Values] {
-	if asyncAPI, ok := c.RegednonBlockingApi.Get(api); ok {
-		return async_wrapper.NewAsyncWrapper(func(ac *async_wrapper.AsyncController[defines.Values]) {
-			asyncAPI(args, func(ret defines.Values, err error) {
-				ac.SetResultAndErr(ret, err)
-			})
-		}, false)
-	} else {
-		return async_wrapper.NewAsyncWrapper(func(ac *async_wrapper.AsyncController[defines.Values]) {
-			ac.SetErr(ErrAPINotExist)
-		}, false)
-	}
+	return async_wrapper.NewAsyncWrapper(func(ac *async_wrapper.AsyncController[defines.Values]) {
+		c.RegednonBlockingApi.CallAPI(api, args, func(ret defines.Values, err error) {
+			ac.SetResultAndErr(ret, err)
+		})
+	}, false)
 }
 
 func (c *LocalAPINode) CallOmitResponse(api string, args defines.Values) {
-	if asyncAPI, ok := c.RegednonBlockingApi.Get(api); ok {
-		asyncAPI(args, func(defines.Values, error) {})
-	}
+	c.RegednonBlockingApi.CallAPI(api, args, func(ret defines.Values, err error) {})
 }
 
 func NewLocalAPINode() *LocalAPINode {
 	return &LocalAPINode{
-		RegednonBlockingApi: sync_wrapper.NewSyncKVMap[string, defines.AsyncAPI](),
+		RegednonBlockingApi: async_wrapper.NewAsyncAPIGroup[defines.Values, defines.Values](),
 	}
 }
 

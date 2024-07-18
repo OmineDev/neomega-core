@@ -36,12 +36,11 @@ func WrapError(rets Values, err error) ValueWithErr {
 	}
 }
 
-type API func(args Values) (result Values, err error)
 type MsgListener func(msg Values)
 
 type APINode interface {
 	// Point-to-Point Remote Process Call
-	ExposeAPI(apiName string, api API, newGoroutine bool) error
+	ExposeAPI(apiName string) async_wrapper.AsyncAPISetHandler[Values, Values]
 	CallOmitResponse(api string, args Values)
 	CallWithResponse(api string, args Values) async_wrapper.AsyncResult[Values]
 }

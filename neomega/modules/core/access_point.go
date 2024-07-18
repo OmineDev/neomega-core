@@ -25,18 +25,18 @@ func (i *AccessPointInteractCore) SendPacketBytes(packet []byte) {
 
 func NewAccessPointInteractCore(node defines.APINode, conn minecraft_conn.Conn) neomega.InteractCore {
 	core := &AccessPointInteractCore{Conn: conn}
-	node.ExposeAPI("send-packet-bytes", func(args defines.Values) (result defines.Values, err error) {
+	node.ExposeAPI("send-packet-bytes").InstantAPI(func(args defines.Values) (result defines.Values, err error) {
 		packetBytes, err := args.ToBytes()
 		if err != nil {
 			return defines.Empty, err
 		}
 		conn.WriteBytePacket(packetBytes)
 		return defines.Empty, nil
-	}, false)
-	node.ExposeAPI("get-shield-id", func(args defines.Values) (result defines.Values, err error) {
+	})
+	node.ExposeAPI("get-shield-id").InstantAPI(func(args defines.Values) (result defines.Values, err error) {
 		shieldID := conn.GetShieldID()
 		return defines.FromInt32(shieldID), nil
-	}, false)
+	})
 	return core
 }
 

@@ -16,15 +16,14 @@ func Master() {
 		panic(err)
 	}
 	master := nodes.NewMasterNode(server)
-	<-master.WaitClosed()
-	master.ExposeAPI("echo_master", func(args defines.Values) (result defines.Values, err error) {
+	master.ExposeAPI("echo_master").InstantAPI(func(args defines.Values) (result defines.Values, err error) {
 		return defines.FromString("echo_master echo").Extend(args), nil
-	}, false)
-
-	master.ExposeAPI("echo", func(args defines.Values) (result defines.Values, err error) {
+	})
+	master.ExposeAPI("echo").InstantAPI(func(args defines.Values) (result defines.Values, err error) {
 		fmt.Println("master %v recv:", args.ToStrings())
 		return defines.FromString("master echo").Extend(args), nil
-	}, false)
+	})
+	<-master.WaitClosed()
 	fmt.Println("master closed")
 }
 
@@ -40,20 +39,20 @@ func Slave(id string) {
 	}
 	go func() {
 		ret, err := slave.CallWithResponse("echo_master", defines.FromStrings("hello", "world", fmt.Sprintf("%v", id))).BlockGetResult()
-		fmt.Printf("slave %v get response: %v %v\n", id, ret.ToStrings(), err)
+		fmt.Printf("slave %v call echo_master get response: %v %v\n", id, ret.ToStrings(), err)
 	}()
-	slave.ExposeAPI(fmt.Sprintf("slave-echo-%v", id), func(args defines.Values) (defines.Values, error) {
+	slave.ExposeAPI(fmt.Sprintf("slave-echo-%v", id)).InstantAPI(func(args defines.Values) (result defines.Values, err error) {
 		fmt.Println(fmt.Sprintf("slave-echo %v recv:", id), args.ToStrings())
 		return defines.FromString(fmt.Sprintf("slave-echo-%v echo", id)).Extend(args), nil
-	}, false)
-	slave.ExposeAPI("echo", func(args defines.Values) (defines.Values, error) {
+	})
+	slave.ExposeAPI("echo").InstantAPI(func(args defines.Values) (result defines.Values, err error) {
 		fmt.Println(fmt.Sprintf("slave %v recv:", id), args.ToStrings())
 		return defines.FromString(fmt.Sprintf("slave %v echo", id)).Extend(args), nil
-	}, false)
+	})
 	ret, err := slave.CallWithResponse(fmt.Sprintf("slave-echo-%v", id), defines.FromStrings("hello", "world", fmt.Sprintf("%v", id))).BlockGetResult()
-	fmt.Printf("slave %v get response: %v %v\n", id, ret.ToStrings(), err)
+	fmt.Printf("slave %v call slave-echo-%v get response: %v %v\n", id, id, ret.ToStrings(), err)
 	ret, err = slave.CallWithResponse("echo", defines.FromStrings("hello", "world", fmt.Sprintf("%v", id))).BlockGetResult()
-	fmt.Printf("slave %v get response: %v %v\n", id, ret.ToStrings(), err)
+	fmt.Printf("slave %v call echo get response: %v %v\n", id, ret.ToStrings(), err)
 	<-slave.WaitClosed()
 	fmt.Printf("slave %v closed\n", id)
 }

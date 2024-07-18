@@ -39,10 +39,10 @@ func NewAccessPointMicroUQHolder(node defines.APINode, conn minecraft_conn.Conn,
 		NewExtendInfoHolder(conn),
 		sync.Mutex{},
 	}
-	node.ExposeAPI("get-uqholder", func(args defines.Values) (result defines.Values, err error) {
+	node.ExposeAPI("get-uqholder").InstantAPI(func(args defines.Values) (result defines.Values, err error) {
 		data, err := uq.Marshal()
 		return defines.FromFrags(data), err
-	}, false)
+	})
 	reactCore.SetAnyPacketCallBack(uq.UpdateFromPacket, false)
 	return uq
 }

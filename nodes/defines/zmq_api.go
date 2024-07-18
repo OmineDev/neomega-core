@@ -6,19 +6,19 @@ import (
 )
 
 type NewMasterNodeCaller string
-
-type NewMasterNodeClientAPI func(args Values) (ret Values, err error)
-type NewMasterNodeServerAPI func(caller NewMasterNodeCaller, args Values) (ret Values, err error)
-
+type ArgWithCaller struct {
+	Caller NewMasterNodeCaller
+	Args   Values
+}
 type NewMasterNodeAPIClient interface {
 	CallOmitResponse(api string, args Values)
 	CallWithResponse(api string, args Values) async_wrapper.AsyncResult[Values]
-	ExposeAPI(apiName string, api NewMasterNodeClientAPI, newGoroutine bool)
+	ExposeAPI(apiName string) async_wrapper.AsyncAPISetHandler[Values, Values]
 	can_close.CanClose
 }
 
 type NewMasterNodeAPIServer interface {
-	ExposeAPI(apiName string, api NewMasterNodeServerAPI, newGoroutine bool)
+	ExposeAPI(apiName string) async_wrapper.AsyncAPISetHandler[ArgWithCaller, Values]
 	ConcealAPI(apiName string)
 	CallOmitResponse(callee NewMasterNodeCaller, api string, args Values)
 	CallWithResponse(callee NewMasterNodeCaller, api string, args Values) async_wrapper.AsyncResult[Values]

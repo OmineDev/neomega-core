@@ -6,9 +6,9 @@ import (
 	"github.com/OmineDev/neomega-core/utils/sync_wrapper"
 )
 
-// PackInstanceAPI pack an api which can finish in very short time
+// PackInstantAPI pack an api which can finish in very short time
 // to callback format
-func PackInstanceAPI[inT any, outT any](
+func PackInstantAPI[inT any, outT any](
 	inAPI func(in inT) (outT, error),
 ) func(in inT, setResult func(outT, error)) {
 	return func(in inT, setResult func(outT, error)) {
@@ -48,7 +48,7 @@ func PackCallBackAPI[inT any, outT any](
 
 type AsyncAPISetHandler[inT any, outT any] interface {
 	// set an api which can finish in very short time
-	InstanceAPI(func(in inT) (outT, error))
+	InstantAPI(func(in inT) (outT, error))
 	// set an api which could need a very long time to execute/finish
 	BlockingAPI(func(in inT) (outT, error))
 	// set an api which is in callback format with double result set check
@@ -56,8 +56,12 @@ type AsyncAPISetHandler[inT any, outT any] interface {
 }
 
 type AsyncAPIGroup[inT any, outT any] interface {
+	// check api exist
+	Exist(apiName string) bool
 	// Add a new api
 	AddAPI(apiName string) AsyncAPISetHandler[inT, outT]
+	// Remove an api
+	RemoveAPI(apiName string)
 	// call api without blocking
 	// if apiName not exist, return api not exist error
 	CallAPI(apiName string, in inT, onResult func(ret outT, err error))
@@ -79,31 +83,58 @@ func (g *baseAPIGroup[inT, outT]) CallAPI(apiName string, in inT, onResult func(
 	}
 }
 
-type APISetter[inT any, outT any] struct {
-	onSet func(func(in inT, setResult func(outT, error)))
+func (g *baseAPIGroup[inT, outT]) Exist(apiName string) bool {
+	api, found := g.apis.Get(apiName)
+	if !found || api == nil {
+		return false
+	} else {
+		return true
+	}
+}
+
+type apiSetter[inT any, outT any] struct {
+	onSet          func(func(in inT, setResult func(outT, error)))
+	checkDoubleSet bool
+}
+
+func NewApiSetter[inT any, outT any](cb func(func(in inT, setResult func(outT, error))), checkDoubleSet bool) AsyncAPISetHandler[inT, outT] {
+	return &apiSetter[inT, outT]{
+		onSet:          cb,
+		checkDoubleSet: checkDoubleSet,
+	}
 }
 
 // set an api which can finish in very short time
-func (s *APISetter[inT, outT]) InstanceAPI(f func(in inT) (outT, error)) {
-	s.onSet(PackInstanceAPI(f))
+func (s *apiSetter[inT, outT]) InstantAPI(f func(in inT) (outT, error)) {
+	s.onSet(PackInstantAPI(f))
 }
 
 // set an api which could need a very long time to execute/finish
-func (s *APISetter[inT, outT]) BlockingAPI(f func(in inT) (outT, error)) {
+func (s *apiSetter[inT, outT]) BlockingAPI(f func(in inT) (outT, error)) {
 	s.onSet(PackBlockingAPI(f))
 }
 
 // set an api which is in callback format with double result set check
-func (s *APISetter[inT, outT]) CallBackAPI(f func(in inT, setResult func(outT, error))) {
-	s.onSet(PackCallBackAPI(f))
+func (s *apiSetter[inT, outT]) CallBackAPI(f func(in inT, setResult func(outT, error))) {
+	if s.checkDoubleSet {
+		s.onSet(PackCallBackAPI(f))
+	} else {
+		s.onSet(f)
+	}
+
 }
 
 func (g *baseAPIGroup[inT, outT]) AddAPI(apiName string) AsyncAPISetHandler[inT, outT] {
-	return &APISetter[inT, outT]{
+	return &apiSetter[inT, outT]{
 		onSet: func(f func(in inT, setResult func(outT, error))) {
 			g.apis.Set(apiName, f)
 		},
+		checkDoubleSet: true,
 	}
+}
+
+func (g *baseAPIGroup[inT, outT]) RemoveAPI(apiName string) {
+	g.apis.Delete(apiName)
 }
 
 func NewAsyncAPIGroup[inT any, outT any]() AsyncAPIGroup[inT, outT] {

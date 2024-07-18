@@ -23,8 +23,8 @@ func (n *group) translateName(name string) string {
 	}
 }
 
-func (n *group) ExposeAPI(apiName string, api defines.API, newGoroutine bool) error {
-	return n.Node.ExposeAPI(n.translateName(apiName), api, newGoroutine)
+func (n *group) ExposeAPI(apiName string) async_wrapper.AsyncAPISetHandler[defines.Values, defines.Values] {
+	return n.Node.ExposeAPI(n.translateName(apiName))
 }
 func (n *group) CallOmitResponse(api string, args defines.Values) {
 	n.Node.CallOmitResponse(n.translateName(api), args)

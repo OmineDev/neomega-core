@@ -67,7 +67,7 @@ func NewAccessPointCmdSender(node defines.APINode, reactable neomega.ReactCore, 
 		<-ctx.Done()
 		fmt.Printf(i18n.T(i18n.S_send_commandfeedback_is_set_to_be)+"\n", c.expectedCmdFeedback)
 	}()
-	node.ExposeAPI("send-player-command", func(args defines.Values) (result defines.Values, err error) {
+	node.ExposeAPI("send-player-command").InstantAPI(func(args defines.Values) (result defines.Values, err error) {
 		cmd, err := args.ToString()
 		if err != nil {
 			return
@@ -83,8 +83,8 @@ func NewAccessPointCmdSender(node defines.APINode, reactable neomega.ReactCore, 
 		}
 		c.launchOrDeferPlayerCommand(do)
 		return defines.Empty, nil
-	}, false)
-	node.ExposeAPI("send-ai-command", func(args defines.Values) (result defines.Values, err error) {
+	})
+	node.ExposeAPI("send-ai-command").InstantAPI(func(args defines.Values) (result defines.Values, err error) {
 		// fmt.Println("ai command")
 		runtimeid, err := args.ToString()
 		if err != nil {
@@ -106,7 +106,7 @@ func NewAccessPointCmdSender(node defines.APINode, reactable neomega.ReactCore, 
 		}
 		c.launchOrDeferPlayerCommand(do)
 		return defines.Empty, nil
-	}, false)
+	})
 	// deduce command feed back
 	// no we cannot do this since bot currently not pass the challenge
 	// go func() {

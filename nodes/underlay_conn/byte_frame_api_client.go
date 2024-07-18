@@ -17,7 +17,7 @@ type FrameAPIClient struct {
 	can_close.CanCloseWithError
 	FrameConn       conn_defines.ByteFrameConnBase
 	cbs             *sync_wrapper.SyncKVMap[string, func(defines.Values, error)]
-	nonBlockingApis *sync_wrapper.SyncKVMap[string, func(defines.Values, func(defines.Values, error))]
+	nonBlockingApis async_wrapper.AsyncAPIGroup[defines.Values, defines.Values]
 }
 
 func NewFrameAPIClient(conn conn_defines.ByteFrameConnBase) *FrameAPIClient {
@@ -26,7 +26,7 @@ func NewFrameAPIClient(conn conn_defines.ByteFrameConnBase) *FrameAPIClient {
 		CanCloseWithError: can_close.NewClose(conn.Close),
 		FrameConn:         conn,
 		cbs:               sync_wrapper.NewSyncKVMap[string, func(defines.Values, error)](),
-		nonBlockingApis:   sync_wrapper.NewSyncKVMap[string, func(defines.Values, func(defines.Values, error))](),
+		nonBlockingApis:   async_wrapper.NewAsyncAPIGroup[defines.Values, defines.Values](),
 	}
 	go func() {
 		// close when underlay err
@@ -47,21 +47,11 @@ func NewFrameAPIClientWithCtx(conn conn_defines.ByteFrameConnBase, ctx context.C
 	return c
 }
 
-func (c *FrameAPIClient) ExposeAPI(apiName string, api defines.NewMasterNodeClientAPI, newGoroutine bool) {
+func (c *FrameAPIClient) ExposeAPI(apiName string) async_wrapper.AsyncAPISetHandler[defines.Values, defines.Values] {
 	if !strings.HasPrefix(apiName, "/") {
 		apiName = "/" + apiName
 	}
-	c.nonBlockingApis.Set(apiName, func(args defines.Values, setResult func(defines.Values, error)) {
-		if newGoroutine {
-			go func() {
-				ret, err := api(args)
-				setResult(ret, err)
-			}()
-		} else {
-			ret, err := api(args)
-			setResult(ret, err)
-		}
-	})
+	return c.nonBlockingApis.AddAPI(apiName)
 }
 
 func (c *FrameAPIClient) Run() (err error) {
@@ -70,15 +60,13 @@ func (c *FrameAPIClient) Run() (err error) {
 		indexOrApi := string(frames[0])
 		if strings.HasPrefix(indexOrApi, "/") {
 			index := frames[1]
-			if apiFn, ok := c.nonBlockingApis.Get(indexOrApi); ok {
-				apiFn(frames[2:], func(z defines.Values, err error) {
-					if len(index) == 0 {
-						return
-					}
-					frames := append([][]byte{index}, defines.WrapError(z, err)...)
-					c.FrameConn.WriteBytePacket(byteSlicesToBytes(frames))
-				})
-			}
+			c.nonBlockingApis.CallAPI(indexOrApi, frames[2:], func(z defines.Values, err error) {
+				if len(index) == 0 {
+					return
+				}
+				frames := append([][]byte{index}, defines.WrapError(z, err)...)
+				c.FrameConn.WriteBytePacket(byteSlicesToBytes(frames))
+			})
 		} else {
 			if cb, ok := c.cbs.GetAndDelete(indexOrApi); ok {
 				ret, err := defines.ValueWithErr(frames[1:]).Unwrap()

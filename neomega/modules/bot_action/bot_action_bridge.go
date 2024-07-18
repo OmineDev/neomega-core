@@ -37,7 +37,7 @@ func NewEndPointBotAction(node defines.Node, uq neomega.MicroUQHolder, ctrl neom
 }
 
 func (a *AccessPointBotActionWithPersistData) ExposeInventoryContent() {
-	a.node.ExposeAPI("get_inventory_content", func(args defines.Values) (result defines.Values, err error) {
+	a.node.ExposeAPI("get_inventory_content").BlockingAPI(func(args defines.Values) (result defines.Values, err error) {
 		var windowID uint32
 		var slot uint8
 		if err = (&ArgsChain{resArgs: args}).TakeUint32(&windowID).TakeUint8(&slot).Error(); err != nil {
@@ -51,7 +51,7 @@ func (a *AccessPointBotActionWithPersistData) ExposeInventoryContent() {
 		writer := protocol.NewWriter(buf, 0)
 		writer.ItemInstance(inventoryContent)
 		return defines.FromFrags(buf.Bytes()), nil
-	}, true)
+	})
 }
 
 func (e *EndPointBotAction) GetInventoryContent(windowID uint32, slotID uint8) (*protocol.ItemInstance, bool) {
@@ -72,7 +72,7 @@ func (e *EndPointBotAction) GetInventoryContent(windowID uint32, slotID uint8) (
 }
 
 func (a *AccessPointBotActionWithPersistData) ExposeUseHotBarItemOnBlock() {
-	a.node.ExposeAPI("use_hot_bar_item_on_block", func(args defines.Values) (result defines.Values, err error) {
+	a.node.ExposeAPI("use_hot_bar_item_on_block").BlockingAPI(func(args defines.Values) (result defines.Values, err error) {
 		var blockPos define.CubePos
 		var blockNEMCRuntimeID uint32
 		var face int32
@@ -82,11 +82,11 @@ func (a *AccessPointBotActionWithPersistData) ExposeUseHotBarItemOnBlock() {
 		}
 		err = a.UseHotBarItemOnBlock(blockPos, blockNEMCRuntimeID, face, slot)
 		return defines.Empty, err
-	}, true)
+	})
 }
 
 func (a *AccessPointBotActionWithPersistData) ExposeUseHotBarItemOnBlockWithOffset() {
-	a.node.ExposeAPI("use_hot_bar_item_on_block_with_offset", func(args defines.Values) (result defines.Values, err error) {
+	a.node.ExposeAPI("use_hot_bar_item_on_block_with_offset").BlockingAPI(func(args defines.Values) (result defines.Values, err error) {
 		var blockPos define.CubePos
 		var blockNEMCRuntimeID uint32
 		var face int32
@@ -97,7 +97,7 @@ func (a *AccessPointBotActionWithPersistData) ExposeUseHotBarItemOnBlockWithOffs
 		}
 		err = a.UseHotBarItemOnBlockWithBotOffset(blockPos, offsetPos, blockNEMCRuntimeID, face, slot)
 		return defines.Empty, err
-	}, true)
+	})
 }
 
 func (e *EndPointBotAction) UseHotBarItemOnBlock(blockPos define.CubePos, blockNEMCRuntimeID uint32, face int32, slot uint8) (err error) {
@@ -113,14 +113,14 @@ func (e *EndPointBotAction) UseHotBarItemOnBlockWithBotOffset(blockPos define.Cu
 }
 
 func (a *AccessPointBotActionWithPersistData) ExposeSelectHotBar() {
-	a.node.ExposeAPI("select_hot_bar", func(args defines.Values) (result defines.Values, err error) {
+	a.node.ExposeAPI("select_hot_bar").BlockingAPI(func(args defines.Values) (result defines.Values, err error) {
 		var slot uint8
 		if err = (&ArgsChain{resArgs: args}).TakeUint8(&slot).Error(); err != nil {
 			return defines.Empty, err
 		}
 		err = a.selectHotBar(slot)
 		return defines.Empty, err
-	}, true)
+	})
 }
 
 func (e *EndPointBotAction) SelectHotBar(slotID uint8) error {
@@ -130,7 +130,7 @@ func (e *EndPointBotAction) SelectHotBar(slotID uint8) error {
 }
 
 func (a *AccessPointBotActionWithPersistData) ExposeMoveItemFromInventoryToEmptyContainerSlots() {
-	a.node.ExposeAPI("move_item_from_inventory_slot_to_empty_container_slots", func(args defines.Values) (result defines.Values, err error) {
+	a.node.ExposeAPI("move_item_from_inventory_slot_to_empty_container_slots").BlockingAPI(func(args defines.Values) (result defines.Values, err error) {
 		var pos define.CubePos
 		var blockNEMCRuntimeID uint32
 		var blockName string
@@ -149,7 +149,7 @@ func (a *AccessPointBotActionWithPersistData) ExposeMoveItemFromInventoryToEmpty
 		}
 		err = a.MoveItemFromInventoryToEmptyContainerSlots(pos, blockNEMCRuntimeID, blockName, switchOperations)
 		return defines.Empty, err
-	}, true)
+	})
 }
 
 func (e *EndPointBotAction) MoveItemFromInventoryToEmptyContainerSlots(pos define.CubePos, blockNemcRtid uint32, blockName string, switchOperations map[uint8]uint8) error {
@@ -162,7 +162,7 @@ func (e *EndPointBotAction) MoveItemFromInventoryToEmptyContainerSlots(pos defin
 }
 
 func (a *AccessPointBotActionWithPersistData) ExposeUseAnvil() {
-	a.node.ExposeAPI("use_anvil", func(args defines.Values) (result defines.Values, err error) {
+	a.node.ExposeAPI("use_anvil").BlockingAPI(func(args defines.Values) (result defines.Values, err error) {
 		var pos define.CubePos
 		var blockNEMCRuntimeID uint32
 		var slot uint8
@@ -172,7 +172,7 @@ func (a *AccessPointBotActionWithPersistData) ExposeUseAnvil() {
 		}
 		err = a.UseAnvil(pos, blockNEMCRuntimeID, slot, newName)
 		return defines.Empty, err
-	}, true)
+	})
 }
 
 func (e *EndPointBotAction) UseAnvil(pos define.CubePos, blockNemcRtid uint32, slot uint8, newName string) error {
@@ -182,14 +182,14 @@ func (e *EndPointBotAction) UseAnvil(pos define.CubePos, blockNemcRtid uint32, s
 }
 
 func (a *AccessPointBotActionWithPersistData) ExposeDropItemFromHotBar() {
-	a.node.ExposeAPI("drop_item_from_hot_bar", func(args defines.Values) (result defines.Values, err error) {
+	a.node.ExposeAPI("drop_item_from_hot_bar").BlockingAPI(func(args defines.Values) (result defines.Values, err error) {
 		var slot uint8
 		if err = (&ArgsChain{resArgs: args}).TakeUint8(&slot).Error(); err != nil {
 			return defines.Empty, err
 		}
 		err = a.DropItemFromHotBar(slot)
 		return defines.Empty, err
-	}, true)
+	})
 }
 
 func (e *EndPointBotAction) DropItemFromHotBar(slot uint8) error {
@@ -199,14 +199,14 @@ func (e *EndPointBotAction) DropItemFromHotBar(slot uint8) error {
 }
 
 func (a *AccessPointBotActionWithPersistData) ExposeMoveItemInsideHotBarOrInventory() {
-	a.node.ExposeAPI("move_item_inside_hotbar_or_inventory", func(args defines.Values) (result defines.Values, err error) {
+	a.node.ExposeAPI("move_item_inside_hotbar_or_inventory").BlockingAPI(func(args defines.Values) (result defines.Values, err error) {
 		var sourceSlot, targetSlot, count uint8
 		if err = (&ArgsChain{resArgs: args}).TakeUint8(&sourceSlot).TakeUint8(&targetSlot).TakeUint8(&count).Error(); err != nil {
 			return defines.Empty, err
 		}
 		err = a.MoveItemInsideHotBarOrInventory(sourceSlot, targetSlot, count)
 		return defines.Empty, err
-	}, true)
+	})
 }
 
 func (e *EndPointBotAction) MoveItemInsideHotBarOrInventory(sourceSlot, targetSlot, count uint8) error {
@@ -216,14 +216,14 @@ func (e *EndPointBotAction) MoveItemInsideHotBarOrInventory(sourceSlot, targetSl
 }
 
 func (a *AccessPointBotActionWithPersistData) ExposeUseHotBarItem() {
-	a.node.ExposeAPI("use_hotbar_item", func(args defines.Values) (result defines.Values, err error) {
+	a.node.ExposeAPI("use_hotbar_item").BlockingAPI(func(args defines.Values) (result defines.Values, err error) {
 		var slot uint8
 		if err = (&ArgsChain{resArgs: args}).TakeUint8(&slot).Error(); err != nil {
 			return defines.Empty, err
 		}
 		err = a.UseHotBarItem(slot)
 		return defines.Empty, err
-	}, true)
+	})
 }
 
 func (e *EndPointBotAction) UseHotBarItem(slot uint8) (err error) {
