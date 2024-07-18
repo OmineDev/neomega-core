@@ -35,8 +35,8 @@ func PackBlockingAPI[inT any, outT any](
 func PackCallBackAPI[inT any, outT any](
 	inAPI func(in inT, setResult func(outT, error)),
 ) func(in inT, setResult func(outT, error)) {
-	set := false
 	return func(in inT, setResult func(outT, error)) {
+		set := false
 		inAPI(in, func(ot outT, err error) {
 			if !set {
 				set = true
