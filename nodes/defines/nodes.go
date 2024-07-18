@@ -36,8 +36,6 @@ func WrapError(rets Values, err error) ValueWithErr {
 	}
 }
 
-type MsgListener func(msg Values)
-
 type APINode interface {
 	// Point-to-Point Remote Process Call
 	ExposeAPI(apiName string) async_wrapper.AsyncAPISetHandler[Values, Values]
@@ -48,7 +46,7 @@ type APINode interface {
 type TopicNetNode interface {
 	// Multi-to-Multi Message Publish & Subscribe
 	PublishMessage(topic string, msg Values)
-	ListenMessage(topic string, listener MsgListener, newGoroutine bool)
+	ListenMessage(topic string, listener func(msg Values), newGoroutine bool)
 }
 
 type FundamentalNode interface {

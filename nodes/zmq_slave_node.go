@@ -11,9 +11,9 @@ import (
 
 type NewMasterNodeSlaveNode struct {
 	client        defines.NewMasterNodeAPIClient
-	localAPI      *LocalAPINode
+	localAPI      *LocalAPINode[defines.Values, defines.Values]
 	localTags     *LocalTags
-	localTopicNet *LocalTopicNet
+	localTopicNet *LocalTopicNet[defines.Values]
 	can_close.CanCloseWithError
 }
 
@@ -21,7 +21,7 @@ func (n *NewMasterNodeSlaveNode) IsMaster() bool {
 	return false
 }
 
-func (n *NewMasterNodeSlaveNode) ListenMessage(topic string, listener defines.MsgListener, newGoroutine bool) {
+func (n *NewMasterNodeSlaveNode) ListenMessage(topic string, listener func(msg defines.Values), newGoroutine bool) {
 	n.client.CallWithResponse("/subscribe", defines.FromString(topic)).BlockGetResult()
 	n.localTopicNet.ListenMessage(topic, listener, newGoroutine)
 }
@@ -125,9 +125,9 @@ func (c *NewMasterNodeSlaveNode) Unlock(name string) {
 func NewSlaveNode(client defines.NewMasterNodeAPIClient) (defines.Node, error) {
 	slave := &NewMasterNodeSlaveNode{
 		client:            client,
-		localAPI:          NewLocalAPINode(),
+		localAPI:          NewLocalAPINode[defines.Values, defines.Values](),
 		localTags:         NewLocalTags(),
-		localTopicNet:     NewLocalTopicNet(),
+		localTopicNet:     NewLocalTopicNet[defines.Values](),
 		CanCloseWithError: can_close.NewClose(client.Close),
 	}
 	client.ExposeAPI("/ping").InstantAPI(func(args defines.Values) (defines.Values, error) {

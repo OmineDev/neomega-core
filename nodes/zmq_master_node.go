@@ -27,10 +27,10 @@ var ErrNotReg = errors.New("need reg node first")
 
 type NewMasterNodeMasterNode struct {
 	server defines.NewMasterNodeAPIServer
-	*LocalAPINode
+	*LocalAPINode[defines.Values, defines.Values]
 	*LocalLock
 	*LocalTags
-	*LocalTopicNet
+	*LocalTopicNet[defines.Values]
 	slaves                *sync_wrapper.SyncKVMap[string, *SlaveNodeInfo]
 	subscribeMu           sync.RWMutex
 	slaveSubscribedTopics map[string]map[string]chan defines.Values
@@ -87,7 +87,8 @@ func (n *NewMasterNodeMasterNode) onNodeOffline(id string, info *SlaveNodeInfo) 
 }
 
 func (n *NewMasterNodeMasterNode) publishMessage(source string, topic string, msg defines.Values) {
-	msgWithTopic := n.LocalTopicNet.publishMessage(topic, msg)
+	msgWithTopic := defines.FromString(topic).Extend(msg)
+	n.LocalTopicNet.publishMessage(topic, msg)
 	n.subscribeMu.RLock()
 	defer n.subscribeMu.RUnlock()
 	subScribers, ok := n.slaveSubscribedTopics[topic]
@@ -369,10 +370,10 @@ func (master *NewMasterNodeMasterNode) exposeNetLockFunc() {
 func NewMasterNode(server defines.NewMasterNodeAPIServer) defines.Node {
 	master := &NewMasterNodeMasterNode{
 		server:                server,
-		LocalAPINode:          NewLocalAPINode(),
+		LocalAPINode:          NewLocalAPINode[defines.Values, defines.Values](),
 		LocalLock:             NewLocalLock(),
 		LocalTags:             NewLocalTags(),
-		LocalTopicNet:         NewLocalTopicNet(),
+		LocalTopicNet:         NewLocalTopicNet[defines.Values](),
 		slaves:                sync_wrapper.NewSyncKVMap[string, *SlaveNodeInfo](),
 		subscribeMu:           sync.RWMutex{},
 		slaveSubscribedTopics: map[string]map[string]chan defines.Values{},

@@ -132,7 +132,7 @@ func NewMicroOmega(
 		}
 	})
 
-	if !isAccessPoint {
+	if !isAccessPoint && true {
 		omega.PostponeActionsAfterChallengePassed("check bot command status each 10s", func() {
 			go func() {
 				for {

@@ -35,7 +35,7 @@ func (n *group) CallWithResponse(api string, args defines.Values) async_wrapper.
 func (n *group) PublishMessage(topic string, msg defines.Values) {
 	n.Node.PublishMessage(n.translateName(topic), msg)
 }
-func (n *group) ListenMessage(topic string, listener defines.MsgListener, newGoroutine bool) {
+func (n *group) ListenMessage(topic string, listener func(msg defines.Values), newGoroutine bool) {
 	n.Node.ListenMessage(n.translateName(topic), listener, newGoroutine)
 }
 func (n *group) GetValue(key string) (val defines.Values, found bool) {
