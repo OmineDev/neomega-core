@@ -25,23 +25,45 @@ type PlayerKit struct {
 // SubTitle(msg string)
 // InterceptJustNextInput(cb func(chat *GameChat))
 
+func (p *PlayerKit) playerNotAvailable() bool {
+	if p != nil && p.PlayerUQReader != nil && p.userName != "" && p.i != nil && p.i.info != nil {
+		return false
+	}
+	return true
+}
+
 func (p *PlayerKit) Say(msg string) {
+	if p.playerNotAvailable() {
+		return
+	}
 	p.i.info.SayTo(p.userName, msg)
 }
 
 func (p *PlayerKit) RawSay(msg string) {
+	if p.playerNotAvailable() {
+		return
+	}
 	p.i.info.RawSayTo(p.userName, msg)
 }
 
 func (p *PlayerKit) ActionBar(msg string) {
+	if p.playerNotAvailable() {
+		return
+	}
 	p.i.info.ActionBarTo(p.userName, msg)
 }
 
 func (p *PlayerKit) Title(msg string) {
+	if p.playerNotAvailable() {
+		return
+	}
 	p.i.info.TitleTo(p.userName, msg)
 }
 
 func (p *PlayerKit) SubTitle(subTitle string, title string) {
+	if p.playerNotAvailable() {
+		return
+	}
 	p.i.info.SubTitleTo(p.userName, subTitle, title)
 }
 
@@ -50,6 +72,9 @@ func (p *PlayerKit) GetInput() async_wrapper.AsyncResult[*neomega.GameChat] {
 }
 
 func (p *PlayerKit) CheckCondition(onResult func(bool), conditions ...string) {
+	if p.playerNotAvailable() {
+		return
+	}
 	condstr := strings.Join(conditions, ",")
 	if condstr != "" {
 		condstr = "," + condstr
@@ -61,6 +86,9 @@ func (p *PlayerKit) CheckCondition(onResult func(bool), conditions ...string) {
 }
 
 func (p *PlayerKit) Query(onResult func([]neomega.QueryResult), conditions ...string) {
+	if p.playerNotAvailable() {
+		return
+	}
 	condstr := strings.Join(conditions, ",")
 	if condstr != "" {
 		condstr = "," + condstr
@@ -84,10 +112,16 @@ func (p *PlayerKit) Query(onResult func([]neomega.QueryResult), conditions ...st
 }
 
 func (p *PlayerKit) GetName() (name string, found bool) {
+	if p.playerNotAvailable() {
+		return
+	}
 	return p.userName, p.PlayerUQReader.StillOnline()
 }
 
 func (p *PlayerKit) getAbilities() uint16 {
+	if p.playerNotAvailable() {
+		return 0
+	}
 	if p == nil {
 		return 0
 	}
@@ -135,6 +169,9 @@ func (p *PlayerKit) getAbilities() uint16 {
 }
 
 func (p *PlayerKit) setAbilities(abilities uint16) {
+	if p.playerNotAvailable() {
+		return
+	}
 	if p == nil {
 		return
 	}
@@ -182,6 +219,9 @@ func (p *PlayerKit) setAbilities(abilities uint16) {
 }
 
 func (p *PlayerKit) setSpecificAbility(allow bool, a uint16) {
+	if p.playerNotAvailable() {
+		return
+	}
 	ab := p.getAbilities()
 	if allow {
 		ab = ab | a
@@ -190,24 +230,52 @@ func (p *PlayerKit) setSpecificAbility(allow bool, a uint16) {
 	}
 	p.setAbilities(ab)
 }
-func (p *PlayerKit) SetBuildAbility(allow bool) { p.setSpecificAbility(allow, protocol.AbilityBuild) }
-func (p *PlayerKit) SetMineAbility(allow bool)  { p.setSpecificAbility(allow, protocol.AbilityMine) }
+func (p *PlayerKit) SetBuildAbility(allow bool) {
+	if p.playerNotAvailable() {
+		return
+	}
+	p.setSpecificAbility(allow, protocol.AbilityBuild)
+}
+func (p *PlayerKit) SetMineAbility(allow bool) {
+	if p.playerNotAvailable() {
+		return
+	}
+	p.setSpecificAbility(allow, protocol.AbilityMine)
+}
 func (p *PlayerKit) SetDoorsAndSwitchesAbility(allow bool) {
+	if p.playerNotAvailable() {
+		return
+	}
 	p.setSpecificAbility(allow, protocol.AbilityDoorsAndSwitches)
 }
 func (p *PlayerKit) SetOpenContainersAbility(allow bool) {
+	if p.playerNotAvailable() {
+		return
+	}
 	p.setSpecificAbility(allow, protocol.AbilityOpenContainers)
 }
 func (p *PlayerKit) SetAttackPlayersAbility(allow bool) {
+	if p.playerNotAvailable() {
+		return
+	}
 	p.setSpecificAbility(allow, protocol.AbilityAttackPlayers)
 }
 func (p *PlayerKit) SetAttackMobsAbility(allow bool) {
+	if p.playerNotAvailable() {
+		return
+	}
 	p.setSpecificAbility(allow, protocol.AbilityAttackMobs)
 }
 func (p *PlayerKit) SetOperatorCommandsAbility(allow bool) {
+	if p.playerNotAvailable() {
+		return
+	}
 	p.setSpecificAbility(allow, protocol.AbilityOperatorCommands)
 }
 func (p *PlayerKit) SetTeleportAbility(allow bool) {
+	if p.playerNotAvailable() {
+		return
+	}
 	p.setSpecificAbility(allow, protocol.AbilityTeleport)
 }
 

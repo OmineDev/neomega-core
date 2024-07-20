@@ -99,13 +99,14 @@ func (i *PlayerInteract) onRemovePlayer(uid uuid.UUID) {
 	if !found {
 		return
 	}
-	name, found := player.GetUsername()
-	if found {
-		if i.nextMsgListenerChan[name] != nil {
-			close(i.nextMsgListenerChan[name])
-			delete(i.nextMsgListenerChan, name)
-		}
-	}
+	// name, found := player.GetUsername()
+	// if found {
+	// if i.nextMsgListenerChan[name] != nil {
+	// don't close this or error will occour
+	// close(i.nextMsgListenerChan[name])
+	// delete(i.nextMsgListenerChan, name)
+	// }
+	// }
 	for _, cb := range i.playerChangeListeners {
 		go cb(player, "offline")
 	}
