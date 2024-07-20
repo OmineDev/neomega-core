@@ -27,6 +27,10 @@ func WriteUint8(w CanWriteBytes, x uint8) error {
 	return w.Write([]byte{byte(x)})
 }
 
+func MakeUint16(x uint16) []byte {
+	return []byte{byte(x), byte(x >> 8)}
+}
+
 // WriteInt16 ...
 func WriteInt16(w CanWriteBytes, x int16) error {
 	return w.Write([]byte{byte(x), byte(x >> 8)})
