@@ -27,6 +27,7 @@ type SubChunkResult interface {
 	SubCunkPos() protocol.SubChunkPos // X<<4,Y<<4,Z<<4 -> real world pos
 	ChunkPos() define.ChunkPos        // define.ChunkPos{SubCunkPos().X(),SubCunkPos().Z()}
 	Error() error                     // (ResultCode == protocol.SubChunkResultSuccessAllAir || ResultCode == protocol.SubChunkResultSuccess) && decodeErr()==nil
+	AttachDecodeError(error)
 	ResultCode() byte
 	NBTsInAbsolutePos() map[define.CubePos]map[string]interface{}
 	SubChunk() *chunk.SubChunk
@@ -38,7 +39,7 @@ type SubChunkBatchResult interface {
 	AllOk() bool
 	AllErrors() map[protocol.SubChunkPos]error
 	ToChunks(
-		optionalAlterFn func(r SubChunkResult) (*chunk.SubChunk, map[define.CubePos]map[string]interface{}),
+		optionalAlterFn func(r SubChunkResult) (*chunk.SubChunk, map[define.CubePos]map[string]interface{}, error),
 	) map[define.ChunkPos]*chunks.ChunkWithAuxInfo
 }
 

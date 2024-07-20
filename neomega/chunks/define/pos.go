@@ -24,6 +24,23 @@ func (p ChunkPos) String() string {
 // 为和国际版MC保持统一，世界范围被定义为 -64~319 ,现在网易的高度也是 -64 ~ 319 了，所以省事了不少
 var WorldRange = Range{-64, 319}
 
+var OverWorldRangeUpperInclude = Range{-64, 319}
+var NetherRangeUpperInclude = Range{0, 127}
+var TheEndRangeUpperInclude = Range{0, 255}
+
+func DimRangeUpperInclude(dm int32) Range {
+	if dm == 0 {
+		return OverWorldRangeUpperInclude
+	}
+	if dm == 1 {
+		return NetherRangeUpperInclude
+	}
+	if dm == 2 {
+		return TheEndRangeUpperInclude
+	}
+	return OverWorldRangeUpperInclude
+}
+
 // CubePos holds the position of a block. The position is represented of an array with an x, y and z value,
 // where the y value is positive.
 type CubePos [3]int

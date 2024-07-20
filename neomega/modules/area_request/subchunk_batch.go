@@ -29,18 +29,8 @@ func autoDim(info neomega.ExtendInfo) int32 {
 }
 
 func fullY(dim int32) []int8 {
-	s, e := int8(-4), int8(20)
-	if dim == 0 {
-
-	} else if dim == 1 {
-		s, e = 0, 8
-	} else if dim == 2 {
-		s, e = 0, 16
-	} else {
-		// seems same as overworld, not suggest
-	}
 	ys := make([]int8, 0, 24)
-	for i := int8(s); i < e; i++ {
+	for i := int8(define.DimRangeUpperInclude(dim).Min() >> 4); i <= int8(define.DimRangeUpperInclude(dim).Max()>>4); i++ {
 		ys = append(ys, i)
 	}
 	return ys
@@ -115,7 +105,7 @@ func (r *SubChunkBatchResult) AllErrors() map[protocol.SubChunkPos]error {
 	return es
 }
 
-func (r *SubChunkBatchResult) ToChunks(optionalAlterFn func(r neomega.SubChunkResult) (*chunk.SubChunk, map[define.CubePos]map[string]interface{})) map[define.ChunkPos]*chunks.ChunkWithAuxInfo {
+func (r *SubChunkBatchResult) ToChunks(optionalAlterFn func(r neomega.SubChunkResult) (*chunk.SubChunk, map[define.CubePos]map[string]interface{}, error)) map[define.ChunkPos]*chunks.ChunkWithAuxInfo {
 	chunkSet := map[define.ChunkPos]*chunks.ChunkWithAuxInfo{}
 	for pos, sc := range r.results {
 		cp := define.ChunkPos{pos.X(), pos.Z()}
@@ -136,7 +126,11 @@ func (r *SubChunkBatchResult) ToChunks(optionalAlterFn func(r neomega.SubChunkRe
 		}
 		finalSC, nbts := sc.SubChunk(), sc.NBTsInAbsolutePos()
 		if optionalAlterFn != nil {
-			finalSC, nbts = optionalAlterFn(sc)
+			var newErr error
+			finalSC, nbts, newErr = optionalAlterFn(sc)
+			if newErr != nil {
+				sc.AttachDecodeError(newErr)
+			}
 		}
 		c.Chunk.AssignSub(int(ySubChunk), finalSC)
 		for p, n := range nbts {

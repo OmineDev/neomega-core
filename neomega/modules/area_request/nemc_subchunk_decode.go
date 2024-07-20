@@ -155,6 +155,17 @@ func (sr *SubChunkResult) Error() error {
 	}
 }
 
+func (sr *SubChunkResult) AttachDecodeError(err error) {
+	if err == nil {
+		return
+	}
+	if sr.decodeErr == nil {
+		sr.decodeErr = err
+	} else {
+		sr.decodeErr = fmt.Errorf("%v, %v", sr.decodeErr, err)
+	}
+}
+
 func (sr *SubChunkResult) SubChunk() *chunk.SubChunk {
 	return sr.subChunk
 }
