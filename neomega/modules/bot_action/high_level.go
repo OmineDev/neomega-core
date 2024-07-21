@@ -12,6 +12,8 @@ import (
 	"github.com/OmineDev/neomega-core/neomega/blocks"
 	"github.com/OmineDev/neomega-core/neomega/chunks"
 	"github.com/OmineDev/neomega-core/neomega/chunks/define"
+	"github.com/OmineDev/neomega-core/neomega/supported_nbt_data"
+	"github.com/OmineDev/neomega-core/neomega/supported_nbt_data/supported_item"
 	"github.com/OmineDev/neomega-core/nodes/defines"
 	"github.com/OmineDev/neomega-core/utils/string_wrapper"
 	"github.com/OmineDev/neomega-core/utils/structure/pos_operations"
@@ -220,7 +222,7 @@ func (o *BotActionHighLevel) highLevelGetAndRemoveSpecificBlockSideEffect(pos de
 	return decodedStructure, deferFunc, nil
 }
 
-func (o *BotActionHighLevel) HighLevelPlaceSign(targetPos define.CubePos, signBlock string, opt *neomega.SignBlockPlaceOption) (err error) {
+func (o *BotActionHighLevel) HighLevelPlaceSign(targetPos define.CubePos, signBlock string, opt *supported_nbt_data.SignBlockSupportedData) (err error) {
 	if opt == nil {
 		return nil
 	}
@@ -233,7 +235,7 @@ func (o *BotActionHighLevel) HighLevelPlaceSign(targetPos define.CubePos, signBl
 	return o.highLevelPlaceSign(targetPos, signBlock, opt)
 }
 
-func (o *BotActionHighLevel) highLevelPlaceSign(targetPos define.CubePos, signBlock string, opt *neomega.SignBlockPlaceOption) (err error) {
+func (o *BotActionHighLevel) highLevelPlaceSign(targetPos define.CubePos, signBlock string, opt *supported_nbt_data.SignBlockSupportedData) (err error) {
 	rtid, ok := blocks.BlockStrToRuntimeID(signBlock)
 	if !ok {
 		return fmt.Errorf("sign block not found")
@@ -319,28 +321,28 @@ func (o *BotActionHighLevel) highLevelPlaceSign(targetPos define.CubePos, signBl
 	return nil
 }
 
-func (o *BotActionHighLevel) HighLevelPlaceCommandBlock(option *neomega.PlaceCommandBlockOption, maxRetry int) error {
+func (o *BotActionHighLevel) HighLevelPlaceCommandBlock(targetPos define.CubePos, option *supported_nbt_data.CommandBlockSupportedData, maxRetry int) error {
 	release, err := o.occupyBot(time.Second * 3)
 	if err != nil {
 		return err
 	}
 	defer release()
-	return o.highLevelPlaceCommandBlock(option, maxRetry)
+	return o.highLevelPlaceCommandBlock(targetPos, option, maxRetry)
 }
 
-func (o *BotActionHighLevel) highLevelPlaceCommandBlock(option *neomega.PlaceCommandBlockOption, maxRetry int) error {
-	if err := o.highLevelEnsureBotNearby(define.CubePos{option.X, option.Y, option.Z}, 8); err != nil {
+func (o *BotActionHighLevel) highLevelPlaceCommandBlock(targetPos define.CubePos, option *supported_nbt_data.CommandBlockSupportedData, maxRetry int) error {
+	if err := o.highLevelEnsureBotNearby(targetPos, 8); err != nil {
 		return err
 	}
-	updateOption := option.GenCommandBlockUpdateFromOption()
+	updateOption := option.GenCommandBlockUpdateFromOption(targetPos)
 	sleepTime := 1
 	for maxRetry > 0 {
 		maxRetry--
-		cmd := fmt.Sprintf("setblock %v %v %v %v %v", option.X, option.Y, option.Z, strings.Replace(option.BlockName, "minecraft:", "", 1), option.BlockState)
+		cmd := fmt.Sprintf("setblock %v %v %v %v %v", targetPos.X(), targetPos.Y(), targetPos.Z(), strings.Replace(option.BlockName, "minecraft:", "", 1), option.BlockState)
 		o.cmdSender.SendWebSocketCmdNeedResponse(cmd).SetTimeout(time.Second * 3).BlockGetResult()
 		o.ctrl.SendPacket(updateOption)
 		time.Sleep(100 * time.Millisecond)
-		r, err := o.areaRequester.LowLevelRequestStructure(define.CubePos{option.X, option.Y, option.Z}, define.CubePos{1, 1, 1}, "_temp").BlockGetResult()
+		r, err := o.areaRequester.LowLevelRequestStructure(targetPos, define.CubePos{1, 1, 1}, "_temp").BlockGetResult()
 		if err != nil {
 		} else {
 			d, err := r.Decode()
@@ -503,7 +505,7 @@ func (o *BotActionHighLevel) highLevelRenameItemWithAnvil(pos define.CubePos, sl
 	return o.microAction.UseAnvil(pos, containerRuntimeID, slot, newName)
 }
 
-func (o *BotActionHighLevel) HighLevelEnchantItem(slot uint8, enchants map[string]int32) (err error) {
+func (o *BotActionHighLevel) HighLevelEnchantItem(slot uint8, enchants supported_item.Enchants) (err error) {
 	release, err := o.occupyBot(time.Second * 3)
 	if err != nil {
 		return err
@@ -512,7 +514,7 @@ func (o *BotActionHighLevel) HighLevelEnchantItem(slot uint8, enchants map[strin
 	return o.highLevelEnchantItem(slot, enchants)
 }
 
-func (o *BotActionHighLevel) highLevelEnchantItem(slot uint8, enchants map[string]int32) (err error) {
+func (o *BotActionHighLevel) highLevelEnchantItem(slot uint8, enchants supported_item.Enchants) (err error) {
 	o.microAction.SelectHotBar(slot)
 	o.microAction.SleepTick(1)
 	results := make(chan *packet.CommandOutput, len(enchants))
@@ -858,7 +860,7 @@ func (o *BotActionHighLevel) highLevelPlaceItemFrameItem(pos define.CubePos, slo
 	return err
 }
 
-func (o *BotActionHighLevel) HighLevelSetContainerContent(pos define.CubePos, containerInfo map[uint8]*neomega.ContainerSlotItemStack) (err error) {
+func (o *BotActionHighLevel) HighLevelSetContainerContent(pos define.CubePos, containerInfo map[uint8]*supported_item.ContainerSlotItemStack) (err error) {
 	release, err := o.occupyBot(time.Second * 3)
 	if err != nil {
 		return err
@@ -868,7 +870,7 @@ func (o *BotActionHighLevel) HighLevelSetContainerContent(pos define.CubePos, co
 	return o.highLevelSetContainerItems(pos, containerInfo)
 }
 
-func (o *BotActionHighLevel) HighLevelGenContainer(pos define.CubePos, containerInfo map[uint8]*neomega.ContainerSlotItemStack, block string) (err error) {
+func (o *BotActionHighLevel) HighLevelGenContainer(pos define.CubePos, containerInfo map[uint8]*supported_item.ContainerSlotItemStack, block string) (err error) {
 	release, err := o.occupyBot(time.Second * 3)
 	if err != nil {
 		return err
@@ -881,7 +883,7 @@ func (o *BotActionHighLevel) HighLevelGenContainer(pos define.CubePos, container
 	return o.highLevelSetContainerItems(pos, containerInfo)
 }
 
-func (o *BotActionHighLevel) HighLevelMakeItem(item *neomega.Item, slotID uint8, anvilPos, nextContainerPos define.CubePos) error {
+func (o *BotActionHighLevel) HighLevelMakeItem(item *supported_item.Item, slotID uint8, anvilPos, nextContainerPos define.CubePos) error {
 	release, err := o.occupyBot(time.Second * 3)
 	if err != nil {
 		return err
@@ -890,20 +892,20 @@ func (o *BotActionHighLevel) HighLevelMakeItem(item *neomega.Item, slotID uint8,
 	return o.highLevelMakeItem(item, slotID, anvilPos, nextContainerPos)
 }
 
-func (o *BotActionHighLevel) highLevelMakeItem(item *neomega.Item, slotID uint8, anvilPos, nextContainerPos define.CubePos) error {
+func (o *BotActionHighLevel) highLevelMakeItem(item *supported_item.Item, slotID uint8, anvilPos, nextContainerPos define.CubePos) error {
 	typeDescription := item.GetTypeDescription()
 	if !typeDescription.IsComplexBlock() {
-		if typeDescription.KnownItem() == neomega.KnownItemWritableBook {
-			if err := o.highLevelWriteBook(uint8(slotID), item.RelatedKnownItemData.Pages); err != nil {
+		if typeDescription.KnownItem() == supported_item.KnownItemWritableBook {
+			if err := o.highLevelWriteBook(uint8(slotID), item.SpecificKnownNonBlockItemData.Pages); err != nil {
 				return err
 			}
-		} else if typeDescription.KnownItem() == neomega.KnownItemWrittenBook {
-			if err := o.highLevelWriteBookAndClose(uint8(slotID), item.RelatedKnownItemData.Pages, item.RelatedKnownItemData.BookName, item.RelatedKnownItemData.BookAuthor); err != nil {
+		} else if typeDescription.KnownItem() == supported_item.KnownItemWrittenBook {
+			if err := o.highLevelWriteBookAndClose(uint8(slotID), item.SpecificKnownNonBlockItemData.Pages, item.SpecificKnownNonBlockItemData.BookName, item.SpecificKnownNonBlockItemData.BookAuthor); err != nil {
 				return err
 			}
 		} else {
-			if ret, err := o.cmdHelper.ReplaceBotHotBarItemFullCmd(int32(slotID), item.Name, 1, int32(item.Value), item.Components).SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult(); ret == nil || err != nil {
-				return fmt.Errorf("cannot put simple block/item in container %v %v %v %v", item.Name, 1, int32(item.Value), item.Components)
+			if ret, err := o.cmdHelper.ReplaceBotHotBarItemFullCmd(int32(slotID), item.Name, 1, int32(item.Value), item.BaseProps).SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult(); ret == nil || err != nil {
+				return fmt.Errorf("cannot put simple block/item in container %v %v %v %v", item.Name, 1, int32(item.Value), item.BaseProps)
 			}
 		}
 		if item.DisplayName != "" {
@@ -948,7 +950,7 @@ func (o *BotActionHighLevel) highLevelMakeItem(item *neomega.Item, slotID uint8,
 	return nil
 }
 
-func (o *BotActionHighLevel) highLevelSetContainerItems(pos define.CubePos, containerInfo map[uint8]*neomega.ContainerSlotItemStack) (err error) {
+func (o *BotActionHighLevel) highLevelSetContainerItems(pos define.CubePos, containerInfo map[uint8]*supported_item.ContainerSlotItemStack) (err error) {
 	o.highLevelEnsureBotNearby(pos, 8)
 	updateErr := func(newErr error) {
 		if newErr == nil {
@@ -966,14 +968,14 @@ func (o *BotActionHighLevel) highLevelSetContainerItems(pos define.CubePos, cont
 	// put simple block/item in container first
 	for slot, stack := range containerInfo {
 		if stack.Item.GetTypeDescription().IsSimple() {
-			if ret, err := o.cmdHelper.ReplaceContainerItemFullCmd(targetContainerPos, int32(slot), stack.Item.Name, stack.Count, int32(stack.Item.Value), stack.Item.Components).SendAndGetResponse().BlockGetResult(); ret == nil || err != nil {
-				updateErr(fmt.Errorf("cannot put simple block/item in container %v %v %v %v", stack.Item.Name, stack.Count, int32(stack.Item.Value), stack.Item.Components))
+			if ret, err := o.cmdHelper.ReplaceContainerItemFullCmd(targetContainerPos, int32(slot), stack.Item.Name, stack.Count, int32(stack.Item.Value), stack.Item.BaseProps).SendAndGetResponse().BlockGetResult(); ret == nil || err != nil {
+				updateErr(fmt.Errorf("cannot put simple block/item in container %v %v %v %v", stack.Item.Name, stack.Count, int32(stack.Item.Value), stack.Item.BaseProps))
 			}
 		}
 	}
 	// put block/item needs only enchant in container
 	hotBarSlotID := 0
-	slotAndEnchant := map[uint8]*neomega.ContainerSlotItemStack{}
+	slotAndEnchant := map[uint8]*supported_item.ContainerSlotItemStack{}
 	targetSlots := map[uint8]uint8{}
 	flush := func() {
 		if len(targetSlots) == 0 {
@@ -1011,7 +1013,7 @@ func (o *BotActionHighLevel) highLevelSetContainerItems(pos define.CubePos, cont
 		updateErr(o.highLevelMoveItemToContainer(targetContainerPos, targetSlots))
 		// reset
 		hotBarSlotID = 0
-		slotAndEnchant = map[uint8]*neomega.ContainerSlotItemStack{}
+		slotAndEnchant = map[uint8]*supported_item.ContainerSlotItemStack{}
 		targetSlots = map[uint8]uint8{}
 		o.microAction.SleepTick(5)
 	}
@@ -1019,13 +1021,13 @@ func (o *BotActionHighLevel) highLevelSetContainerItems(pos define.CubePos, cont
 		slot, stack := _slot, _stack
 		typeDescription := stack.Item.GetTypeDescription()
 		if typeDescription.NeedHotbar() && !typeDescription.IsComplexBlock() {
-			if typeDescription.KnownItem() == neomega.KnownItemWritableBook {
-				updateErr(o.highLevelWriteBook(uint8(hotBarSlotID), stack.Item.RelatedKnownItemData.Pages))
-			} else if typeDescription.KnownItem() == neomega.KnownItemWrittenBook {
-				updateErr(o.highLevelWriteBookAndClose(uint8(hotBarSlotID), stack.Item.RelatedKnownItemData.Pages, stack.Item.RelatedKnownItemData.BookName, stack.Item.RelatedKnownItemData.BookAuthor))
+			if typeDescription.KnownItem() == supported_item.KnownItemWritableBook {
+				updateErr(o.highLevelWriteBook(uint8(hotBarSlotID), stack.Item.SpecificKnownNonBlockItemData.Pages))
+			} else if typeDescription.KnownItem() == supported_item.KnownItemWrittenBook {
+				updateErr(o.highLevelWriteBookAndClose(uint8(hotBarSlotID), stack.Item.SpecificKnownNonBlockItemData.Pages, stack.Item.SpecificKnownNonBlockItemData.BookName, stack.Item.SpecificKnownNonBlockItemData.BookAuthor))
 			} else {
-				if ret, err := o.cmdHelper.ReplaceBotHotBarItemFullCmd(int32(hotBarSlotID), stack.Item.Name, stack.Count, int32(stack.Item.Value), stack.Item.Components).SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult(); ret == nil || err != nil {
-					updateErr(fmt.Errorf("cannot put simple block/item in container %v %v %v %v", stack.Item.Name, stack.Count, int32(stack.Item.Value), stack.Item.Components))
+				if ret, err := o.cmdHelper.ReplaceBotHotBarItemFullCmd(int32(hotBarSlotID), stack.Item.Name, stack.Count, int32(stack.Item.Value), stack.Item.BaseProps).SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult(); ret == nil || err != nil {
+					updateErr(fmt.Errorf("cannot put simple block/item in container %v %v %v %v", stack.Item.Name, stack.Count, int32(stack.Item.Value), stack.Item.BaseProps))
 				}
 			}
 			slotAndEnchant[uint8(hotBarSlotID)] = stack

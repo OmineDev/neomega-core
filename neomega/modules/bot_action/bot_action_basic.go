@@ -7,6 +7,7 @@ import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
 	"github.com/OmineDev/neomega-core/neomega"
 	"github.com/OmineDev/neomega-core/neomega/chunks/define"
+	"github.com/OmineDev/neomega-core/neomega/supported_nbt_data"
 
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -23,7 +24,7 @@ func NewBotActionSimple(uq neomega.MicroUQHolder, ctrl neomega.InteractCore) *Bo
 	}
 }
 
-func (b *BotActionSimple) SetStructureBlockData(pos define.CubePos, settings *neomega.StructureBlockSettings) {
+func (b *BotActionSimple) SetStructureBlockData(pos define.CubePos, settings *supported_nbt_data.StructureBlockSupportedData) {
 	updatePacket := &packet.StructureBlockUpdate{
 		Position:           protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
 		StructureName:      settings.StructureName,

@@ -7,6 +7,7 @@ import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
 	"github.com/OmineDev/neomega-core/neomega"
 	"github.com/OmineDev/neomega-core/neomega/chunks/define"
+	"github.com/OmineDev/neomega-core/neomega/supported_nbt_data/supported_item"
 	"github.com/OmineDev/neomega-core/utils/async_wrapper"
 	"github.com/OmineDev/neomega-core/utils/string_wrapper"
 
@@ -123,7 +124,7 @@ func (c *CommandHelper) ReplaceHotBarItemCmd(slotID int32, item string) neomega.
 	return c.constructWebSocketCommand(fmt.Sprintf("replaceitem entity @s slot.hotbar %v %v", slotID, item))
 }
 
-func (c *CommandHelper) ReplaceBotHotBarItemFullCmd(slotID int32, itemName string, count uint8, value int32, components *neomega.ItemComponentsInGiveOrReplace) neomega.CmdCanGetResponse {
+func (c *CommandHelper) ReplaceBotHotBarItemFullCmd(slotID int32, itemName string, count uint8, value int32, components *supported_item.ItemPropsInGiveOrReplace) neomega.CmdCanGetResponse {
 	componentsStr := ""
 	if components != nil {
 		if components.ItemLock != "" {
@@ -134,17 +135,17 @@ func (c *CommandHelper) ReplaceBotHotBarItemFullCmd(slotID int32, itemName strin
 		if strings.Contains(itemName, " ") {
 			itemName = strings.Split(itemName, " ")[0]
 		}
-		componentsStr = (components).ToString()
+		componentsStr = (components).CmdString()
 	}
 	return c.constructWebSocketCommand(fmt.Sprintf("/replaceitem entity @s slot.hotbar %v destroy %v %v %v "+componentsStr, slotID, itemName, count, value))
 }
 
-func (c *CommandHelper) ReplaceContainerItemFullCmd(pos define.CubePos, slotID int32, itemName string, count uint8, value int32, components *neomega.ItemComponentsInGiveOrReplace) neomega.CmdCanGetResponse {
+func (c *CommandHelper) ReplaceContainerItemFullCmd(pos define.CubePos, slotID int32, itemName string, count uint8, value int32, components *supported_item.ItemPropsInGiveOrReplace) neomega.CmdCanGetResponse {
 	itemName = strings.TrimSpace(itemName)
 	if strings.Contains(itemName, " ") {
 		itemName = strings.Split(itemName, " ")[0]
 	}
-	componentsStr := (components).ToString()
+	componentsStr := (components).CmdString()
 	return c.constructWebSocketCommand(fmt.Sprintf("/replaceitem block %v %v %v slot.container %v destroy %v %v %v "+componentsStr, pos.X(), pos.Y(), pos.Z(), slotID, itemName, count, value))
 }
 

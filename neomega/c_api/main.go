@@ -18,8 +18,10 @@ import (
 	"github.com/OmineDev/neomega-core/i18n"
 	"github.com/OmineDev/neomega-core/neomega"
 	"github.com/OmineDev/neomega-core/neomega/bundle"
+	"github.com/OmineDev/neomega-core/neomega/chunks/define"
 	"github.com/OmineDev/neomega-core/neomega/rental_server_impact/access_helper"
 	"github.com/OmineDev/neomega-core/neomega/rental_server_impact/info_collect_utils"
+	"github.com/OmineDev/neomega-core/neomega/supported_nbt_data"
 	"github.com/OmineDev/neomega-core/nodes"
 	"github.com/OmineDev/neomega-core/nodes/defines"
 	"github.com/OmineDev/neomega-core/nodes/underlay_conn"
@@ -184,11 +186,17 @@ func JsonStrAsIsGamePacketBytes(packetID int, jsonStr *C.char) (pktBytes *C.char
 	return bytesToCharArr(bs), l, nil
 }
 
+type SimplePos struct {
+	X, Y, Z int
+}
+
 //export PlaceCommandBlock
 func PlaceCommandBlock(option *C.char) {
-	opt := neomega.PlaceCommandBlockOption{}
+	opt := supported_nbt_data.CommandBlockSupportedData{}
 	json.Unmarshal([]byte(C.GoString(option)), &opt)
-	GOmegaCore.GetBotAction().HighLevelPlaceCommandBlock(&opt, 3)
+	ops := &SimplePos{}
+	json.Unmarshal([]byte(C.GoString(option)), &ops)
+	GOmegaCore.GetBotAction().HighLevelPlaceCommandBlock(define.CubePos{ops.X, ops.Y, ops.Z}, &opt, 3)
 	// ba := GOmegaCore.GetGameControl().GenCommandBlockUpdateFromOption(&opt)
 	// GOmegaCore.GetGameControl().AsyncPlaceCommandBlock(define.CubePos{
 	// 	opt.X, opt.Y, opt.Z,

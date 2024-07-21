@@ -1,13 +1,7 @@
 package neomega
 
 import (
-	"fmt"
-	"strings"
-
-	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
-	"github.com/OmineDev/neomega-core/neomega/blocks"
-	"github.com/OmineDev/neomega-core/neomega/chunks/define"
 	"github.com/OmineDev/neomega-core/utils/async_wrapper"
 
 	"github.com/google/uuid"
@@ -58,16 +52,6 @@ type CmdSender interface {
 	SendAICommandNeedResponse(runtimeid string, cmd string) async_wrapper.AsyncResult[*packet.CommandOutput]
 }
 
-// type CmdSender interface {
-// 	SendWebSocketCmdOmitResponse(cmd string)
-// 	SendWOCmd(cmd string)
-// 	SendPlayerCmdOmitResponse(cmd string)
-// 	SendWebSocketCmdNeedResponse(string, func(output *packet.CommandOutput))
-// 	SendPlayerCmdAndInvokeOnResponseWithFeedback(string, func(output *packet.CommandOutput))
-// 	SendWSCmdAndInvokeOnResponseNoBlock(string, func(output *packet.CommandOutput))
-// 	SendPlayerCmdAndInvokeOnResponseWithFeedbackNoBlock(string, func(output *packet.CommandOutput))
-// }
-
 type InfoSender interface {
 	BotSay(msg string)
 	SayTo(target string, msg string)
@@ -76,158 +60,6 @@ type InfoSender interface {
 	TitleTo(target string, msg string)
 	SubTitleTo(target string, subTitle string, title string)
 }
-
-type PlaceCommandBlockOption struct {
-	X, Y, Z            int
-	BlockName          string
-	BlockState         string
-	NeedRedStone       bool
-	Conditional        bool
-	Command            string
-	Name               string
-	TickDelay          int
-	ShouldTrackOutput  bool
-	ExecuteOnFirstTick bool
-}
-
-func (opt *PlaceCommandBlockOption) String() string {
-	describe := ""
-	describe += fmt.Sprintf("[%v,%v,%v]%v%v", opt.X, opt.Y, opt.Z, opt.BlockName, opt.BlockState)
-	if opt.Name != "" {
-		describe += fmt.Sprintf("\n  名字: %v", opt.Name)
-	}
-	if opt.Command != "" {
-		describe += fmt.Sprintf("\n  指令: %v", opt.Command)
-	}
-	options := fmt.Sprintf("\n  红石=%v,有条件=%v,显示输出=%v,执行第一个已选项=%v,延迟=%v", opt.NeedRedStone, opt.Conditional, opt.ShouldTrackOutput, opt.ExecuteOnFirstTick, opt.TickDelay)
-	describe += strings.ReplaceAll(strings.ReplaceAll(options, "true", "是"), "false", "否")
-	return describe
-}
-
-func (opt *PlaceCommandBlockOption) GenCommandBlockUpdateFromOption() *packet.CommandBlockUpdate {
-	var mode uint32
-	if opt.BlockName == "command_block" {
-		mode = packet.CommandBlockImpulse
-	} else if opt.BlockName == "repeating_command_block" {
-		mode = packet.CommandBlockRepeating
-	} else if opt.BlockName == "chain_command_block" {
-		mode = packet.CommandBlockChain
-	} else {
-		opt.BlockName = "command_block"
-		mode = packet.CommandBlockImpulse
-	}
-	return &packet.CommandBlockUpdate{
-		Block:              true,
-		Position:           protocol.BlockPos{int32(opt.X), int32(opt.Y), int32(opt.Z)},
-		Mode:               mode,
-		NeedsRedstone:      opt.NeedRedStone,
-		Conditional:        opt.Conditional,
-		Command:            opt.Command,
-		LastOutput:         "",
-		Name:               opt.Name,
-		TickDelay:          uint32(opt.TickDelay),
-		ExecuteOnFirstTick: opt.ExecuteOnFirstTick,
-		ShouldTrackOutput:  opt.ShouldTrackOutput,
-	}
-}
-
-func NewPlaceCommandBlockOptionFromNBT(pos define.CubePos, blockNameAndState string, nbt map[string]interface{}) (o *PlaceCommandBlockOption, err error) {
-	rtid, found := blocks.BlockStrToRuntimeID(blockNameAndState)
-	if !found {
-		return nil, fmt.Errorf("cannot recognize this block %v", blockNameAndState)
-	}
-	return NewPlaceCommandBlockOptionFromNBTAndRtid(pos, rtid, nbt)
-}
-
-func NewPlaceCommandBlockOptionFromNBTAndRtid(pos define.CubePos, rtid uint32, nbt map[string]interface{}) (o *PlaceCommandBlockOption, err error) {
-	_, exist := nbt["__tag"]
-	if exist {
-		return nil, fmt.Errorf("flatten nemc nbt, cannot handle")
-	}
-	if nbt == nil {
-		return nil, fmt.Errorf("nbt is empty, cannot handle")
-	}
-	var mode uint32
-	defer func() {
-		r := recover()
-		if r != nil {
-			err = fmt.Errorf("cannot gen place command block option %v", r)
-		}
-	}()
-	block, _ := blocks.RuntimeIDToBlock(rtid)
-	if block.ShortName() == "command_block" {
-		mode = packet.CommandBlockImpulse
-	} else if block.ShortName() == "repeating_command_block" {
-		mode = packet.CommandBlockRepeating
-	} else if block.ShortName() == "chain_command_block" {
-		mode = packet.CommandBlockChain
-	} else {
-		return nil, fmt.Errorf("this block %v%v is not command block", block.ShortName(), block.States().BedrockString(true))
-	}
-	mode = mode // just make compiler happy
-	cmd, _ := nbt["Command"].(string)
-	constumeName, _ := nbt["CustomName"].(string)
-	exeft, _ := nbt["ExecuteOnFirstTick"].(uint8)
-	tickdelay, _ := nbt["TickDelay"].(int32)     //*/
-	aut, _ := nbt["auto"].(uint8)                //!needrestone
-	trackoutput, _ := nbt["TrackOutput"].(uint8) //
-	// lo, _ := nbt["LastOutput"].(string)
-	conditionalmode, ok := nbt["conditionalMode"].(uint8)
-	if !ok {
-		conditionalmode = block.States().ToNBT()["conditional_bit"].(uint8)
-	}
-	//conditionalmode := nbt["conditionalMode"].(uint8)
-	var executeOnFirstTickBit bool
-	if exeft == 0 {
-		executeOnFirstTickBit = false
-	} else {
-		executeOnFirstTickBit = true
-	}
-	var trackOutputBit bool
-	if trackoutput == 1 {
-		trackOutputBit = true
-	} else {
-		trackOutputBit = false
-	}
-	var needRedStoneBit bool
-	if aut == 1 {
-		needRedStoneBit = false
-		//REVERSED!!
-	} else {
-		needRedStoneBit = true
-	}
-	var conditionalBit bool
-	if conditionalmode == 1 {
-		conditionalBit = true
-	} else {
-		conditionalBit = false
-	}
-	o = &PlaceCommandBlockOption{
-		X: pos.X(), Y: pos.Y(), Z: pos.Z(),
-		BlockName:          block.ShortName(),
-		BlockState:         block.States().BedrockString(true),
-		NeedRedStone:       needRedStoneBit,
-		Conditional:        conditionalBit,
-		Command:            cmd,
-		Name:               constumeName,
-		TickDelay:          int(tickdelay),
-		ShouldTrackOutput:  trackOutputBit,
-		ExecuteOnFirstTick: executeOnFirstTickBit,
-	}
-	return o, nil
-}
-
-// type AsyncNBTBlockPlacer interface {
-// 	GenCommandBlockUpdateFromNbt(pos define.CubePos, blockName string, blockState map[string]interface{}, nbt map[string]interface{}) (cfg *packet.CommandBlockUpdate, err error)
-// 	GenCommandBlockUpdateFromOption(opt *PlaceCommandBlockOption) *packet.CommandBlockUpdate
-// 	AsyncPlaceCommandBlock(pos define.CubePos, commandBlockName string, blockDataOrStateStr string, withMove, withAirPrePlace bool, updatePacket *packet.CommandBlockUpdate,
-// 		onDone func(done bool), timeOut time.Duration)
-// 	// PlaceSignBlock(pos define.CubePos, signBlockName string, blockDataOrStateStr string, withMove, withAirPrePlace bool, updatePacket *packet.BlockActorData, onDone func(done bool), timeOut time.Duration)
-// }
-
-// type BlockPlacer interface {
-// 	AsyncNBTBlockPlacer
-// }
 
 type GameChat struct {
 	// 玩家名（去除前缀, e.g. <乱七八糟的前缀> 张三 -> 张三）
