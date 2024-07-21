@@ -72,6 +72,10 @@ type GameRule struct {
 }
 
 type ExtendInfo interface {
+	GetWorldName() (worldName string, found bool)
+	GetWorldSeed() (worldSeed int64, found bool)
+	GetWorldGenerator() (worldGenerator int32, found bool)
+	GetLevelID() (levelID string, found bool)
 	GetCompressThreshold() (compressThreshold uint16, found bool)
 	GetWorldGameMode() (worldGameMode int32, found bool)
 	GetWorldDifficulty() (worldDifficulty uint32, found bool)

@@ -271,6 +271,18 @@ func GetClientMaintainedBotBasicInfo() *C.char {
 func GetClientMaintainedExtendInfo() *C.char {
 	extendInfo := GOmegaCore.GetMicroUQHolder().GetExtendInfo()
 	extendInfoMap := map[string]any{}
+	if worldName, found := extendInfo.GetWorldName(); found {
+		extendInfoMap["WorldName"] = worldName
+	}
+	if worldSeed, found := extendInfo.GetWorldSeed(); found {
+		extendInfoMap["WorldSeed"] = worldSeed
+	}
+	if worldGenerator, found := extendInfo.GetWorldGenerator(); found {
+		extendInfoMap["WorldGenerator"] = worldGenerator
+	}
+	if levelID, found := extendInfo.GetLevelID(); found {
+		extendInfoMap["LevelID"] = levelID
+	}
 	if thres, found := extendInfo.GetCompressThreshold(); found {
 		extendInfoMap["CompressThreshold"] = thres
 	}

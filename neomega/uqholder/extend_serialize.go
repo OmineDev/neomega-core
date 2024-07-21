@@ -21,15 +21,38 @@ func (e *ExtendInfoHolder) Marshal() (data []byte, err error) {
 			return writer.WriteByte(0)
 		}
 	}
-	// err = little_endian.WriteString(writer, e.WorldName)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// err = writeBool(e.knownWorldName)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
+	err = little_endian.WriteString(writer, e.WorldName)
+	if err != nil {
+		return nil, err
+	}
+	err = writeBool(e.knownWorldName)
+	if err != nil {
+		return nil, err
+	}
+	err = little_endian.WriteInt64(writer, e.WorldSeed)
+	if err != nil {
+		return nil, err
+	}
+	err = writeBool(e.knownWorldSeed)
+	if err != nil {
+		return nil, err
+	}
+	err = little_endian.WriteInt32(writer, e.WorldGenerator)
+	if err != nil {
+		return nil, err
+	}
+	err = writeBool(e.knownWorldGenerator)
+	if err != nil {
+		return nil, err
+	}
+	err = little_endian.WriteString(writer, e.LevelID)
+	if err != nil {
+		return nil, err
+	}
+	err = writeBool(e.knownLevelID)
+	if err != nil {
+		return nil, err
+	}
 	err = little_endian.WriteUint16(writer, e.CompressThreshold)
 	if err != nil {
 		return nil, err
@@ -150,10 +173,6 @@ func (e *ExtendInfoHolder) Marshal() (data []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	// err = writeBool(e.knownPosition)
-	// if err != nil {
-	// 	return nil, err
-	// }
 	err = writeBool(e.currentContainerOpened)
 	if err != nil {
 		return nil, err
@@ -197,14 +216,38 @@ func (e *ExtendInfoHolder) Unmarshal(data []byte) (err error) {
 		}
 		return byteToBool(b)
 	}
-	// e.WorldName, err = little_endian.String(reader)
-	// if err != nil {
-	// 	return err
-	// }
-	// e.knownWorldName, err = readBool()
-	// if err != nil {
-	// 	return err
-	// }
+	e.WorldName, err = little_endian.String(reader)
+	if err != nil {
+		return err
+	}
+	e.knownWorldName, err = readBool()
+	if err != nil {
+		return err
+	}
+	e.WorldSeed, err = little_endian.Int64(reader)
+	if err != nil {
+		return err
+	}
+	e.knownWorldSeed, err = readBool()
+	if err != nil {
+		return err
+	}
+	e.WorldGenerator, err = little_endian.Int32(reader)
+	if err != nil {
+		return err
+	}
+	e.knownWorldGenerator, err = readBool()
+	if err != nil {
+		return err
+	}
+	e.LevelID, err = little_endian.String(reader)
+	if err != nil {
+		return err
+	}
+	e.knownLevelID, err = readBool()
+	if err != nil {
+		return err
+	}
 	e.CompressThreshold, err = little_endian.Uint16(reader)
 	if err != nil {
 		return err

@@ -26,8 +26,14 @@ type ItemStackRequestDetails struct {
 }
 
 type ExtendInfoHolder struct {
-	// WorldName              string
-	// knownWorldName         bool
+	WorldName                    string
+	knownWorldName               bool
+	WorldSeed                    int64
+	knownWorldSeed               bool
+	WorldGenerator               int32
+	knownWorldGenerator          bool
+	LevelID                      string
+	knownLevelID                 bool
 	CompressThreshold            uint16
 	knownCompressThreshold       bool
 	lastSyncRatioStaticStartTime time.Time
@@ -70,14 +76,41 @@ func NewExtendInfoHolder(conn minecraft_conn.Conn) *ExtendInfoHolder {
 	}
 }
 
-// func (e *ExtendInfoHolder) GetWorldName() (worldName string, found bool) {
-// 	return e.WorldName, e.knownWorldName
-// }
+func (e *ExtendInfoHolder) GetWorldName() (worldName string, found bool) {
+	return e.WorldName, e.knownWorldName
+}
 
-// func (e *ExtendInfoHolder) setWorldName(worldName string) {
-// 	e.WorldName = worldName
-// 	e.knownWorldName = true
-// }
+func (e *ExtendInfoHolder) setWorldName(worldName string) {
+	e.WorldName = worldName
+	e.knownWorldName = true
+}
+
+func (e *ExtendInfoHolder) GetWorldSeed() (worldSeed int64, found bool) {
+	return e.WorldSeed, e.knownWorldSeed
+}
+
+func (e *ExtendInfoHolder) setWorldSeed(worldSeed int64) {
+	e.WorldSeed = worldSeed
+	e.knownWorldSeed = true
+}
+
+func (e *ExtendInfoHolder) GetWorldGenerator() (worldGenerator int32, found bool) {
+	return e.WorldGenerator, e.knownWorldGenerator
+}
+
+func (e *ExtendInfoHolder) setWorldGenerator(worldGenerator int32) {
+	e.WorldGenerator = worldGenerator
+	e.knownWorldGenerator = true
+}
+
+func (e *ExtendInfoHolder) GetLevelID() (levelID string, found bool) {
+	return e.LevelID, e.knownLevelID
+}
+
+func (e *ExtendInfoHolder) setLevelID(levelID string) {
+	e.LevelID = levelID
+	e.knownLevelID = true
+}
 
 func (e *ExtendInfoHolder) GetCompressThreshold() (compressThreshold uint16, found bool) {
 	return e.CompressThreshold, e.knownCompressThreshold
@@ -196,6 +229,11 @@ func (uq *ExtendInfoHolder) UpdateFromPacket(pk packet.Packet) {
 		}
 	}()
 	switch p := pk.(type) {
+	case *packet.StartGame:
+		uq.setWorldName(p.WorldName)
+		uq.setWorldSeed(p.WorldSeed)
+		uq.setWorldGenerator(p.Generator)
+		uq.setLevelID(p.LevelID)
 	case *packet.NetworkSettings:
 		uq.setCompressThreshold(p.CompressionThreshold)
 	case *packet.SetTime:
