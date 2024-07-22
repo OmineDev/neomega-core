@@ -60,7 +60,7 @@ type BotActionHighLevel interface {
 	HighLevelEnchantItem(slot uint8, enchants supported_item.Enchants) (err error)
 	HighLevelListenItemPicked(timeout time.Duration) (actionChan chan protocol.InventoryAction, cancel func(), err error)
 	HighLevelPickBlock(pos define.CubePos, targetHotBar uint8, retryTimes int) error
-	HighLevelBlockBreakAndPickInHotBar(pos define.CubePos, recoverBlock bool, targetSlots map[uint8]bool, maxRetriesTotal int) (targetSlotsGetInfo map[uint8]bool, err error)
+	HighLevelBlockBreakAndPickInHotBar(pos define.CubePos, recoverBlock bool, targetSlot uint8, maxRetriesTotal int) (err error)
 	HighLevelSetContainerContent(pos define.CubePos, containerInfo map[uint8]*supported_item.ContainerSlotItemStack) (err error)
 	HighLevelGenContainer(pos define.CubePos, containerInfo map[uint8]*supported_item.ContainerSlotItemStack, block string) (err error)
 	HighLevelWriteBook(slotID uint8, pages []string) (err error)

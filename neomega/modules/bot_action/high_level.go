@@ -601,71 +601,50 @@ func (o *BotActionHighLevel) highLevelPickBlock(pos define.CubePos, targetHotBar
 	return fmt.Errorf("cannot pick block within specific retry times")
 }
 
-func (o *BotActionHighLevel) HighLevelBlockBreakAndPickInHotBar(pos define.CubePos, recoverBlock bool, targetSlots map[uint8]bool, maxRetriesTotal int) (targetSlotsGetInfo map[uint8]bool, err error) {
+func (o *BotActionHighLevel) HighLevelBlockBreakAndPickInHotBar(pos define.CubePos, recoverBlock bool, targetSlot uint8, maxRetriesTotal int) (err error) {
 	release, err := o.occupyBot(time.Second * 3)
 	if err != nil {
-		return targetSlots, err
+		return err
 	}
 	defer release()
-	return o.highLevelBlockBreakAndPickInHotBar(pos, recoverBlock, targetSlots, maxRetriesTotal)
+	return o.highLevelBlockBreakAndPickInHotBar(pos, recoverBlock, targetSlot, maxRetriesTotal)
 }
 
-func (o *BotActionHighLevel) highLevelBlockBreakAndPickInHotBar(pos define.CubePos, recoverBlock bool, targetSlots map[uint8]bool, maxRetriesTotal int) (targetSlotsGetInfo map[uint8]bool, err error) {
+func (o *BotActionHighLevel) highLevelBlockBreakAndPickInHotBar(pos define.CubePos, recoverBlock bool, targetSlot uint8, maxRetriesTotal int) (err error) {
 	if err := o.highLevelEnsureBotNearby(pos, 8); err != nil {
-		return map[uint8]bool{}, err
+		return err
 	}
 	o.cmdSender.SendWebSocketCmdNeedResponse("clear @s").BlockGetResult()
 	o.microAction.SelectHotBar(0)
 	o.microAction.SleepTick(2)
 	// split targets
-	targetSlotsGetInfo = map[uint8]bool{}
-	for k, v := range targetSlots {
-		if !v {
-			if k > 8 {
-				return targetSlots, fmt.Errorf("hot bar slot can only be 0~8")
-			}
-			targetSlotsGetInfo[k] = v
-			o.cmdHelper.ReplaceHotBarItemCmd(int32(k), "air").SendAndGetResponse().BlockGetResult()
-		}
-	}
 	o.microAction.SleepTick(2)
-	// merge later
-	defer func() {
-		for k, v := range targetSlots {
-			if v {
-				targetSlotsGetInfo[k] = v
-			}
-		}
-	}()
-	if len(targetSlotsGetInfo) == 0 {
-		return
-	}
 	if ret, err := o.cmdSender.SendWebSocketCmdNeedResponse(fmt.Sprintf("tp @s %v %v %v", pos.X(), pos.Y(), pos.Z())).SetTimeout(time.Second * 3).BlockGetResult(); ret == nil || err != nil {
-		return targetSlotsGetInfo, fmt.Errorf("cannot make bot to target position")
+		return fmt.Errorf("cannot make bot to target position")
 	}
 	if ret, err := o.cmdSender.SendWebSocketCmdNeedResponse("tp @e[type=item,r=9] ~ -100 ~").SetTimeout(time.Second * 3).BlockGetResult(); ret == nil || err != nil {
-		return targetSlotsGetInfo, fmt.Errorf("cannot clean bot nearby items")
+		return fmt.Errorf("cannot clean bot nearby items")
 	}
 
 	ctx, cancelListen := context.WithCancel(context.Background())
 	defer cancelListen()
 	actionChan, err := o.highLevelListenItemPicked(ctx)
 	if err != nil {
-		return targetSlotsGetInfo, err
+		return err
 	}
 	currentBlock, recoverAction, err := o.highLevelGetAndRemoveSpecificBlockSideEffect(pos, false, "_temp_break")
 	if err != nil {
-		return targetSlotsGetInfo, err
+		return err
 	}
 	if currentBlock.ForeGroundRtidNested()[0] == blocks.AIR_RUNTIMEID && currentBlock.BackGroundRtidNested()[0] == blocks.AIR_RUNTIMEID {
-		return targetSlotsGetInfo, fmt.Errorf("block is air")
+		return fmt.Errorf("block is air")
 	}
 	defer func() {
 		if err != nil || recoverBlock {
 			recoverAction()
 		}
 	}()
-	totalTimes := len(targetSlotsGetInfo) + maxRetriesTotal
+	totalTimes := 1 + maxRetriesTotal
 	for tryTime := 0; tryTime < totalTimes; tryTime++ {
 		thisTimeOk := false
 		pickedSlot := -1
@@ -700,27 +679,18 @@ func (o *BotActionHighLevel) highLevelBlockBreakAndPickInHotBar(pos define.CubeP
 			if !hasInreleventItem {
 				thisTimeOk = true
 			} else {
-				return targetSlotsGetInfo, fmt.Errorf("this is not a simple block or a shulker box, but a block with contents, which cannot be get in single slot")
+				return fmt.Errorf("this is not a simple block or a shulker box, but a block with contents, which cannot be get in single slot")
 			}
 		}
 
 		if thisTimeOk {
 			// check if item is in slot we want
-			if _, ok := targetSlotsGetInfo[uint8(pickedSlot)]; ok {
+			if pickedSlot == int(targetSlot) {
+				return
 				// lucky
 				// fmt.Println("get in slot ", pickedSlot)
-				targetSlotsGetInfo[uint8(pickedSlot)] = true
 			} else {
 				// move item
-				targetSlot := -1
-				for k, v := range targetSlotsGetInfo {
-					if !v {
-						targetSlot = int(k)
-					}
-				}
-				if targetSlot == -1 {
-					panic("programme logic error, should never reach this")
-				}
 				// fmt.Printf("move %v -> %v\n", pickedSlot, targetSlot)
 				if err = o.microAction.MoveItemInsideHotBarOrInventory(uint8(pickedSlot), uint8(targetSlot), 1); err != nil {
 					// maybe something block this slot
@@ -730,45 +700,28 @@ func (o *BotActionHighLevel) highLevelBlockBreakAndPickInHotBar(pos define.CubeP
 						// oh no
 						thisTimeOk = false
 					} else {
-						targetSlotsGetInfo[uint8(targetSlot)] = true
-						pickedSlot = targetSlot
+						// ok
+						return nil
 					}
-				} else {
-					targetSlotsGetInfo[uint8(targetSlot)] = true
-					pickedSlot = targetSlot
 				}
 			}
 		}
 
 		// fmt.Printf("do time: %v ok: %v slot: %v\n", tryTime, thisTimeOk, pickedSlot)
-		allDone := true
-		for _, v := range targetSlotsGetInfo {
-			if !v {
-				allDone = false
-				break
-			}
-		}
-		if allDone {
-			return targetSlotsGetInfo, nil
-		}
 		if tryTime == totalTimes-1 {
 			break
 		}
 		recoverAction()
 		if !thisTimeOk {
 			if ret, err := o.cmdSender.SendWebSocketCmdNeedResponse("tp @e[type=item,r=9] ~ -100 ~").SetTimeout(time.Second * 3).BlockGetResult(); ret == nil || err != nil {
-				return targetSlotsGetInfo, fmt.Errorf("cannot clean bot nearby items")
+				return fmt.Errorf("cannot clean bot nearby items")
 			}
-			for k, v := range targetSlotsGetInfo {
-				if !v {
-					o.cmdHelper.ReplaceHotBarItemCmd(int32(k), "air").SendAndGetResponse().BlockGetResult()
-				}
-			}
+			o.cmdHelper.ReplaceHotBarItemCmd(int32(targetSlot), "air").SendAndGetResponse().BlockGetResult()
 		}
 		o.microAction.SleepTick(10)
 	}
 	o.microAction.SleepTick(5)
-	return targetSlotsGetInfo, fmt.Errorf("not all slots successfully get block")
+	return fmt.Errorf("not all slots successfully get block")
 }
 
 func (o *BotActionHighLevel) HighLevelWriteBook(slotID uint8, pages []string) (err error) {
@@ -932,7 +885,7 @@ func (o *BotActionHighLevel) highLevelMakeItem(item *supported_item.Item, slotID
 		// if err := o.highLevelPickBlock(nextContainerPos, slotID, 3); err != nil {
 		// 	return err
 		// }
-		if _, err := o.highLevelBlockBreakAndPickInHotBar(nextContainerPos, false, map[uint8]bool{slotID: false}, 2); err != nil {
+		if err := o.highLevelBlockBreakAndPickInHotBar(nextContainerPos, false, slotID, 2); err != nil {
 			return err
 		}
 		// give complex block enchant and name
@@ -1049,7 +1002,7 @@ func (o *BotActionHighLevel) highLevelSetContainerItems(pos define.CubePos, cont
 			o.microAction.SleepTick(5)
 			updateErr(o.highLevelSetContainerItems(nextContainerPos, stack.Item.RelateComplexBlockData.Container))
 			// err := o.highLevelPickBlock(nextContainerPos, 0, 3)
-			_, err := o.highLevelBlockBreakAndPickInHotBar(nextContainerPos, false, map[uint8]bool{0: false}, 3)
+			err := o.highLevelBlockBreakAndPickInHotBar(nextContainerPos, false, 0, 3)
 			updateErr(err)
 			// give complex block enchant and name
 			if len(stack.Item.Enchants) > 0 {

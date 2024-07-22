@@ -19,19 +19,20 @@ func init() {
 }
 
 func T_MC(in string) (string, bool) {
+	out, ok := T_MCItem(in)
+	if ok {
+		return out, true
+	}
 	for _, group := range Vanilla {
 		if out, found := group[in]; found {
 			return out, true
 		}
 	}
-	out, ok := T_MCBlock(in)
+	out, ok = T_MCBlock(in)
 	if ok {
 		return out, true
 	}
-	out, ok = T_MCItem(in)
-	if ok {
-		return out, true
-	}
+
 	return in, false
 }
 
