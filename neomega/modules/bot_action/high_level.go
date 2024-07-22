@@ -519,7 +519,7 @@ func (o *BotActionHighLevel) highLevelEnchantItem(slot uint8, enchants supported
 	o.microAction.SleepTick(1)
 	results := make(chan *packet.CommandOutput, len(enchants))
 	for nameOrID, level := range enchants {
-		o.cmdSender.SendWebSocketCmdNeedResponse(fmt.Sprintf("enchant @s %v %v", nameOrID, level)).SetTimeout(time.Second * 3).AsyncGetResult(func(output *packet.CommandOutput, err error) {
+		o.cmdSender.SendWebSocketCmdNeedResponse(fmt.Sprintf("enchant @s %d %v", nameOrID, level)).SetTimeout(time.Second * 3).AsyncGetResult(func(output *packet.CommandOutput, err error) {
 			if err != nil {
 				output = nil
 			}
