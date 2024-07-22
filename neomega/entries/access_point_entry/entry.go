@@ -16,7 +16,7 @@ import (
 
 const ENTRY_NAME = "omega_access_point"
 
-func Entry(args *Args) {
+func Entry(args *Args, individual bool) (omegaCore neomega.MicroOmega, node defines.Node) {
 	fmt.Println(i18n.T(i18n.S_neomega_access_point_starting))
 	impactOption := args.ImpactOption
 	var err error
@@ -31,8 +31,6 @@ func Entry(args *Args) {
 	accessOption.DisableCommandBlock = false
 	accessOption.ReasonWithPrivilegeStuff = true
 
-	var omegaCore neomega.MicroOmega
-	var node defines.Node
 	ctx := context.Background()
 	{
 		server, err := underlay_conn.NewServerFromBasicNet(args.AccessArgs.AccessPointAddr)
@@ -60,7 +58,10 @@ func Entry(args *Args) {
 	node.PublishMessage("reboot", defines.FromString("reboot to refresh data"))
 	fmt.Println(i18n.T(i18n.S_neomega_access_point_ready))
 
-	panic(<-omegaCore.Dead())
+	if individual {
+		panic(<-omegaCore.Dead())
+	}
+	return
 }
 
 func StrMD5Str(data string) string {

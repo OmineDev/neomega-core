@@ -4,5 +4,5 @@ import access_point "github.com/OmineDev/neomega-core/neomega/entries/access_poi
 
 func main() {
 	args := access_point.GetArgs()
-	access_point.Entry(args)
+	access_point.Entry(args, true)
 }

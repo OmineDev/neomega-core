@@ -111,8 +111,17 @@ func initConvertor() {
 	// initSchematicBlockCheck(schematicToNemcConvertor)
 }
 
+var inited bool
+
 func init() {
 	initNEMCBlocks()
+}
+
+func Init() {
+	if inited {
+		return
+	}
+	inited = true
 	initConvertor()
 }
 
