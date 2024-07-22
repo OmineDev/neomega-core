@@ -885,7 +885,7 @@ func (o *BotActionHighLevel) highLevelMakeItem(item *supported_item.Item, slotID
 		// if err := o.highLevelPickBlock(nextContainerPos, slotID, 3); err != nil {
 		// 	return err
 		// }
-		if err := o.highLevelBlockBreakAndPickInHotBar(nextContainerPos, false, slotID, 2); err != nil {
+		if err := o.highLevelPickBlock(nextContainerPos, slotID, 2); err != nil {
 			return err
 		}
 		// give complex block enchant and name
@@ -1002,7 +1002,7 @@ func (o *BotActionHighLevel) highLevelSetContainerItems(pos define.CubePos, cont
 			o.microAction.SleepTick(5)
 			updateErr(o.highLevelSetContainerItems(nextContainerPos, stack.Item.RelateComplexBlockData.Container))
 			// err := o.highLevelPickBlock(nextContainerPos, 0, 3)
-			err := o.highLevelBlockBreakAndPickInHotBar(nextContainerPos, false, 0, 3)
+			err := o.highLevelPickBlock(nextContainerPos, 0, 3)
 			updateErr(err)
 			// give complex block enchant and name
 			if len(stack.Item.Enchants) > 0 {
