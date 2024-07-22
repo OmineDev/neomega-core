@@ -8,17 +8,17 @@ import (
 
 type Enchant int32
 
-func (e Enchant) String() string {
+func (e Enchant) TranslatedString() string {
 	return i18n.T_MCEnchantStr(int32(e))
 }
 
 type Enchants map[Enchant]int32
 
-func (es Enchants) String() string {
+func (es Enchants) TranslatedString() string {
 	out := ""
 	if len(es) > 0 {
 		for enchant, level := range es {
-			out += fmt.Sprintf("[%v:%v级]", enchant.String(), level)
+			out += fmt.Sprintf("[%v:%v级]", enchant.TranslatedString(), level)
 		}
 	}
 	return out

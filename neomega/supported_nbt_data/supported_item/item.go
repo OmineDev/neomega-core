@@ -52,7 +52,7 @@ func (i *Item) String() string {
 	if specific != "" {
 		out += "\n -信息:" + strings.ReplaceAll(specific, "\n", "\n  ")
 	}
-	enchants := i.Enchants.String()
+	enchants := i.Enchants.TranslatedString()
 	if enchants != "" {
 		out += "\n -附魔:" + strings.ReplaceAll(enchants, "\n", "\n  ")
 	}
