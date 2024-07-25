@@ -55,7 +55,7 @@ type BotActionHighLevel interface {
 	HighLevelPlaceCommandBlock(targetPos define.CubePos, option *supported_nbt_data.CommandBlockSupportedData, maxRetry int) error
 	HighLevelMoveItemToContainer(pos define.CubePos, moveOperations map[uint8]uint8) error
 	HighLevelEnsureBotNearby(pos define.CubePos, threshold float32) error
-	HighLevelRemoveSpecificBlockSideEffect(pos define.CubePos, wantAir bool, backupName string) (deferFunc func(), err error)
+	HighLevelRemoveSpecificBlockSideEffect(pos define.CubePos, backupName string) (deferFunc func(), err error)
 	HighLevelRenameItemWithAnvil(pos define.CubePos, slot uint8, newName string, autoGenAnvil bool) (err error)
 	HighLevelEnchantItem(slot uint8, enchants supported_item.Enchants) (err error)
 	HighLevelListenItemPicked(timeout time.Duration) (actionChan chan protocol.InventoryAction, cancel func(), err error)

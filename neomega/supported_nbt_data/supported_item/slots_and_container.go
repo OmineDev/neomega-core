@@ -2,6 +2,7 @@ package supported_item
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -19,8 +20,13 @@ func (d *ComplexBlockData) String() string {
 	}
 	if d.Container != nil {
 		out := "容器内容:"
-		for _, slot := range d.Container {
-			out += "\n  " + strings.ReplaceAll(slot.String(), "\n", "\n  | ")
+		origOrder := []int{}
+		for slotID, _ := range d.Container {
+			origOrder = append(origOrder, int(slotID))
+		}
+		sort.Ints(origOrder)
+		for _, slotID := range origOrder {
+			out += "\n  " + strings.ReplaceAll(fmt.Sprintf("槽%v: ", slotID)+d.Container[uint8(slotID)].String(), "\n", "\n  | ")
 		}
 		return out
 	}

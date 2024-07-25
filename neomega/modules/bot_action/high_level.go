@@ -171,54 +171,31 @@ func (o *BotActionHighLevel) HighLevelEnsureBotNearby(pos define.CubePos, thresh
 // if we want the pos to be air when use it, recoverFromAir=true
 // e.g. 如果我们希望把某个方块位置临时变为 air, 则 wantAir=true
 // 如果希望把某个方块位置临时变为某个非空气方块, 则 wantAir=false
-func (o *BotActionHighLevel) HighLevelRemoveSpecificBlockSideEffect(pos define.CubePos, wantAir bool, backupName string) (deferFunc func(), err error) {
+func (o *BotActionHighLevel) HighLevelRemoveSpecificBlockSideEffect(pos define.CubePos, backupName string) (deferFunc func(), err error) {
 	release, err := o.occupyBot(time.Second * 3)
 	if err != nil {
 		return func() {}, err
 	}
 	defer release()
-	return o.highLevelRemoveSpecificBlockSideEffect(pos, wantAir, backupName)
+	return o.highLevelRemoveSpecificBlockSideEffect(pos, backupName)
 }
 
-func (o *BotActionHighLevel) highLevelRemoveSpecificBlockSideEffect(pos define.CubePos, wantAir bool, backupName string) (deferFunc func(), err error) {
-	_, deferFunc, err = o.highLevelGetAndRemoveSpecificBlockSideEffect(pos, wantAir, backupName)
+func (o *BotActionHighLevel) highLevelRemoveSpecificBlockSideEffect(pos define.CubePos, backupName string) (deferFunc func(), err error) {
+	_, deferFunc, err = o.highLevelGetAndRemoveSpecificBlockSideEffect(pos, backupName)
 	return deferFunc, err
 }
 
-func (o *BotActionHighLevel) highLevelGetAndRemoveSpecificBlockSideEffect(pos define.CubePos, wantAir bool, backupName string) (decodedStructure neomega.DecodedStructure, deferFunc func(), err error) {
+func (o *BotActionHighLevel) highLevelGetAndRemoveSpecificBlockSideEffect(pos define.CubePos, backupName string) (decodedStructure neomega.DecodedStructure, deferFunc func(), err error) {
 	o.highLevelEnsureBotNearby(pos, 8)
-	structure, err := o.areaRequester.LowLevelRequestStructure(pos, define.CubePos{1, 1, 1}, backupName).SetTimeout(time.Second * 3).BlockGetResult()
-	if err != nil {
-		return nil, func() {}, err
-	}
-	decodedStructure, err = structure.Decode()
-	if err != nil {
-		return nil, func() {}, err
-	}
-	foreGround, backGround := decodedStructure.BlockOfRelativePos(define.CubePos{0, 0, 0})
-	isAir := false
-	if foreGround == blocks.AIR_RUNTIMEID && backGround == blocks.AIR_RUNTIMEID {
-		isAir = true
-	} else {
-		ret, err := o.cmdHelper.BackupStructureWithGivenNameCmd(pos, define.CubePos{1, 1, 1}, backupName).SendAndGetResponse().SetTimeout(time.Second * 3).BlockGetResult()
-		if ret == nil || err != nil {
-			return nil, func() {}, fmt.Errorf("cannot backup block for revert")
-		}
+	ret, err := o.cmdHelper.BackupStructureWithGivenNameCmd(pos, define.CubePos{1, 1, 1}, backupName).SendAndGetResponse().SetTimeout(time.Second * 3).BlockGetResult()
+	if ret == nil || err != nil {
+		return nil, func() {}, fmt.Errorf("cannot backup block for revert")
 	}
 	deferFunc = func() {
 		o.cmdHelper.RevertStructureWithGivenNameCmd(pos, backupName).Send()
 		o.microAction.SleepTick(1)
 	}
-	if !wantAir {
-		if isAir {
-			deferFunc = func() { o.cmdHelper.SetBlockCmd(pos, "air").Send() }
-		}
-	} else {
-		if isAir {
-			deferFunc = func() {}
-		}
-		o.cmdHelper.SetBlockCmd(pos, "air").AsWebSocket().SendAndGetResponse().BlockGetResult()
-	}
+	o.cmdHelper.SetBlockCmd(pos, "air").AsWebSocket().SendAndGetResponse().BlockGetResult()
 	return decodedStructure, deferFunc, nil
 }
 
@@ -386,7 +363,7 @@ func (o *BotActionHighLevel) highLevelMoveItemToContainer(pos define.CubePos, mo
 	if err := o.highLevelEnsureBotNearby(pos, 8); err != nil {
 		return err
 	}
-	structureResponse, err := o.areaRequester.LowLevelRequestStructure(pos, define.CubePos{1, 1, 1}, "_temp").BlockGetResult()
+	structureResponse, err := o.areaRequester.LowLevelRequestStructure(pos.Sub(define.CubePos{1, 0, 1}), define.CubePos{3, 1, 3}, o.nextCountName()).SetTimeout(time.Second * 3).BlockGetResult()
 	if err != nil {
 		return err
 	}
@@ -394,7 +371,7 @@ func (o *BotActionHighLevel) highLevelMoveItemToContainer(pos define.CubePos, mo
 	if err != nil {
 		return err
 	}
-	containerRuntimeID := structure.ForeGroundRtidNested()[0]
+	containerRuntimeID := structure.ForeGroundRtidNested()[4]
 	// containerNEMCRuntimeID := chunk.StandardRuntimeIDToNEMCRuntimeID(containerRuntimeID)
 	if containerRuntimeID == blocks.AIR_RUNTIMEID {
 		return fmt.Errorf("block of %v (nemc) not found", containerRuntimeID)
@@ -437,14 +414,14 @@ func (o *BotActionHighLevel) highLevelMoveItemToContainer(pos define.CubePos, mo
 			case 5:
 				blockerPos[0] = blockerPos[0] + 1
 			}
-			deferAction, err = o.highLevelRemoveSpecificBlockSideEffect(blockerPos, true, "_temp_container_blocker"+o.nextCountName())
+			deferAction, err = o.highLevelRemoveSpecificBlockSideEffect(blockerPos, "_temp_container_blocker"+o.nextCountName())
 			if err != nil {
 				return err
 			}
 		}
 	} else if strings.Contains(block.ShortName(), "chest") {
 		o.cmdHelper.BackupStructureWithGivenNameCmd(pos.Add(define.CubePos{0, 1, 0}), define.CubePos{1, 1, 1}, "container_blocker").SendAndGetResponse().SetTimeout(time.Second * 3).BlockGetResult()
-		deferAction, err = o.highLevelRemoveSpecificBlockSideEffect(pos.Add(define.CubePos{0, 1, 0}), true, "_temp_container_blocker"+o.nextCountName())
+		deferAction, err = o.highLevelRemoveSpecificBlockSideEffect(pos.Add(define.CubePos{0, 1, 0}), "_temp_container_blocker"+o.nextCountName())
 		if err != nil {
 			return err
 		}
@@ -470,14 +447,14 @@ func (o *BotActionHighLevel) highLevelRenameItemWithAnvil(pos define.CubePos, sl
 	deferActionStand := func() {}
 	deferAction := func() {}
 	if autoGenAnvil {
-		deferActionStand, err = o.highLevelRemoveSpecificBlockSideEffect(pos.Add(define.CubePos{0, -1, 0}), false, "_temp_anvil_stand"+o.nextCountName())
+		deferActionStand, err = o.highLevelRemoveSpecificBlockSideEffect(pos.Add(define.CubePos{0, -1, 0}), "_temp_anvil_stand"+o.nextCountName())
 		if err != nil {
 			return err
 		}
 		if ret, err := o.cmdHelper.SetBlockCmd(pos.Add(define.CubePos{0, -1, 0}), "glass").AsWebSocket().SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult(); ret == nil || err != nil {
 			return fmt.Errorf("cannot place anvil for operation")
 		}
-		deferAction, err = o.highLevelRemoveSpecificBlockSideEffect(pos, false, "_temp_anvil"+o.nextCountName())
+		deferAction, err = o.highLevelRemoveSpecificBlockSideEffect(pos, "_temp_anvil"+o.nextCountName())
 		if err != nil {
 			return err
 		}
@@ -632,7 +609,7 @@ func (o *BotActionHighLevel) highLevelBlockBreakAndPickInHotBar(pos define.CubeP
 	if err != nil {
 		return err
 	}
-	currentBlock, recoverAction, err := o.highLevelGetAndRemoveSpecificBlockSideEffect(pos, false, "_temp_break")
+	currentBlock, recoverAction, err := o.highLevelGetAndRemoveSpecificBlockSideEffect(pos, "_temp_break")
 	if err != nil {
 		return err
 	}
@@ -862,9 +839,9 @@ func (o *BotActionHighLevel) highLevelMakeItem(item *supported_item.Item, slotID
 			}
 		}
 		if item.DisplayName != "" {
-			deferActionStand, _ := o.highLevelRemoveSpecificBlockSideEffect(anvilPos.Add(define.CubePos{0, -1, 0}), false, "_temp_anvil_stand")
+			deferActionStand, _ := o.highLevelRemoveSpecificBlockSideEffect(anvilPos.Add(define.CubePos{0, -1, 0}), "_temp_anvil_stand")
 			o.cmdHelper.SetBlockCmd(anvilPos.Add(define.CubePos{0, -1, 0}), "glass").AsWebSocket().SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult()
-			deferAction, _ := o.highLevelRemoveSpecificBlockSideEffect(anvilPos, false, "_temp_anvil"+o.nextCountName())
+			deferAction, _ := o.highLevelRemoveSpecificBlockSideEffect(anvilPos, "_temp_anvil"+o.nextCountName())
 			o.cmdHelper.SetBlockCmd(anvilPos, "anvil").AsWebSocket().SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult()
 			o.highLevelRenameItemWithAnvil(anvilPos, slotID, item.DisplayName, false)
 			deferAction()
@@ -876,7 +853,7 @@ func (o *BotActionHighLevel) highLevelMakeItem(item *supported_item.Item, slotID
 			}
 		}
 	} else {
-		deferActionWorkspace, _ := o.highLevelRemoveSpecificBlockSideEffect(nextContainerPos, false, "_temp_work"+o.nextCountName())
+		deferActionWorkspace, _ := o.highLevelRemoveSpecificBlockSideEffect(nextContainerPos, "_temp_work"+o.nextCountName())
 		defer deferActionWorkspace()
 		o.cmdHelper.SetBlockCmd(nextContainerPos, fmt.Sprintf("%v %v", item.Name, item.RelatedBlockBedrockStateString)).AsWebSocket().SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult()
 		if err := o.highLevelSetContainerItems(nextContainerPos, item.RelateComplexBlockData.Container); err != nil {
@@ -943,9 +920,9 @@ func (o *BotActionHighLevel) highLevelSetContainerItems(pos define.CubePos, cont
 
 		for _, stack := range slotAndEnchant {
 			if stack.Item.DisplayName != "" {
-				deferActionStand, _ = o.highLevelRemoveSpecificBlockSideEffect(anvilPos.Add(define.CubePos{0, -1, 0}), false, "_temp_anvil_stand"+o.nextCountName())
+				deferActionStand, _ = o.highLevelRemoveSpecificBlockSideEffect(anvilPos.Add(define.CubePos{0, -1, 0}), "_temp_anvil_stand"+o.nextCountName())
 				o.cmdHelper.SetBlockCmd(anvilPos.Add(define.CubePos{0, -1, 0}), "glass").AsWebSocket().SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult()
-				deferAction, _ = o.highLevelRemoveSpecificBlockSideEffect(anvilPos, false, "_temp_anvil"+o.nextCountName())
+				deferAction, _ = o.highLevelRemoveSpecificBlockSideEffect(anvilPos, "_temp_anvil"+o.nextCountName())
 				o.cmdHelper.SetBlockCmd(anvilPos, "anvil").AsWebSocket().SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult()
 				break
 			}
@@ -996,7 +973,7 @@ func (o *BotActionHighLevel) highLevelSetContainerItems(pos define.CubePos, cont
 		slot, stack := _slot, _stack
 		if stack.Item.GetTypeDescription().IsComplexBlock() {
 			o.microAction.SleepTick(5)
-			deferActionWorkspace, _ := o.highLevelRemoveSpecificBlockSideEffect(nextContainerPos, false, "_temp_work"+o.nextCountName())
+			deferActionWorkspace, _ := o.highLevelRemoveSpecificBlockSideEffect(nextContainerPos, "_temp_work"+o.nextCountName())
 			defer deferActionWorkspace()
 			o.cmdHelper.SetBlockCmd(nextContainerPos, fmt.Sprintf("%v %v", stack.Item.Name, stack.Item.RelatedBlockBedrockStateString)).AsWebSocket().SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult()
 			o.microAction.SleepTick(5)
