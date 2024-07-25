@@ -11,7 +11,7 @@ import (
 type Item struct {
 	// Basic Item: item can be given by replace/give, etc.
 	Name  string `json:"name"`
-	Value int16  `json:"val"`
+	Value int32  `json:"val"`
 	// can place on, can break, lock, etc. safe to be nil
 	BaseProps *ItemPropsInGiveOrReplace `json:"base_props,omitempty"`
 	// if item can be put as a block, it could have RelatedBlockStateString, safe to be empty

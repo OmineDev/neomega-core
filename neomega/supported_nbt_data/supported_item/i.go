@@ -22,6 +22,9 @@ func GenContainerItemsInfoFromItemsNbt(itemsNbt []any) (container map[uint8]*Con
 			continue
 		}
 		slot, itemStack := itemNbt.toContainerSlotItemStack()
+		if itemNbt.Tag.Damage != 0 {
+			itemStack.Item.Value = itemNbt.Tag.Damage
+		}
 		container[slot] = itemStack
 	}
 	return container, err
@@ -38,6 +41,9 @@ func GenItemInfoFromItemFrameNBT(itemNbt any) (*Item, error) {
 		return nil, fmt.Errorf("fail to decode item nbt: %v, %v", itemNbt, err)
 	}
 	_, itemStack := ir.toContainerSlotItemStack()
+	if ir.Tag.Damage != 0 {
+		itemStack.Item.Value = ir.Tag.Damage
+	}
 
 	return itemStack.Item, nil
 }
@@ -68,6 +74,7 @@ type containerSlotItemNBT struct {
 		// if is written book
 		Title  string `mapstructure:"title"`
 		Author string `mapstructure:"author"`
+		Damage int32  `mapstructure:"Damage"`
 	} `mapstructure:"tag"`
 	Block struct {
 		Name  string         `mapstructure:"name"`
@@ -82,7 +89,7 @@ func (i *containerSlotItemNBT) toContainerSlotItemStack() (slot uint8, stack *Co
 		Count: i.Count,
 		Item: &Item{
 			Name:                           i.Name,
-			Value:                          i.Damage,
+			Value:                          int32(i.Damage),
 			IsBlock:                        false,
 			RelatedBlockBedrockStateString: "",
 			BaseProps: &ItemPropsInGiveOrReplace{
@@ -106,7 +113,7 @@ func (i *containerSlotItemNBT) toContainerSlotItemStack() (slot uint8, stack *Co
 	// }
 	if i.Block.Name != "" {
 		stack.Item.IsBlock = true
-		stack.Item.Value = i.Block.Value
+		stack.Item.Value = int32(i.Block.Value)
 		states := map[string]any{}
 		if len(i.Block.State) > 0 {
 			states = i.Block.State
