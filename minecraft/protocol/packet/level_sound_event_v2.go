@@ -9,17 +9,17 @@ import (
 // Netease packet
 type LevelSoundEventV2 struct {
 	// Netease
-	Unknown1 uint8
+	SoundType uint8
 	// Netease
 	Posistion mgl32.Vec3
 	// Netease
-	Unknown2 int32
+	ExtraData int32
 	// Netease
-	Unknown3 string
+	EntityIdentifier string
 	// Netease
-	Unknown4 bool
+	IsBabyMob bool
 	// Netease
-	Unknown5 bool
+	IsGlobal bool
 }
 
 // ID ...
@@ -28,10 +28,10 @@ func (*LevelSoundEventV2) ID() uint32 {
 }
 
 func (pk *LevelSoundEventV2) Marshal(io protocol.IO) {
-	io.Uint8(&pk.Unknown1)
+	io.Uint8(&pk.SoundType)
 	io.Vec3(&pk.Posistion)
-	io.Varint32(&pk.Unknown2)
-	io.String(&pk.Unknown3)
-	io.Bool(&pk.Unknown4)
-	io.Bool(&pk.Unknown5)
+	io.Varint32(&pk.ExtraData)
+	io.String(&pk.EntityIdentifier)
+	io.Bool(&pk.IsBabyMob)
+	io.Bool(&pk.IsGlobal)
 }

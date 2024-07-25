@@ -5,19 +5,19 @@ import "github.com/OmineDev/neomega-core/minecraft/protocol"
 // Netease Packet
 type AnimateEmoteEntity struct {
 	// Netease
-	Unknown1 string
+	Animation string
 	// Netease
-	Unknown2 string
+	NextState string
 	// Netease
-	Unknown3 string
+	StopExpression string
 	// Netease
-	Unknown4 int32
+	StopExpressionVersion int32
 	// Netease
-	Unknown5 string
+	Controller string
 	// Netease
-	Unknown6 float32
-	// Netease: uncertain, varint32 + slice = []sometype
-	Unknown7 []byte
+	BlendOutTime float32
+	// Netease
+	RuntimeEntityIds []uint64
 }
 
 // ID ...
@@ -26,12 +26,11 @@ func (*AnimateEmoteEntity) ID() uint32 {
 }
 
 func (pk *AnimateEmoteEntity) Marshal(io protocol.IO) {
-	io.String(&pk.Unknown1)
-	io.String(&pk.Unknown2)
-	io.String(&pk.Unknown3)
-	io.Int32(&pk.Unknown4)
-	io.String(&pk.Unknown5)
-	io.Float32(&pk.Unknown6)
-	//io.ByteSlice(&pk.Unknown7)
-	io.Bytes(&pk.Unknown7)
+	io.String(&pk.Animation)
+	io.String(&pk.NextState)
+	io.String(&pk.StopExpression)
+	io.Int32(&pk.StopExpressionVersion)
+	io.String(&pk.Controller)
+	io.Float32(&pk.BlendOutTime)
+	protocol.FuncSliceVarint32Length(io, &pk.RuntimeEntityIds, io.Varuint64)
 }
