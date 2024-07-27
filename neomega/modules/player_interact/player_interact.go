@@ -99,14 +99,19 @@ func (i *PlayerInteract) onRemovePlayer(uid uuid.UUID) {
 	if !found {
 		return
 	}
-	// name, found := player.GetUsername()
-	// if found {
-	// if i.nextMsgListenerChan[name] != nil {
-	// don't close this or error will occour
-	// close(i.nextMsgListenerChan[name])
-	// delete(i.nextMsgListenerChan, name)
-	// }
-	// }
+	name, found := player.GetUsername()
+	if found {
+		i.mu.Lock()
+		if i.nextMsgListenerChan[name] != nil {
+			// don't close this or error will occour
+			// close(i.nextMsgListenerChan[name])
+			delete(i.nextMsgListenerChan, name)
+			// this is a failure design which may cause memory leak,
+			// but we cannot remove this since we must let all listen call handle this error,
+			// but this is impossible because the exist of lua component
+		}
+		i.mu.Unlock()
+	}
 	for _, cb := range i.playerChangeListeners {
 		go cb(player, "offline")
 	}
