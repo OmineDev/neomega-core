@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/OmineDev/neomega-core/i18n"
 	"github.com/OmineDev/neomega-core/minecraft_neo/can_close"
 	"github.com/OmineDev/neomega-core/nodes/defines"
 	"github.com/OmineDev/neomega-core/utils/async_wrapper"
@@ -100,7 +101,7 @@ func (n *NewMasterNodeMasterNode) publishMessage(source string, topic string, ms
 			select {
 			case msgC <- msgWithTopic:
 			default:
-				fmt.Println("communication between nodes too slow, msg queued!")
+				fmt.Println(i18n.T(i18n.S_communitaion_between_nodes_too_slow_msg_queued))
 				go func() {
 					msgC <- msgWithTopic
 				}()

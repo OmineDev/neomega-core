@@ -101,7 +101,7 @@ func (i *PlayerInteract) onRemovePlayer(uid uuid.UUID) {
 	}
 	name, found := player.GetUsername()
 	if found {
-		i.mu.Lock()
+		// i.mu.Lock()
 		if i.nextMsgListenerChan[name] != nil {
 			// don't close this or error will occour
 			// close(i.nextMsgListenerChan[name])
@@ -110,7 +110,7 @@ func (i *PlayerInteract) onRemovePlayer(uid uuid.UUID) {
 			// but we cannot remove this since we must let all listen call handle this error,
 			// but this is impossible because the exist of lua component
 		}
-		i.mu.Unlock()
+		// i.mu.Unlock()
 	}
 	for _, cb := range i.playerChangeListeners {
 		go cb(player, "offline")
