@@ -117,10 +117,16 @@ func NewCommandBlockSupportedDataFromNBTAndRtid(rtid uint32, nbt map[string]inte
 	tickdelay, _ := nbt["TickDelay"].(int32)     //*/
 	aut, _ := nbt["auto"].(uint8)                //!needrestone
 	trackoutput, _ := nbt["TrackOutput"].(uint8) //
+	var conditionalmode uint8
 	// lo, _ := nbt["LastOutput"].(string)
-	conditionalmode, ok := nbt["conditionalMode"].(uint8)
-	if !ok {
-		conditionalmode = block.States().ToNBT()["conditional_bit"].(uint8)
+	// conditionalmode, ok := nbt["conditionalMode"].(uint8)
+	// if !ok {
+	// 	conditionalmode = block.States().ToNBT()["conditional_bit"].(uint8)
+	// }
+	for _, p := range block.States() {
+		if p.Name == "conditional_bit" {
+			conditionalmode = p.Value.Uint8Val()
+		}
 	}
 	//conditionalmode := nbt["conditionalMode"].(uint8)
 	var executeOnFirstTickBit bool
