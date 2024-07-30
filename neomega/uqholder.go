@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
+	"github.com/OmineDev/neomega-core/neomega/chunks/define"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/google/uuid"
@@ -86,7 +87,7 @@ type ExtendInfo interface {
 	GetCurrentTick() (currentTick int64, found bool)
 	GetSyncRatio() (ratio float32, known bool)
 	GetCurrentOpenedContainer() (container *packet.ContainerOpen, open bool)
-	GetBotDimension() (dimension int32, found bool)
+	GetBotDimension() (dimension define.Dimension, found bool)
 	GetBotPosition() (pos mgl32.Vec3, outOfSyncTick int64)
 	UQInfoHolderEntry
 }

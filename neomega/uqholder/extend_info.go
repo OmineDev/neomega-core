@@ -8,6 +8,7 @@ import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
 	"github.com/OmineDev/neomega-core/neomega"
+	"github.com/OmineDev/neomega-core/neomega/chunks/define"
 	"github.com/OmineDev/neomega-core/neomega/minecraft_conn"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -201,9 +202,9 @@ func (e *ExtendInfoHolder) GetCurrentOpenedContainer() (container *packet.Contai
 	return e.currentOpenedContainer, e.currentContainerOpened
 }
 
-func (e *ExtendInfoHolder) GetBotDimension() (dimension int32, found bool) {
+func (e *ExtendInfoHolder) GetBotDimension() (dimension define.Dimension, found bool) {
 	if e.knownDimension {
-		return e.Dimension, true
+		return define.Dimension(e.Dimension), true
 	} else {
 		return 0, false
 	}

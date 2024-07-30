@@ -17,20 +17,20 @@ type SubChunkBatchReqHandler struct {
 	baseChunkPos define.ChunkPos
 	xGen         func() []int8
 	zGen         func() []int8
-	yGen         func(dim int32) []int8
-	getDim       func() int32
+	yGen         func(dim define.Dimension) []int8
+	getDim       func() define.Dimension
 	ar           *AreaRequester
-	finalDim     *int32
+	finalDim     *define.Dimension
 }
 
-func autoDim(info neomega.ExtendInfo) int32 {
+func autoDim(info neomega.ExtendInfo) define.Dimension {
 	dim, _ := info.GetBotDimension()
 	return dim
 }
 
-func fullY(dim int32) []int8 {
+func fullY(dim define.Dimension) []int8 {
 	ys := make([]int8, 0, 24)
-	for i := int8(define.DimRangeUpperInclude(dim).Min() >> 4); i <= int8(define.DimRangeUpperInclude(dim).Max()>>4); i++ {
+	for i := int8(dim.RangeUpperInclude().Min() >> 4); i <= int8(dim.RangeUpperInclude().Max()>>4); i++ {
 		ys = append(ys, i)
 	}
 	return ys
@@ -65,7 +65,7 @@ func (h *SubChunkBatchReqHandler) OmitResult() {
 		}
 	}
 	h.ar.ctrl.SendPacket(&packet.SubChunkRequest{
-		Dimension: *h.finalDim,
+		Dimension: int32(*h.finalDim),
 		Position:  protocol.SubChunkPos{h.baseChunkPos.X(), 0, h.baseChunkPos.Z()},
 		Offsets:   subChunkOffsets,
 	})
@@ -140,7 +140,7 @@ func (r *SubChunkBatchResult) ToChunks(optionalAlterFn func(r neomega.SubChunkRe
 	return chunkSet
 }
 
-func newSubChunkBatchResult(dim int32, slots []protocol.SubChunkPos) *SubChunkBatchResult {
+func newSubChunkBatchResult(dim define.Dimension, slots []protocol.SubChunkPos) *SubChunkBatchResult {
 	placeHolderResult := map[protocol.SubChunkPos]neomega.SubChunkResult{}
 	for _, slot := range slots {
 		placeHolderResult[slot] = &SubChunkResult{
@@ -153,7 +153,7 @@ func newSubChunkBatchResult(dim int32, slots []protocol.SubChunkPos) *SubChunkBa
 	}
 	return &SubChunkBatchResult{
 		results:  placeHolderResult,
-		finalDim: dim,
+		finalDim: int32(dim),
 	}
 }
 
@@ -196,12 +196,12 @@ func (h *SubChunkBatchReqHandler) GetResult() async_wrapper.AsyncResult[neomega.
 }
 
 func (h *SubChunkBatchReqHandler) AutoDimension() neomega.SubChunkBatchReqHandler {
-	h.getDim = func() int32 { return autoDim(h.ar.extendInfo) }
+	h.getDim = func() define.Dimension { return autoDim(h.ar.extendInfo) }
 	return h
 }
 
-func (h *SubChunkBatchReqHandler) InDimension(dim int32) neomega.SubChunkBatchReqHandler {
-	h.getDim = func() int32 { return dim }
+func (h *SubChunkBatchReqHandler) InDimension(dim define.Dimension) neomega.SubChunkBatchReqHandler {
+	h.getDim = func() define.Dimension { return dim }
 	return h
 }
 
@@ -216,7 +216,7 @@ func (h *SubChunkBatchReqHandler) Z(zOffset int8) neomega.SubChunkBatchReqHandle
 }
 
 func (h *SubChunkBatchReqHandler) Y(yOffset int8) neomega.SubChunkBatchReqHandler {
-	h.yGen = func(dim int32) []int8 { return []int8{yOffset} }
+	h.yGen = func(dim define.Dimension) []int8 { return []int8{yOffset} }
 	return h
 }
 
@@ -230,7 +230,7 @@ func (h *SubChunkBatchReqHandler) ZRange(startOffset int8, endNotIncludedOffset 
 	return h
 }
 func (h *SubChunkBatchReqHandler) YRange(startOffset int8, endNotIncludedOffset int8) neomega.SubChunkBatchReqHandler {
-	h.yGen = func(dim int32) []int8 { return rangeR(startOffset, endNotIncludedOffset)() }
+	h.yGen = func(dim define.Dimension) []int8 { return rangeR(startOffset, endNotIncludedOffset)() }
 	return h
 }
 
@@ -245,7 +245,7 @@ func (ar *AreaRequester) LowLevelRequestChunk(chunkPos define.ChunkPos) neomega.
 		xGen:         fixR(0),
 		zGen:         fixR(0),
 		yGen:         fullY,
-		getDim:       func() int32 { return autoDim(ar.extendInfo) },
+		getDim:       func() define.Dimension { return autoDim(ar.extendInfo) },
 		ar:           ar,
 	}
 }

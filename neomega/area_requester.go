@@ -47,7 +47,7 @@ type SubChunkBatchReqHandler interface {
 	OmitResult()
 	GetResult() async_wrapper.AsyncResult[SubChunkBatchResult]
 	AutoDimension() SubChunkBatchReqHandler
-	InDimension(dim int32) SubChunkBatchReqHandler
+	InDimension(dim define.Dimension) SubChunkBatchReqHandler
 	X(xOffset int8) SubChunkBatchReqHandler
 	Z(zOffset int8) SubChunkBatchReqHandler
 	Y(zOffset int8) SubChunkBatchReqHandler
