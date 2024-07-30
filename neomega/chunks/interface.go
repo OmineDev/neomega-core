@@ -3,6 +3,7 @@ package chunks
 import (
 	"time"
 
+	"github.com/OmineDev/neomega-core/neomega/blocks"
 	"github.com/OmineDev/neomega-core/neomega/chunks/chunk"
 	"github.com/OmineDev/neomega-core/neomega/chunks/define"
 )
@@ -19,6 +20,26 @@ type ChunkWithAuxInfo struct {
 	ChunkPos  define.ChunkPos
 }
 
+func (c *ChunkWithAuxInfo) GetBlock(pos define.CubePos) (rtid uint32) {
+	if c.Chunk == nil {
+		return blocks.AIR_RUNTIMEID
+	}
+	return c.Chunk.Block(uint8(pos.X()&0xf), int16(pos.Y()), uint8(pos.Z()&0xf), 0)
+}
+
+func (c *ChunkWithAuxInfo) GetBlockWithNbt(pos define.CubePos) (rtid uint32, nbt map[string]interface{}) {
+	var n map[string]interface{}
+	if c.BlockNbts != nil {
+		n = c.BlockNbts[pos]
+	}
+	return c.GetBlock(pos), n
+}
+
+type DimensiondChunkWithAuxInfo struct {
+	*ChunkWithAuxInfo
+	Dim define.Dimension
+}
+
 func (cd *ChunkWithAuxInfo) GetSyncTime() time.Time {
 	return time.Unix(cd.SyncTime, 0)
 }
@@ -32,27 +53,6 @@ type RidBlockWithNbt struct {
 	Nbt map[string]interface{}
 }
 
-// type LegacyBlockWithNbt struct {
-// 	block *chunk.LegacyBlock
-// 	Nbt   map[string]interface{}
-// }
-
-// 考虑到 Chunk 是一个结构化的，空间受限的，16对齐的数据结构
-// 因此，不同格式(特别是非序列化的格式中)，不同世界的转换很不方便
-// WorldChunkBasic 通过提供一个 Offset Pos (Outside Pos-Inside Pos)
-// 允许序列化的 Outside Blocks 与 Chunk 结构的 Inside Blocks 转换
-type WorldChunkBasic interface {
-	SetOffset(offset define.CubePos)
-	DumpAll() chan RidBlockWithNbt
-}
-
-// WorldChunkAdvanced 和 WorldChunkBasic 概念类似
-// 只是增加了可被导入，导出的数据类型
-// type WorldChunkAdvanced interface {
-// 	WorldChunkBasic
-// 	DumpAllAsLegacyBlock() chan LegacyBlockWithNbt
-// }
-
 type ChunkWriter interface {
 	Write(data *ChunkWithAuxInfo) error
 }
@@ -61,12 +61,6 @@ type ChunkWriter interface {
 // GetWithDeadline(pos ChunkPos, deadline time.Time) 若在 deadline 前无法获得数据，那么应该返回 nil
 type ChunkReader interface {
 	Get(ChunkPos define.ChunkPos) (data *ChunkWithAuxInfo)
-	// GetWithNoFallBack(ChunkPos define.ChunkPos) (data *ChunkData)
-}
-
-// ChunkRequester 在指定deadline时间之前获得目标区块
-type ChunkRequester interface {
-	GetWithDeadline(pos define.ChunkPos, deadline time.Time) (data *ChunkWithAuxInfo)
 }
 
 // 可以读写区块
@@ -75,20 +69,18 @@ type ChunkProvider interface {
 	ChunkWriter
 }
 
-// type WorldDumper interface {
-// 	DumpAll() chan RidBlockWithNbt
-// }
+type MultiDimChunkWriter interface {
+	WriteWithDim(data *DimensiondChunkWithAuxInfo) error
+}
 
-// type WorldFeeder interface {
-// 	Add(block RidBlockWithNbt) error
-// }
+// 没有该数据时应该返回 nil
+// GetWithDeadline(pos ChunkPos, deadline time.Time) 若在 deadline 前无法获得数据，那么应该返回 nil
+type MultiDimChunkReader interface {
+	GetWithDim(dim define.Dimension, ChunkPos define.ChunkPos) (data *DimensiondChunkWithAuxInfo)
+}
 
-// // ChunkCacher 和 ChunkProvider 构成 MirrorWorld 的存储体系
-// // offset 描述 Offset Pos (Outside Pos-Inside Pos)
-// type MirrorWorld interface {
-// 	SetChunkRequester(requester ChunkRequester)
-// 	SetChunkProvider(provier ChunkProvider)
-// 	SetOffSet(offset define.Pos)
-// 	GetDumper() WorldDumper
-// 	GetFeeder() WorldFeeder
-// }
+// 可以读写区块
+type MultiDimChunkProvider interface {
+	MultiDimChunkReader
+	MultiDimChunkWriter
+}
