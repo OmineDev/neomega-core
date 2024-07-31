@@ -125,6 +125,10 @@ func FromFrags(vals ...[]byte) Values {
 	return vals
 }
 
+func FromBytes(val []byte) Values {
+	return Values{val}
+}
+
 func FromString(val string) Values {
 	return Values{[]byte(val)}
 }
