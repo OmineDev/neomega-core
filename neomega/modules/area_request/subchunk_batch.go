@@ -110,7 +110,7 @@ func (r *SubChunkBatchResult) ToChunks(optionalAlterFn func(r neomega.SubChunkRe
 	for pos, sc := range r.results {
 		cp := define.ChunkPos{pos.X(), pos.Z()}
 		ySubChunk := pos.Y()
-		if r.finalDim == 0 {
+		if r.finalDim != 1 && r.finalDim != 2 {
 			ySubChunk += 4
 		}
 		var c *chunks.ChunkWithAuxInfo
