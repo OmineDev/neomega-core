@@ -7,17 +7,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/OmineDev/neomega-core/i18n"
 	"github.com/OmineDev/neomega-core/minecraft_neo/can_close"
 	"github.com/OmineDev/neomega-core/nodes/defines"
 	"github.com/OmineDev/neomega-core/utils/async_wrapper"
 	"github.com/OmineDev/neomega-core/utils/sync_wrapper"
+	"github.com/OmineDev/neomega-core/utils/waitable_queue"
 )
 
 type SlaveNodeInfo struct {
 	Ctx              context.Context
 	cancelFn         func()
-	MsgToPub         chan defines.Values
+	MsgToPub         *waitable_queue.WaitableQueue[defines.Values]
 	SubScribedTopics *sync_wrapper.SyncKVMap[string, struct{}]
 	ExposedApis      *sync_wrapper.SyncKVMap[string, struct{}]
 	AcquiredLocks    *sync_wrapper.SyncKVMap[string, struct{}]
@@ -34,7 +34,7 @@ type NewMasterNodeMasterNode struct {
 	*LocalTopicNet[defines.Values]
 	slaves                *sync_wrapper.SyncKVMap[string, *SlaveNodeInfo]
 	subscribeMu           sync.RWMutex
-	slaveSubscribedTopics map[string]map[string]chan defines.Values
+	slaveSubscribedTopics map[string]map[string]*waitable_queue.WaitableQueue[defines.Values]
 	ApiProvider           *sync_wrapper.SyncKVMap[string, string]
 	values                *sync_wrapper.SyncKVMap[string, defines.Values]
 	can_close.CanCloseWithError
@@ -50,7 +50,7 @@ func (n *NewMasterNodeMasterNode) onNewNode(id string) *SlaveNodeInfo {
 	nodeInfo := &SlaveNodeInfo{
 		Ctx:              ctx,
 		cancelFn:         cancelFn,
-		MsgToPub:         make(chan defines.Values, 128),
+		MsgToPub:         waitable_queue.NewWaitableQueue[defines.Values](),
 		SubScribedTopics: sync_wrapper.NewSyncKVMap[string, struct{}](),
 		ExposedApis:      sync_wrapper.NewSyncKVMap[string, struct{}](),
 		AcquiredLocks:    sync_wrapper.NewSyncKVMap[string, struct{}](),
@@ -62,7 +62,7 @@ func (n *NewMasterNodeMasterNode) onNewNode(id string) *SlaveNodeInfo {
 
 func (n *NewMasterNodeMasterNode) onNodeOffline(id string, info *SlaveNodeInfo) {
 	info.cancelFn()
-
+	info.MsgToPub.Put(nil)
 	info.SubScribedTopics.Iter(func(topic string, v struct{}) (continueInter bool) {
 		n.subscribeMu.Lock()
 		defer n.subscribeMu.Unlock()
@@ -98,14 +98,7 @@ func (n *NewMasterNodeMasterNode) publishMessage(source string, topic string, ms
 			if receiver == source {
 				continue
 			}
-			select {
-			case msgC <- msgWithTopic:
-			default:
-				fmt.Println(i18n.T(i18n.S_communitaion_between_nodes_too_slow_msg_queued))
-				go func() {
-					msgC <- msgWithTopic
-				}()
-			}
+			msgC.Put(msgWithTopic)
 		}
 	}
 }
@@ -199,12 +192,11 @@ func (master *NewMasterNodeMasterNode) exposeNewClientFunc() {
 		})
 		go func() {
 			for {
-				select {
-				case <-nodeInfo.Ctx.Done():
+				msg := nodeInfo.MsgToPub.Get()
+				if nodeInfo.Ctx.Err() != nil {
 					return
-				case msg := <-nodeInfo.MsgToPub:
-					master.server.CallOmitResponse(caller, "/on_new_msg", msg)
 				}
+				master.server.CallOmitResponse(caller, "/on_new_msg", msg)
 			}
 		}()
 		return defines.Empty, nil
@@ -227,7 +219,7 @@ func (master *NewMasterNodeMasterNode) exposeTopicFunc() {
 		master.subscribeMu.Lock()
 		subscribers, found := master.slaveSubscribedTopics[topic]
 		if !found {
-			subscribers = make(map[string]chan defines.Values)
+			subscribers = map[string]*waitable_queue.WaitableQueue[defines.Values]{}
 			master.slaveSubscribedTopics[topic] = subscribers
 		}
 		subscribers[string(caller)] = slaveInfo.MsgToPub
@@ -377,7 +369,7 @@ func NewMasterNode(server defines.NewMasterNodeAPIServer) defines.Node {
 		LocalTopicNet:         NewLocalTopicNet[defines.Values](),
 		slaves:                sync_wrapper.NewSyncKVMap[string, *SlaveNodeInfo](),
 		subscribeMu:           sync.RWMutex{},
-		slaveSubscribedTopics: map[string]map[string]chan defines.Values{},
+		slaveSubscribedTopics: map[string]map[string]*waitable_queue.WaitableQueue[defines.Values]{},
 		ApiProvider:           sync_wrapper.NewSyncKVMap[string, string](),
 		values:                sync_wrapper.NewSyncKVMap[string, defines.Values](),
 		CanCloseWithError:     can_close.NewClose(server.Close),
