@@ -1083,6 +1083,45 @@ if __name__ == '__main__':
             accountOption=None
         )
 
+    # 下列 py 示例对应的 lua 插件
+    # local omega = require("omega")
+    # local json = require("json")
+    # --- @type Coromega
+    # local coromega = require("coromega").from(omega)
+    
+    # coromega:when_called_by_api_named("py/api/py_call_lua"):start_new(function (data)
+    
+    #     -- call py plugin 
+    #     local ret,err=coromega:call_other_plugin_api("py/api/lua_call_py",{
+    #         name="2401PT"
+    #     })
+    #     coromega:print(ret,err)
+    #     -- end call py plugin 
+    
+    #     coromega:print(data)
+    #     return {
+    #         ok=true,
+    #         echo=data,
+    #     }
+    # end)
+    
+    # coromega:when_new_data_in_subscribed_topic_named("py/topic/py2lua"):start_new(function (data)
+    #     coromega:print("py2lua:",data)
+    # end)
+    
+    # coromega:start_new(function ()
+    #     local i=0
+    #     while true do 
+    #         i=i+1
+    #         coromega:sleep(1.0)
+    #         coromega:publish_info("py/topic/lua2py",{
+    #             count=i
+    #         })
+    #     end 
+    # end)
+    
+    # coromega:run()
+
     # 演示 API 暴露 (lua 调用 py 的 api)
     def softPYAPI(data):
         print(data)
