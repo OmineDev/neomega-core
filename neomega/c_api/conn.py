@@ -55,8 +55,9 @@ if platform.uname()[0] == "Windows":
     lib_path = os.path.join(os.path.dirname(__file__),"libs", lib_path)
     LIB = ctypes.cdll.LoadLibrary(lib_path)
 elif platform.uname()[0] == "Linux":
-    lib_path = f"libneomega_linux_{machine}.so"
+    lib_path = f"neomega_linux_{machine}.so"
     lib_path = os.path.join(os.path.dirname(__file__),"libs", lib_path)
+    print(lib_path)
     LIB = ctypes.CDLL(lib_path)
 else:
     lib_path = f"neomega_macos_{machine}.dylib"
@@ -111,9 +112,12 @@ def OmitEvent():
 # event retrievers
 LIB.ConsumeOmegaConnError.restype = CString
 LIB.ConsumeCommandResponseCB.restype = CString
+LIB.ConsumeSoftData.restype = CString
 class MCPacketEvent(ctypes.Structure):
     _fields_ = [("packetDataAsJsonStr", CString),
                 ("convertError", CString)]
+LIB.ConsumeSoftCall.restype = CString
+LIB.ConsumeSoftCall.argtypes = [CString]
 LIB.ConsumeMCPacket.restype = MCPacketEvent
 
 # Async Actions
@@ -129,7 +133,29 @@ def SendPlayerCommandNeedResponse(cmd:str,retrieverID:str):
     OmegaAvailable()
     LIB.SendPlayerCommandNeedResponse(toCString(cmd),toCString(retrieverID))
 
+LIB.SoftCall.argtypes=[CString,CString,CString]
+def SoftCall(api:str,json_args:str,retrieverID:str):
+    OmegaAvailable()
+    LIB.SoftCall(toCString(api),toCString(json_args),toCString(retrieverID))
+
+LIB.SoftReg.argtypes=[CString]
+def SoftReg(api:str):
+    OmegaAvailable()
+    LIB.SoftReg(toCString(api))
+
+LIB.SoftListen.argtypes=[CString]
+def SoftListen(api:str):
+    OmegaAvailable()
+    LIB.SoftListen(toCString(api))
+
+LIB.FinishSoftCall.argtypes=[CString,CString,CString]
+
 # OneWay Actions
+LIB.SoftPub.argtypes=[CString]
+def SoftPub(api:str,json_args:str,):
+    OmegaAvailable()
+    LIB.SoftPub(toCString(api),toCString(json_args))
+
 LIB.SendWOCommand.argtypes=[CString]
 def SendSettingsCommand(cmd:str):
     OmegaAvailable()
@@ -272,7 +298,7 @@ LIB.ConsumeChat.restype=CString
 LIB.PlayerChat.argtypes=[CString,CString]
 LIB.PlayerTitle.argtypes=[CString,CString,CString]
 LIB.PlayerActionBar.argtypes=[CString,CString]
-LIB.SetPlayerAbility.argtypes=[CString,CString]
+# LIB.SetPlayerAbility.argtypes=[CString,CString]
 
 LIB.ListenCommandBlock.argtypes=[CString]
 LIB.PlaceCommandBlock.argtypes=[CString]
@@ -620,12 +646,12 @@ class PlayerKit:
         pos=self.query().OutputMessages[0].Parameters[0][0]
         return QueriedPlayerPos(dimension=pos["dimension"],yRot=pos["yRot"],x=pos["position"]["x"],y=pos["position"]["y"],z=pos["position"]["z"])
 
-    def set_ability_map(self,action_permission:ActionPermissionMap,adventure_flag:AdventureFlagsMap):
-        jsonFlags=json.dumps({
-            "AdventureFlagsMap":adventure_flag.__dict__,
-            "ActionPermissionMap":action_permission.__dict__,
-        })
-        LIB.SetPlayerAbility(self._c_uuid,toCString(jsonFlags))
+    # def set_ability_map(self,action_permission:ActionPermissionMap,adventure_flag:AdventureFlagsMap):
+    #     jsonFlags=json.dumps({
+    #         "AdventureFlagsMap":adventure_flag.__dict__,
+    #         "ActionPermissionMap":action_permission.__dict__,
+    #     })
+    #     LIB.SetPlayerAbility(self._c_uuid,toCString(jsonFlags))
 
     def __repr__(self) -> str:
         return f"uuid={self.uuid},name={self.name},entity_unique_id={self.entity_unique_id},op={self.op},online={self.online}"
@@ -659,6 +685,17 @@ class ThreadOmega:
 
         # packet listeners 
         self._packet_listeners:Dict[str,List[Callable[[str,any],None]]]={}
+
+        # soft call resp
+        self._soft_call_counter=Counter("soft_call")
+        self._soft_call_cbs:Dict[str,Callable]={}
+
+        # soft listeners
+        self._soft_listeners:Dict[str,List[Callable[[any],None]]]={}
+
+        # soft reg
+        self._soft_reg:Dict[str,Callable[[Any],Any,str]]={}
+        self._soft_resp_counter=Counter("soft_resp")
 
         # setup actions
         LIB.ListenAllPackets() # make LIB listen to all packets and new packets will have eventType="MCPacket"
@@ -716,6 +753,29 @@ class ThreadOmega:
             elif eventType=="CommandResponseCB":
                 cmdResp=unpackCommandOutput(toPyString(LIB.ConsumeCommandResponseCB()))
                 self._omega_cmd_callback_events[retriever](cmdResp)
+            elif eventType=="SoftCallResp":
+                softResp=json.loads(toPyString(LIB.ConsumeSoftData()))
+                self._soft_call_cbs[retriever](softResp)
+            elif eventType=="SoftListen":
+                api_name=retriever
+                listeners=self._soft_listeners.get(api_name,[])
+                softData=json.loads(toPyString(LIB.ConsumeSoftData()))
+                # print(softData)
+                for listener in listeners:
+                    self.start_new(listener,(softData,))
+            elif eventType=="SoftAPICall":
+                api_name=retriever
+                handler=self._soft_reg[api_name]
+                resp_id=next(self._soft_resp_counter)
+                softData=json.loads(toPyString(LIB.ConsumeSoftCall(toCString(resp_id))))
+                def wrapper(data,resp_id):
+                    try:
+                        ret=handler(data)
+                        LIB.FinishSoftCall(toCString(resp_id),toCString(json.dumps(ret)),toCString(""))
+                    except Exception as e:
+                        es=f"{e}"
+                        LIB.FinishSoftCall(toCString(resp_id),toCString(""),toCString(es))
+                self.start_new(wrapper,(softData,resp_id))
             elif eventType=="MCPacket":
                 packetTypeName=retriever
                 # print(f"mc packet {packetTypeName}")
@@ -811,6 +871,28 @@ class ThreadOmega:
         del self._omega_cmd_callback_events[retriever_id]
         return res
     
+    def soft_call(self,api:str,args:any,timeout:int=-1) -> Optional[any]:
+        setter,getter=self._create_lock_and_result_setter()
+        retriever_id=next(self._soft_call_counter)
+        self._soft_call_cbs[retriever_id]=setter
+        SoftCall(api,json.dumps(args),retriever_id)
+        res= getter(timeout=timeout)
+        del self._soft_call_cbs[retriever_id]
+        return res
+
+    def soft_pub(self,api:str,args:any) -> None:
+        SoftPub(api,json.dumps(args))
+
+    def soft_listen(self,api:str,callback:Callable[[Any],None]):
+        if api not in self._soft_listeners:
+            self._soft_listeners[api]=[]
+            SoftListen(api)
+        self._soft_listeners[api].append(callback)
+
+    def soft_reg(self,api:str,handler:Callable[[Any],Any]):
+        self._soft_reg[api]=handler
+        SoftReg(api)
+
     def send_settings_command(self,cmd:str):
         SendSettingsCommand(cmd)
 
@@ -1001,155 +1083,179 @@ if __name__ == '__main__':
             accountOption=None
         )
 
-    # 演示如何感知链接断开
-    def disconnectNotifyExample():
-        reason=omega.wait_disconnect()
-        print(f"omega disconnected because {reason}")
+    # 演示 API 暴露 (lua 调用 py 的 api)
+    def softPYAPI(data):
+        print(data)
+        return {"ok":True,"echo":data}
+    omega.soft_reg("py/api/lua_call_py",softPYAPI)
 
-    omega.start_new(disconnectNotifyExample)
+    # 演示 RPC 调用 (lua 的 api)
+    def softAPIExample():
+        ret=omega.soft_call("py/api/py_call_lua",{"a":1,"b":2},timeout=-1)
+        print("soft call result: ",ret)
+    omega.start_new(softAPIExample)
 
-    # 演示如何发送命令（并获得结果）
-    def commandSendAndResponseFetchExample():
-        resp=omega.send_websocket_command_need_response("tp @s ~~~",timeout=-1)
-        print("ws resp: ",resp)
-        resp=omega.send_player_command_need_response("give @a sand",timeout=-1)
-        print("player resp: ",resp)
-
-        omega.send_websocket_command_omit_response("give @a sand")
-        omega.send_player_command_omit_response("give @a sand")
-        omega.send_settings_command("give @a sand")
-
-    omega.start_new(commandSendAndResponseFetchExample)
-
-    # 演示如何生成任意类型的数据包 （使用 JSON 近似方式）
-    
-    packet_id,packet_bytes=omega.construct_game_packet_bytes_in_json_as_is("SetTime",{"Time":69221000})
-    print(packet_id,packet_bytes)
-    # 实际上没有效果，因为这个只能是服务器向客户端发送，客户端向服务器发送是没任何意义的
-    omega.send_game_packet_in_json_as_is("SetTime",{"Time":69221000})
-
-    # 演示如何监听数据包
-    all_packet_name_id_mapping=omega.get_packet_name_to_id_mapping()
-    # print(f"所有数据包类型及ID {all_packet_name_id_mapping}") # 有点长，自己解除注释吧
-    all_packet_id_name_mapping=omega.get_packet_id_to_name_mapping()
-    # print(f"所有数据包类型及ID {all_packet_id_name_mapping}") # 有点长，自己解除注释吧
-
-    packet_ids=omega.get_packet_name_to_id_mapping(["SetTime","MoveActorDelta"])
-    print(f"一些特定数据包类型的 ID {packet_ids}")
-    packet_types=omega.get_packet_id_to_name_mapping([v for _,v in packet_ids.items()])
-    print(f"一些特定数据包ID的类型 {packet_types}")
-
-    packet_id=omega.get_packet_name_to_id_mapping("SetTime")
-    print(f"数据包类型 SetTime 的 ID {packet_id}")
-    packet_type=omega.get_packet_id_to_name_mapping(10)
-    print(f"数据包ID 10 的类型 {packet_type}")
-
-    def onSetTimeExample(packet_type:str,packet:any):
-        print(f"收到了 {packet_type} 数据包, {packet}")
-    omega.listen_packets("SetTime",onSetTimeExample)
-
-    # 以下调用形式也 OK
-    # omega.listen_packets(10,onSetTimeExample) # 1  使用 ID 表示需要的数据包类型
-    def onPacketExample(packet_type:str,packet:any):
-        print(f"收到了 {packet_type} 数据包, {packet}")
-    # omega.listen_packets(["SetTime","UpdateBlock"],onPacketExample) # 2 使用列表表示多种需要的数据包
-    # omega.listen_packets([10,"UpdateBlock"],onPacketExample) # 3 使用列表（混合）表示多种需要的数据包
-    # omega.listen_packets(["all","!UpdateBlock","!MoveActorDelta"],onPacketExample) # 4 使用 all 和 ！ 表示除了 xx 以外的所有数据包
-        
-    # 获得机器人基本信息
-    print(f"bot info {omega.get_bot_basic_info()}")
-    print(f"bot name {omega.get_bot_name()}")
-    print(f"bot runtime id {omega.get_bot_runtime_id()}")
-    print(f"bot unique id {omega.get_bot_unique_id()}")
-    print(f"bot identity {omega.get_bot_identity()}")
-    print(f"bot uuid str {omega.get_bot_uuid_str()}")
-
-    # 获得其他基本信息
-    print(f"extend info {omega.get_extend_info()}")
-
-    # # 获得玩家信息
-    print(f"current online players {omega.get_all_online_players()}")
-    player0=omega.get_all_online_players()[0]
-    print("name: ",player0.name)
-    print("uuid: ",player0.uuid)
-    print("entity_unique_id: ",player0.entity_unique_id)
-    print("online: ",player0.online)
-    print("op: ",player0.op)
-    print("login time (unix): ",player0.login_time)
-    print("online time: ",time.time()-player0.login_time)
-    print("platform chat id: ",player0.platform_chat_id)
-    print("build platform: ",player0.build_platform)
-    print("skin id: ",player0.skin_id)
-    print("device id: ",player0.device_id)
-    print("properties flag: ",player0.properties_flag)
-    print("command permission level: ",player0.command_permission_level)
-    print("action permission: ",player0.action_permissions)
-    print("op permission level: ",player0.op_permissions_level)
-    print("custom permissions: ",player0.custom_permissions)
-    print("entity runtime id: ",player0.entity_runtime_id)
-    print("entity meta data: ",player0.entity_metadata)
-    action_permission_map,adventure_flags_map=player0.ability_map
-    print("action permission map: ",action_permission_map)
-    print("adventure flags map: ",adventure_flags_map)
-
-    print(omega.get_player_by_name(player0.name))
-    print(omega.get_player_by_uuid(player0.uuid))
-
-    # 监听玩家上线/下线变化 online/offline/exist
-    def on_player_change_example(player:PlayerKit,action):
-        print(f"player: {player.name} {action}")
-    omega.listen_player_change(on_player_change_example)
-
-    # 监听玩家聊天信息并与玩家交互
-    def on_player_chat(chat:Chat,player:PlayerKit):
-        print("chat: ",chat)
-        print(player.query(["m=c","tag=!noc"]))
-        print("is creative: ",player.check_conditions(["m=c","tag=!noc"]))
-        print("pos: ",player.get_pos())
-
-        action_permission_map,adventure_flags_map=player.ability_map
-        print("action permissions: ",action_permission_map)
-        print("adventure flags: ",adventure_flags_map)
-
-        action_permission_map.ActionPermissionAttackPlayers=not action_permission_map.ActionPermissionAttackPlayers
-
-        player.set_ability_map(action_permission_map,adventure_flags_map)
-
+    def softPubExample():
+        i=0
         while True:
-            input=player.ask("请随意输入一些什么，或者输入 取消")
-            print(f"player input: {input}")
-            if input=="取消":
-                break
-            player.say(input)
-            player.title(input,input)
-            player.action_bar(input)
+            i+=1
+            time.sleep(1.0)
+            omega.soft_pub("py/topic/py2lua",{"count":i})
+    omega.start_new(softPubExample)
 
-    omega.listen_player_chat(on_player_chat)
+    def softListenerExample(data):
+        print("lua2py: ",data)
+    omega.soft_listen("py/topic/lua2py",softListenerExample)
 
-    # 监听特定命令块的消息
-    def on_command_block_msg(chat:Chat):
-        print("命令块: ",chat)
+    # # 演示如何感知链接断开
+    # def disconnectNotifyExample():
+    #     reason=omega.wait_disconnect()
+    #     print(f"omega disconnected because {reason}")
 
-    # 在执行之前需要放置一个命令块，名字为 test， 内容为: tell 机器人 消息
-    omega.listen_named_command_block("test",on_command_block_msg)
+    # omega.start_new(disconnectNotifyExample)
 
-    # 监听特定物品的消息
-    def on_snow_ball(chat:Chat):
-        print("雪球: ",chat)
-        omega.send_settings_command("kill @e[type=snowball]")
-    # 在执行之前需要放置一个命令块， 内容为: execute as @e[type=snowball] run tell 机器人 @p
-    omega.listen_specific_chat("雪球",on_snow_ball)
+    # # 演示如何发送命令（并获得结果）
+    # def commandSendAndResponseFetchExample():
+    #     resp=omega.send_websocket_command_need_response("tp @s ~~~",timeout=-1)
+    #     print("ws resp: ",resp)
+    #     resp=omega.send_player_command_need_response("give @a sand",timeout=-1)
+    #     print("player resp: ",resp)
 
-    # 演示如何放置一个命令块
-    omega.place_command_block(CommandBlockPlaceOption(
-        X=836,Y=84,Z=889,
-        BlockName="command_block", #repeating_command_block #chain_command_block
-        BockState="1", # 控制方向等
-        NeedRedStone=True,
-        Conditional=False,
-        Command="say hello",
-        Name="hello",
-        TickDelay=10,
-        ShouldTrackOutput=True,
-        ExecuteOnFirstTick=True,
-    ))
+    #     omega.send_websocket_command_omit_response("give @a sand")
+    #     omega.send_player_command_omit_response("give @a sand")
+    #     omega.send_settings_command("give @a sand")
+
+    # omega.start_new(commandSendAndResponseFetchExample)
+
+    # # 演示如何生成任意类型的数据包 （使用 JSON 近似方式）
+    
+    # packet_id,packet_bytes=omega.construct_game_packet_bytes_in_json_as_is("SetTime",{"Time":69221000})
+    # print(packet_id,packet_bytes)
+    # # 实际上没有效果，因为这个只能是服务器向客户端发送，客户端向服务器发送是没任何意义的
+    # omega.send_game_packet_in_json_as_is("SetTime",{"Time":69221000})
+
+    # # 演示如何监听数据包
+    # all_packet_name_id_mapping=omega.get_packet_name_to_id_mapping()
+    # # print(f"所有数据包类型及ID {all_packet_name_id_mapping}") # 有点长，自己解除注释吧
+    # all_packet_id_name_mapping=omega.get_packet_id_to_name_mapping()
+    # # print(f"所有数据包类型及ID {all_packet_id_name_mapping}") # 有点长，自己解除注释吧
+
+    # packet_ids=omega.get_packet_name_to_id_mapping(["SetTime","MoveActorDelta"])
+    # print(f"一些特定数据包类型的 ID {packet_ids}")
+    # packet_types=omega.get_packet_id_to_name_mapping([v for _,v in packet_ids.items()])
+    # print(f"一些特定数据包ID的类型 {packet_types}")
+
+    # packet_id=omega.get_packet_name_to_id_mapping("SetTime")
+    # print(f"数据包类型 SetTime 的 ID {packet_id}")
+    # packet_type=omega.get_packet_id_to_name_mapping(10)
+    # print(f"数据包ID 10 的类型 {packet_type}")
+
+    # def onSetTimeExample(packet_type:str,packet:any):
+    #     print(f"收到了 {packet_type} 数据包, {packet}")
+    # omega.listen_packets("SetTime",onSetTimeExample)
+
+    # # 以下调用形式也 OK
+    # # omega.listen_packets(10,onSetTimeExample) # 1  使用 ID 表示需要的数据包类型
+    # def onPacketExample(packet_type:str,packet:any):
+    #     print(f"收到了 {packet_type} 数据包, {packet}")
+    # # omega.listen_packets(["SetTime","UpdateBlock"],onPacketExample) # 2 使用列表表示多种需要的数据包
+    # # omega.listen_packets([10,"UpdateBlock"],onPacketExample) # 3 使用列表（混合）表示多种需要的数据包
+    # # omega.listen_packets(["all","!UpdateBlock","!MoveActorDelta"],onPacketExample) # 4 使用 all 和 ！ 表示除了 xx 以外的所有数据包
+        
+    # # 获得机器人基本信息
+    # print(f"bot info {omega.get_bot_basic_info()}")
+    # print(f"bot name {omega.get_bot_name()}")
+    # print(f"bot runtime id {omega.get_bot_runtime_id()}")
+    # print(f"bot unique id {omega.get_bot_unique_id()}")
+    # print(f"bot identity {omega.get_bot_identity()}")
+    # print(f"bot uuid str {omega.get_bot_uuid_str()}")
+
+    # # 获得其他基本信息
+    # print(f"extend info {omega.get_extend_info()}")
+
+    # # # 获得玩家信息
+    # print(f"current online players {omega.get_all_online_players()}")
+    # player0=omega.get_all_online_players()[0]
+    # print("name: ",player0.name)
+    # print("uuid: ",player0.uuid)
+    # print("entity_unique_id: ",player0.entity_unique_id)
+    # print("online: ",player0.online)
+    # print("op: ",player0.op)
+    # print("login time (unix): ",player0.login_time)
+    # print("online time: ",time.time()-player0.login_time)
+    # print("platform chat id: ",player0.platform_chat_id)
+    # print("build platform: ",player0.build_platform)
+    # print("skin id: ",player0.skin_id)
+    # print("device id: ",player0.device_id)
+    # print("properties flag: ",player0.properties_flag)
+    # print("command permission level: ",player0.command_permission_level)
+    # print("action permission: ",player0.action_permissions)
+    # print("op permission level: ",player0.op_permissions_level)
+    # print("custom permissions: ",player0.custom_permissions)
+    # print("entity runtime id: ",player0.entity_runtime_id)
+    # print("entity meta data: ",player0.entity_metadata)
+    # action_permission_map,adventure_flags_map=player0.ability_map
+    # print("action permission map: ",action_permission_map)
+    # print("adventure flags map: ",adventure_flags_map)
+
+    # print(omega.get_player_by_name(player0.name))
+    # print(omega.get_player_by_uuid(player0.uuid))
+
+    # # 监听玩家上线/下线变化 online/offline/exist
+    # def on_player_change_example(player:PlayerKit,action):
+    #     print(f"player: {player.name} {action}")
+    # omega.listen_player_change(on_player_change_example)
+
+    # # 监听玩家聊天信息并与玩家交互
+    # def on_player_chat(chat:Chat,player:PlayerKit):
+    #     print("chat: ",chat)
+    #     print(player.query(["m=c","tag=!noc"]))
+    #     print("is creative: ",player.check_conditions(["m=c","tag=!noc"]))
+    #     print("pos: ",player.get_pos())
+
+    #     action_permission_map,adventure_flags_map=player.ability_map
+    #     print("action permissions: ",action_permission_map)
+    #     print("adventure flags: ",adventure_flags_map)
+
+    #     action_permission_map.ActionPermissionAttackPlayers=not action_permission_map.ActionPermissionAttackPlayers
+
+    #     player.set_ability_map(action_permission_map,adventure_flags_map)
+
+    #     while True:
+    #         input=player.ask("请随意输入一些什么，或者输入 取消")
+    #         print(f"player input: {input}")
+    #         if input=="取消":
+    #             break
+    #         player.say(input)
+    #         player.title(input,input)
+    #         player.action_bar(input)
+
+    # omega.listen_player_chat(on_player_chat)
+
+    # # 监听特定命令块的消息
+    # def on_command_block_msg(chat:Chat):
+    #     print("命令块: ",chat)
+
+    # # 在执行之前需要放置一个命令块，名字为 test， 内容为: tell 机器人 消息
+    # omega.listen_named_command_block("test",on_command_block_msg)
+
+    # # 监听特定物品的消息
+    # def on_snow_ball(chat:Chat):
+    #     print("雪球: ",chat)
+    #     omega.send_settings_command("kill @e[type=snowball]")
+    # # 在执行之前需要放置一个命令块， 内容为: execute as @e[type=snowball] run tell 机器人 @p
+    # omega.listen_specific_chat("雪球",on_snow_ball)
+
+    # # 演示如何放置一个命令块
+    # omega.place_command_block(CommandBlockPlaceOption(
+    #     X=836,Y=84,Z=889,
+    #     BlockName="command_block", #repeating_command_block #chain_command_block
+    #     BockState="1", # 控制方向等
+    #     NeedRedStone=True,
+    #     Conditional=False,
+    #     Command="say hello",
+    #     Name="hello",
+    #     TickDelay=10,
+    #     ShouldTrackOutput=True,
+    #     ExecuteOnFirstTick=True,
+    # ))

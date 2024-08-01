@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"sync"
 	"time"
@@ -31,6 +32,8 @@ import (
 )
 
 var GOmegaCore neomega.MicroOmega
+var GNode defines.Node
+var GResultWaiter map[string]func(ret string, err error)
 var GPacketNameIDMapping map[string]uint32
 var GPacketIDNameMapping map[uint32]string
 var GPool packet.Pool
@@ -48,6 +51,9 @@ const (
 	EventTypePlayerChange           = "PlayerChange"
 	EventTypeChat                   = "Chat"
 	EventTypeNamedCommandBlockMsg   = "NamedCommandBlockMsg"
+	EventTypeSoftCallResp           = "SoftCallResp"
+	EventTypeSoftListen             = "SoftListen"
+	EventTypeSoftAPICall            = "SoftAPICall"
 )
 
 type GEvent struct {
@@ -87,6 +93,38 @@ func ConsumeCommandResponseCB() *C.char {
 	return C.CString(string(bs))
 }
 
+//export ConsumeSoftData
+func ConsumeSoftData() *C.char {
+	p := (GCurrentEvent.Data).(string)
+	return C.CString(p)
+}
+
+//export ConsumeSoftCall
+func ConsumeSoftCall(cbID *C.char) *C.char {
+	if GResultWaiter == nil {
+		GResultWaiter = map[string]func(ret string, err error){}
+	}
+	p := (GCurrentEvent.Data).(*ArgWithCb)
+	GResultWaiter[C.GoString(cbID)] = func(ret string, err error) {
+		p.cb(defines.FromString(ret), err)
+	}
+	return C.CString(p.args)
+}
+
+//export FinishSoftCall
+func FinishSoftCall(cbID *C.char, jsonStr *C.char, errStr *C.char) {
+	gCbID := C.GoString(cbID)
+	gJsonStr := C.GoString(jsonStr)
+	gErrStr := C.GoString(errStr)
+	h := GResultWaiter[gCbID]
+	delete(GResultWaiter, gCbID)
+	if gErrStr == "" {
+		h(gJsonStr, nil)
+	} else {
+		h(gJsonStr, errors.New(gErrStr))
+	}
+}
+
 //export SendWebSocketCommandNeedResponse
 func SendWebSocketCommandNeedResponse(cmd *C.char, retrieverID *C.char) {
 	GoRetrieverID := C.GoString(retrieverID)
@@ -109,7 +147,48 @@ func SendPlayerCommandNeedResponse(cmd *C.char, retrieverID *C.char) {
 	})
 }
 
+//export SoftCall
+func SoftCall(api *C.char, jsonStr *C.char, retrieverID *C.char) {
+	GoRetrieverID := C.GoString(retrieverID)
+	GNode.CallWithResponse(C.GoString(api), defines.FromString(C.GoString(jsonStr))).AsyncGetResult(func(ret defines.Values, err error) {
+		var msg string
+		msg, _ = ret.ToString()
+		GEventsChan <- &GEvent{EventTypeSoftCallResp, GoRetrieverID, msg}
+	})
+}
+
+//export SoftListen
+func SoftListen(api *C.char) {
+	goAPI := C.GoString(api)
+	GNode.ListenMessage(goAPI, func(data defines.Values) {
+		msg, _ := data.ToString()
+		GEventsChan <- &GEvent{EventTypeSoftListen, goAPI, msg}
+	}, false)
+}
+
+type ArgWithCb struct {
+	args string
+	cb   func(defines.Values, error)
+}
+
+//export SoftReg
+func SoftReg(api *C.char) {
+	gAPI := C.GoString(api)
+	GNode.ExposeAPI(gAPI).CallBackAPI(func(in defines.Values, setResult func(defines.Values, error)) {
+		args, _ := in.ToString()
+		GEventsChan <- &GEvent{EventTypeSoftAPICall, gAPI, &ArgWithCb{
+			args: args,
+			cb:   setResult,
+		}}
+	})
+}
+
 // One-Way Action
+
+//export SoftPub
+func SoftPub(api *C.char, jsonStr *C.char) {
+	GNode.PublishMessage(C.GoString(api), defines.FromString(C.GoString(jsonStr)))
+}
 
 //export SendWOCommand
 func SendWOCommand(cmd *C.char) {
@@ -961,6 +1040,7 @@ func ConnectOmega(address *C.char) (Cerr *C.char) {
 			return C.CString(i18n.T(i18n.S_no_access_point_in_network))
 		}
 	}
+	GNode = node
 	omegaCore, err := bundle.NewEndPointMicroOmega(node)
 	if err != nil {
 		return C.CString(err.Error())
@@ -999,6 +1079,7 @@ func StartOmega(address *C.char, impactOptionsJson *C.char) (Cerr *C.char) {
 			node = nodes.NewGroup("neomega", master, false)
 		}
 	}
+	GNode = node
 	ctx := context.Background()
 	omegaCore, err := access_helper.ImpactServer(ctx, node, accessOption)
 	if err != nil {

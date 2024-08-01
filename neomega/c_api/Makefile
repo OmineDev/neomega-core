@@ -9,7 +9,7 @@ ifeq ($(CGO_ENABLED),1)
 	WINDOWS_AMD64_CC:=$(shell if [ -z ${WINDOWS_AMD64_CC} ]; then echo /opt/homebrew/bin/x86_64-w64-mingw32-gcc; else echo ${WINDOWS_AMD64_CC}; fi)  
 	WINDOWS_X86_CC:=$(shell if [ -z ${WINDOWS_X86_CC} ]; then echo /opt/homebrew/bin/i686-w64-mingw32-gcc; else echo ${WINDOWS_X86_CC}; fi)   
 	# brew install messense/macos-cross-toolchains/x86_64-unknown-linux-gnu
-	LINUX_AMD64_CC:=$(shell if [ -z ${LINUX_AMD64_CC} ]; then echo /opt/homebrew/bin/x86_64-unknown-linux-gnu-gcc; else echo ${LINUX_AMD64_CC}; fi) 
+	LINUX_AMD64_CC:=/usr/bin/gcc 
 	# brew install messense/macos-cross-toolchains/aarch64-unknown-linux-gnu
 	LINUX_ARM64_CC:=$(shell if [ -z ${LINUX_ARM64_CC} ]; then echo /opt/homebrew/bin/aarch64-unknown-linux-gnu-gcc; else echo ${LINUX_ARM64_CC}; fi)    
 	# brew install android-ndk
