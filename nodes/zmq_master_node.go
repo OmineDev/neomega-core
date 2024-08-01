@@ -192,11 +192,13 @@ func (master *NewMasterNodeMasterNode) exposeNewClientFunc() {
 		})
 		go func() {
 			for {
-				msg := nodeInfo.MsgToPub.Get()
+				msgs := nodeInfo.MsgToPub.GetAll()
 				if nodeInfo.Ctx.Err() != nil {
 					return
 				}
-				master.server.CallOmitResponse(caller, "/on_new_msg", msg)
+				for _, msg := range msgs {
+					master.server.CallOmitResponse(caller, "/on_new_msg", msg)
+				}
 			}
 		}()
 		return defines.Empty, nil

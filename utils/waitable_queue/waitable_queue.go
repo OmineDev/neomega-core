@@ -30,13 +30,25 @@ func (q *WaitableQueue[T]) Put(data T) {
 func (q *WaitableQueue[T]) Get() (data T) {
 	q.mu.Lock()
 	if len(q.handleFirst) > 0 {
-		e := q.handleFirst[0] 
+		e := q.handleFirst[0]
 		q.handleFirst = q.handleFirst[1:]
 		q.mu.Unlock()
 		return e
 	}
 	q.mu.Unlock()
 	return <-q.later
+}
+
+func (q *WaitableQueue[T]) GetAll() (datas []T) {
+	q.mu.Lock()
+	if len(q.handleFirst) > 0 {
+		datas = q.handleFirst
+		q.handleFirst = []T{}
+		q.mu.Unlock()
+		return datas
+	}
+	q.mu.Unlock()
+	return []T{<-q.later}
 }
 
 func (q *WaitableQueue[T]) Clear() {
