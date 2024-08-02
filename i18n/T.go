@@ -3,6 +3,7 @@ package i18n
 import "fmt"
 
 const (
+	S_mc_server_disconnect                                                                      = "mc server disconnect client"
 	S_communitaion_between_nodes_too_slow_msg_queued                                            = "communication between nodes too slow, msg queued!"
 	S_connecting_to_auth_server                                                                 = "connecting to auth server..."
 	S_done_connecting_to_auth_server                                                            = "done connecting to auth server"
@@ -107,6 +108,7 @@ const (
 )
 
 var I18nDict_zh_cn map[string]string = map[string]string{
+	S_mc_server_disconnect:                                     "租赁服务主动断开了和 neOmega 的连接: ",
 	S_communitaion_between_nodes_too_slow_msg_queued:           "节点间通信速度过慢, 出现数据堆积，程序可能失去响应",
 	S_executing_login_sequence:                                 "开始执行登陆序列",
 	S_updating_tag_in_omega_net:                                "正在检查并更新本地neOmega网络中的属性信息",

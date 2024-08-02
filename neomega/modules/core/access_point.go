@@ -74,7 +74,10 @@ func NewAccessPointReactCore(node defines.Node, conn minecraft_conn.Conn) neomeg
 			// 	bs, _ := json.Marshal(pkt)
 			// 	return fmt.Sprint(pkt.ID()) + string(bs)
 			// }, time.Second/5)
-
+			if pkt.ID() == packet.IDDisconnect {
+				pk := pkt.(*packet.Disconnect)
+				core.DeadReason <- fmt.Errorf("%v: %v", i18n.T(i18n.S_mc_server_disconnect), pk.Message)
+			}
 			core.handlePacket(pkt)
 			if pkt.ID() == packet.IDMovePlayer {
 				pk := pkt.(*packet.MovePlayer)
