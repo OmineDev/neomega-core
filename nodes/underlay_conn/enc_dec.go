@@ -1,35 +1,30 @@
 package underlay_conn
 
 import (
-	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
+	"bytes"
+	"fmt"
 )
 
-type oneFrameIO struct {
-	data []byte
+func byteSlicesToBytes(packets [][]byte) []byte {
+	buf := bytes.NewBuffer(nil)
+	l := make([]byte, 5)
+	for _, packet := range packets {
+		// Each packet is prefixed with a varuint32 specifying the length of the packet.
+		writeVaruint32(buf, uint32(len(packet)), l)
+		buf.Write(packet)
+	}
+	return buf.Bytes()
 }
 
-func (io *oneFrameIO) Write(p []byte) (n int, err error) {
-	io.data = p
-	return len(p), nil
-}
-func (io *oneFrameIO) Read(p []byte) (n int, err error) {
-	panic("should not use this")
-}
-
-func (io *oneFrameIO) ReadPacket() ([]byte, error) {
-	return io.data, nil
-}
-
-func byteSlicesToBytes(ss [][]byte) []byte {
-	io := &oneFrameIO{}
-	enc := packet.NewEncoder(io)
-	enc.Encode(ss)
-	return io.data
-}
-
-func bytesToBytesSlices(ss []byte) [][]byte {
-	io := &oneFrameIO{data: ss}
-	enc := packet.NewDecoder(io)
-	pks, _ := enc.Decode()
-	return pks
+func bytesToBytesSlices(data []byte) (packets [][]byte) {
+	packets = make([][]byte, 0)
+	b := bytes.NewBuffer(data)
+	for b.Len() != 0 {
+		var length uint32
+		if err := readVaruint32(b, &length); err != nil {
+			panic(fmt.Errorf("error reading packet length: %v", err))
+		}
+		packets = append(packets, b.Next(int(length)))
+	}
+	return packets
 }
