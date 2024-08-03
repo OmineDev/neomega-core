@@ -10,6 +10,7 @@ import (
 	"github.com/OmineDev/neomega-core/neomega/minecraft_conn"
 	"github.com/OmineDev/neomega-core/nodes/defines"
 	"github.com/OmineDev/neomega-core/utils/pressure_metric"
+	"github.com/pterm/pterm"
 )
 
 type AccessPointInteractCore struct {
@@ -57,6 +58,13 @@ func NewAccessPointReactCore(node defines.Node, conn minecraft_conn.Conn) neomeg
 	botRuntimeID := conn.GameData().EntityRuntimeID
 	// go core.handleSlowPacketChan()
 	//counter := 0
+
+	commandRespFreq := pressure_metric.NewFreqMetric(time.Second*1, func(e float32) {
+		if e > 30 {
+			pterm.Warning.Printfln(i18n.T(i18n.S_bot_is_sending_cmd_at_a_very_high_ratio_could_cause_stability_issue), e)
+		}
+	})
+
 	core.deferredStart = func() {
 		var pkt packet.Packet
 		var err error
@@ -88,6 +96,9 @@ func NewAccessPointReactCore(node defines.Node, conn minecraft_conn.Conn) neomeg
 				core.DeadReason <- fmt.Errorf("%v: %v", i18n.T(i18n.S_mc_server_disconnect), pk.Message)
 			}
 			core.handlePacket(pkt)
+			if pkt.ID() == packet.IDCommandOutput {
+				commandRespFreq.Record()
+			}
 			if pkt.ID() == packet.IDMovePlayer {
 				pk := pkt.(*packet.MovePlayer)
 				if pk.EntityRuntimeID != botRuntimeID {

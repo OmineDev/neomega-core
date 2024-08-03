@@ -43,3 +43,29 @@ func (p *PressureMetric) IdleEnd() {
 	waitingD := epollEndTime.Sub(p.epollStartTime)
 	p.estimateD += waitingD
 }
+
+type FreqMetric struct {
+	estimateStartTime time.Time
+	estimateP         time.Duration
+	count             int
+	onEstimateResult  func(e float32)
+}
+
+func NewFreqMetric(period time.Duration, onEstimateResult func(e float32)) *FreqMetric {
+	return &FreqMetric{
+		estimateP:         period,
+		onEstimateResult:  onEstimateResult,
+		estimateStartTime: time.Now(),
+	}
+}
+
+func (m *FreqMetric) Record() {
+	m.count += 1
+	nt := time.Now()
+	d := nt.Sub(m.estimateStartTime)
+	if d > m.estimateP {
+		m.onEstimateResult(float32(m.count) / (float32(d) / float32(float32(time.Second))))
+		m.estimateStartTime = nt
+		m.count = 0
+	}
+}
