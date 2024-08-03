@@ -59,7 +59,7 @@ func NewAccessPointReactCore(node defines.Node, conn minecraft_conn.Conn) neomeg
 	// go core.handleSlowPacketChan()
 	//counter := 0
 
-	commandRespFreq := pressure_metric.NewFreqMetric(time.Second*1, func(e float32) {
+	commandRespFreq := pressure_metric.NewFreqMetric(time.Second*5, func(e float32) {
 		if e > 30 {
 			pterm.Warning.Printfln(i18n.T(i18n.S_bot_is_sending_cmd_at_a_very_high_ratio_could_cause_stability_issue), e)
 		}

@@ -3,6 +3,7 @@ package neomega
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
 	"github.com/OmineDev/neomega-core/utils/async_wrapper"
+	"github.com/OmineDev/neomega-core/utils/pressure_metric"
 
 	"github.com/google/uuid"
 )
@@ -137,6 +138,48 @@ type GameCtrl interface {
 	// BlockPlacer
 }
 
+type GameCtrlBox struct {
+	GameCtrl
+	*pressure_metric.FreqMetric
+}
+
+func (b GameCtrlBox) SendWebSocketCmdOmitResponse(cmd string) {
+	b.GameCtrl.SendWebSocketCmdOmitResponse(cmd)
+	b.FreqMetric.Record()
+}
+
+func (b GameCtrlBox) SendPlayerCmdOmitResponse(cmd string) {
+	b.GameCtrl.SendPlayerCmdOmitResponse(cmd)
+	b.FreqMetric.Record()
+}
+
+func (b GameCtrlBox) SendAICommandOmitResponse(runtimeid string, cmd string) {
+	b.GameCtrl.SendAICommandOmitResponse(runtimeid, cmd)
+	b.FreqMetric.Record()
+}
+
+func (b GameCtrlBox) SendWebSocketCmdNeedResponse(cmd string) async_wrapper.AsyncResult[*packet.CommandOutput] {
+	b.FreqMetric.Record()
+	return b.GameCtrl.SendWebSocketCmdNeedResponse(cmd)
+}
+
+func (b GameCtrlBox) SendPlayerCmdNeedResponse(cmd string) async_wrapper.AsyncResult[*packet.CommandOutput] {
+	b.FreqMetric.Record()
+	return b.GameCtrl.SendPlayerCmdNeedResponse(cmd)
+}
+
+func (b GameCtrlBox) SendAICommandNeedResponse(runtimeid string, cmd string) async_wrapper.AsyncResult[*packet.CommandOutput] {
+	b.FreqMetric.Record()
+	return b.GameCtrl.SendAICommandNeedResponse(runtimeid, cmd)
+}
+
+func NewGameCtrlBox(c GameCtrl, m *pressure_metric.FreqMetric) GameCtrlBox {
+	return GameCtrlBox{
+		GameCtrl:   c,
+		FreqMetric: m,
+	}
+}
+
 type MicroOmega interface {
 	Dead() chan error
 	GetGameControl() GameCtrl
@@ -146,6 +189,22 @@ type MicroOmega interface {
 	GetPlayerInteract() PlayerInteract
 	GetLowLevelAreaRequester() LowLevelAreaRequester
 	GetBotAction() BotActionComplex
+}
+
+type MicroOmegaCmdBox struct {
+	GameCtrlBox
+	MicroOmega
+}
+
+func (b MicroOmegaCmdBox) GetGameControl() GameCtrl {
+	return b.GameCtrlBox
+}
+
+func NewMicroOmegaCmdBox(o MicroOmega, m *pressure_metric.FreqMetric) MicroOmegaCmdBox {
+	return MicroOmegaCmdBox{
+		GameCtrlBox: NewGameCtrlBox(o.GetGameControl(), m),
+		MicroOmega:  o,
+	}
 }
 
 type UnReadyMicroOmega interface {
