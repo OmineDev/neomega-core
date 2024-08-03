@@ -9,6 +9,7 @@ import (
 	"github.com/OmineDev/neomega-core/neomega"
 	"github.com/OmineDev/neomega-core/neomega/minecraft_conn"
 	"github.com/OmineDev/neomega-core/nodes/defines"
+	"github.com/OmineDev/neomega-core/utils/pressure_metric"
 )
 
 type AccessPointInteractCore struct {
@@ -47,6 +48,12 @@ func NewAccessPointReactCore(node defines.Node, conn minecraft_conn.Conn) neomeg
 		err := fmt.Errorf("node dead: %v", nodeDead)
 		core.DeadReason <- err
 	}()
+	pressureMetric := pressure_metric.NewPressureMetric(time.Second*3, func(e float32) {
+		if e > 0.5 {
+			fmt.Printf("server->access pressure: %.2f%%\n", e*100)
+		}
+
+	})
 	botRuntimeID := conn.GameData().EntityRuntimeID
 	// go core.handleSlowPacketChan()
 	//counter := 0
@@ -63,7 +70,9 @@ func NewAccessPointReactCore(node defines.Node, conn minecraft_conn.Conn) neomeg
 		}
 		// prob := block_prob.NewBlockProb("Access Point MC Packet Handle Block Prob", time.Second/10)
 		for {
+			pressureMetric.IdleStart()
 			pkt, packetData = conn.ReadPacketAndBytes()
+			pressureMetric.IdleEnd()
 			if err != nil {
 				break
 			}

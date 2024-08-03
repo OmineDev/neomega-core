@@ -194,6 +194,12 @@ func (master *NewMasterNodeMasterNode) exposeNewClientFunc() {
 func (master *NewMasterNodeMasterNode) exposeTopicFunc() {
 	master.server.ExposeAPI("/subscribe").InstantAPI(func(argsWithCaller defines.ArgWithCaller) (defines.Values, error) {
 		caller := argsWithCaller.Caller
+		// pressureMetric := pressure_metric.NewPressureMetric(time.Second*3, func(e float32) {
+		// 	if e > 0.0 {
+		// 		fmt.Printf("master->%v pressure: %.2f%%\n", caller, e*100)
+		// 	}
+
+		// })
 		args := argsWithCaller.Args
 		slaveInfo, ok := master.slaves.Get(string(caller))
 		if !ok {
@@ -211,7 +217,10 @@ func (master *NewMasterNodeMasterNode) exposeTopicFunc() {
 			master.slaveSubscribedTopics[topic] = subscribers
 		}
 		subscribers[string(caller)] = func(v defines.Values) {
+			// pressureMetric.IdleEnd()
 			master.server.CallOmitResponse(caller, "/on_new_msg", v)
+			// pressureMetric.IdleStart()
+
 		}
 		master.subscribeMu.Unlock()
 		return defines.Empty, nil

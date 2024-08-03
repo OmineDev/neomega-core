@@ -55,6 +55,7 @@ const (
 	S_neomega_access_point_starting                                                             = "neOmega access point starting..."
 	S_neomega_access_point_ready                                                                = "neOmega access point ready"
 	S_fail_to_dispatch_packet_to_remote                                                         = "fail to remote dispatch packets"
+	S_no_response_after_a_short_time_bot_maybe_down ="no response after a short time, bot maybe down"
 	S_no_response_after_a_long_time_bot_is_down                                                 = "no response after %v, bot is down (alive %vs)"
 	S_bot_operator_privilege_granted                                                            = "bot operator privilege granted"
 	S_please_grant_bot_operator_privilege                                                       = "please grant bot operator privilege"
@@ -173,6 +174,7 @@ var I18nDict_zh_cn map[string]string = map[string]string{
 	S_neomega_access_point_starting:                            "[neOmega 接入点]: 启动中...",
 	S_neomega_access_point_ready:                               "[neOmega 接入点]: 就绪",
 	S_fail_to_dispatch_packet_to_remote:                        "[neOmega 接入点] -> [neOmega 访问点] 数据包分发失败",
+	S_no_response_after_a_short_time_bot_maybe_down: "租赁服似乎停止向机器人发送数据，机器人可能已经掉线，或者你的服务器太卡了",
 	S_no_response_after_a_long_time_bot_is_down:                "持续 %v 秒未能从网易租赁服获得数据, 机器人已确认掉线 (机器人在线时间 %vs)",
 	S_bot_operator_privilege_granted:                           "机器人已获得操作员权限",
 	S_please_grant_bot_operator_privilege:                      "缺少许可，请给予许可 (操作员权限)",

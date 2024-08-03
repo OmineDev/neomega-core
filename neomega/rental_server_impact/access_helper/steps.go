@@ -268,6 +268,7 @@ func waitDead(omegaCore neomega.MicroOmega, deadReason chan error) {
 		time.Sleep(time.Second)
 		nowTime := time.Now()
 		if lastReceivePacket.Add(time.Second * 5).Before(nowTime) {
+			fmt.Println(i18n.T(i18n.S_no_response_after_a_short_time_bot_maybe_down))
 			omegaCore.GetGameControl().SendWebSocketCmdOmitResponse("testforblock ~~~ air")
 		}
 		if lastReceivePacket.Add(time.Second * 15).Before(nowTime) {

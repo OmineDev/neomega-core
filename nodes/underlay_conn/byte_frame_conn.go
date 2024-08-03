@@ -9,6 +9,7 @@ import (
 
 	"github.com/OmineDev/neomega-core/minecraft_neo/can_close"
 	"github.com/OmineDev/neomega-core/neomega/encoding/little_endian"
+	"github.com/OmineDev/neomega-core/utils/pressure_metric"
 
 	// "github.com/OmineDev/neomega-core/minecraft_neo/defines"
 	"net"
@@ -61,11 +62,19 @@ func NewConnectionFromNetWithCtx(netConn net.Conn, ctx context.Context) *ByteFra
 func (c *ByteFrameConnection) writeRoutine(period time.Duration) {
 	ticker := time.NewTicker(period)
 	defer ticker.Stop()
+	pressureMetric := pressure_metric.NewPressureMetric(time.Second*3, func(e float32) {
+		if e > 0.5 {
+			fmt.Printf("net send pressure: %.2f%%\n", e*100)
+		}
+
+	})
 	for range ticker.C {
+		pressureMetric.IdleEnd()
 		if err := c.Flush(); err != nil {
 			c.CloseWithError(err)
 			return
 		}
+		pressureMetric.IdleStart()
 	}
 }
 
@@ -118,8 +127,15 @@ func (conn *ByteFrameConnection) UnLock() {
 }
 
 func (conn *ByteFrameConnection) ReadRoutine(onPacket func([]byte)) {
+	pressureMetric := pressure_metric.NewPressureMetric(time.Second*3, func(e float32) {
+		if e > 0.5 {
+			fmt.Printf("handle pressure: %.2f%%\n", e*100)
+		}
+	})
 	for {
+		pressureMetric.IdleStart()
 		pks, err := conn.readPackets()
+		pressureMetric.IdleEnd()
 		if err != nil {
 			conn.CloseWithError(err)
 			return
