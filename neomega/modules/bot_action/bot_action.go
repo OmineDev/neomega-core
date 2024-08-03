@@ -688,6 +688,15 @@ func (o *AccessPointBotActionWithPersistData) UseAnvil(pos define.CubePos, block
 							itemInstance = o.copyItemInstance(origInventoryItem)
 							itemInstance.StackNetworkID = slot.StackNetworkID
 							itemInstance.Stack.Count = uint16(slot.Count)
+							if slot.CustomName != "" {
+								if itemInstance.Stack.NBTData == nil {
+									itemInstance.Stack.NBTData = make(map[string]any)
+								}
+								if itemInstance.Stack.NBTData["display"] == nil {
+									itemInstance.Stack.NBTData["display"] = make(map[string]any)
+								}
+								itemInstance.Stack.NBTData["display"].(map[string]any)["Name"] = slot.CustomName
+							}
 						}
 						o.clientInfo.writeInventorySlot(0, slot.Slot, itemInstance)
 						return nil
