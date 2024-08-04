@@ -1,6 +1,7 @@
 package area_request
 
 import (
+	"sync"
 	"time"
 
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
@@ -158,6 +159,7 @@ func newSubChunkBatchResult(dim define.Dimension, slots []protocol.SubChunkPos) 
 }
 
 func (h *SubChunkBatchReqHandler) GetResult() async_wrapper.AsyncResult[neomega.SubChunkBatchResult] {
+	mu := sync.Mutex{}
 	return async_wrapper.NewAsyncWrapper(func(ac *async_wrapper.AsyncController[neomega.SubChunkBatchResult]) {
 		if h.finalDim == nil {
 			d := h.getDim()
@@ -165,6 +167,7 @@ func (h *SubChunkBatchReqHandler) GetResult() async_wrapper.AsyncResult[neomega.
 		}
 		slots := make([]protocol.SubChunkPos, 0)
 		hit := map[protocol.SubChunkPos]bool{}
+		mu.Lock()
 		for _, x := range h.xGen() {
 			for _, z := range h.zGen() {
 				for _, y := range h.yGen(*h.finalDim) {
@@ -174,6 +177,7 @@ func (h *SubChunkBatchReqHandler) GetResult() async_wrapper.AsyncResult[neomega.
 				}
 			}
 		}
+		mu.Unlock()
 		result := newSubChunkBatchResult(*h.finalDim, slots)
 		var detachFn func()
 		ac.SetUnfinishedResult(result)
@@ -181,10 +185,12 @@ func (h *SubChunkBatchReqHandler) GetResult() async_wrapper.AsyncResult[neomega.
 			detachFn()
 		})
 		detachFn = h.ar.AttachSubChunkResultListener(func(scr neomega.SubChunkResult) {
-			if _, found := hit[scr.SubCunkPos()]; found {
+			if _, found := hit[scr.SubCunkPos()]; found && (ac.Context().Err() == nil) {
+				mu.Lock()
 				hit[scr.SubCunkPos()] = true
 				result.results[scr.SubCunkPos()] = scr
 				delete(hit, scr.SubCunkPos())
+				mu.Unlock()
 			}
 			if len(hit) == 0 {
 				detachFn()
