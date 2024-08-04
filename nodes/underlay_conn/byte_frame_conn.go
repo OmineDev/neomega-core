@@ -43,7 +43,7 @@ func NewConnectionFromNet(netConn net.Conn) *ByteFrameConnection {
 		CanCloseWithError: can_close.NewClose(func() { netConn.Close() }),
 		netConn:           netConn,
 	}
-	go conn.writeRoutine(time.Second / 100)
+	go conn.writeRoutine(time.Second / 20)
 	return conn
 }
 
