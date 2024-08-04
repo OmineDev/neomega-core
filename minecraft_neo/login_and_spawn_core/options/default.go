@@ -1,7 +1,6 @@
 package options
 
 import (
-	"bytes"
 	"crypto/ecdsa"
 	"crypto/rand"
 	_ "embed"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/login"
+	"github.com/OmineDev/neomega-core/minecraft_neo/login_and_spawn_core/skin"
 	"github.com/google/uuid"
 )
 
@@ -45,19 +45,19 @@ func NewDefaultOptions(
 	return opt
 }
 
-//go:embed skin_resource_patch.json
-var skinResourcePatch []byte
-
-//go:embed skin_geometry.json
-var skinGeometry []byte
-
 // defaultClientData edits the ClientData passed to have defaults set to all fields that were left unchanged.
 func defaultClientData(address string, authResp map[string]any) login.ClientData {
 	bot_name, _ := authResp["username"].(string)
 	bot_level, _ := authResp["growth_level"].(float64)
+	skin_info, _ := authResp["skin_info"].(map[string]any)
+	skin_iid, _ := skin_info["entity_id"].(string)
+	skin_url, _ := skin_info["res_url"].(string)
 	growthLevel := int(bot_level)
 
+	skin, skinErr := skin.ProcessURLToSkin(skin_url)
+
 	d := login.ClientData{}
+	d.PremiumSkin = (skinErr == nil)
 	d.ServerAddress = address
 	d.DeviceOS = protocol.DeviceAndroid
 	d.GameVersion = protocol.CurrentVersion
@@ -70,16 +70,13 @@ func defaultClientData(address string, authResp map[string]any) login.ClientData
 	d.PieceTintColours = make([]login.PersonaPieceTintColour, 0)
 	d.SelfSignedID = uuid.New().String()
 	d.SkinID = uuid.New().String()
-	d.SkinImageHeight = 32
-	d.SkinImageWidth = 64
-	d.SkinData = base64.StdEncoding.EncodeToString(
-		bytes.Repeat(
-			[]byte{0, 0, 0, 255},
-			d.SkinImageHeight*d.SkinImageWidth,
-		),
-	)
-	d.SkinResourcePatch = base64.StdEncoding.EncodeToString(skinResourcePatch)
-	d.SkinGeometry = base64.StdEncoding.EncodeToString(skinGeometry)
+	d.SkinImageHeight = skin.SkinHight
+	d.SkinImageWidth = skin.SkinWidth
+	d.SkinData = base64.StdEncoding.EncodeToString(skin.SkinPixels)
+	d.SkinResourcePatch = base64.StdEncoding.EncodeToString(skin.SkinResourcePatch)
+	d.SkinGeometry = base64.StdEncoding.EncodeToString(skin.SkinGeometry)
+	d.SkinGeometryVersion = base64.StdEncoding.EncodeToString([]byte("0.0.0"))
+	d.SkinItemID = skin_iid
 	d.ThirdPartyName = bot_name
 	return d
 }
