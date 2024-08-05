@@ -95,7 +95,13 @@ func loginMCServer(ctx context.Context, authenticator Authenticator) (conn minec
 	packetConn.WritePacket(&packet.PyRpc{
 		Value: []any{
 			"SyncUsingMod",
-			[]any{},
+			[]any{
+				[]any{},
+				opt.ClientData.SkinID,
+				opt.ClientData.SkinItemID,
+				true,
+				map[string]any{},
+			},
 			nil,
 		},
 		OperationType: packet.PyRpcOperationTypeSend,

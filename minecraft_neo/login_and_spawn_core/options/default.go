@@ -69,7 +69,7 @@ func defaultClientData(address string, authResp map[string]any) login.ClientData
 	d.PersonaPieces = make([]login.PersonaPiece, 0)
 	d.PieceTintColours = make([]login.PersonaPieceTintColour, 0)
 	d.SelfSignedID = uuid.New().String()
-	d.SkinID = uuid.New().String()
+	d.SkinID = skin.SkinUUID
 	d.SkinImageHeight = skin.SkinHight
 	d.SkinImageWidth = skin.SkinWidth
 	d.SkinData = base64.StdEncoding.EncodeToString(skin.SkinPixels)
