@@ -10,6 +10,7 @@ const (
 	S_connecting_to_mc_server                                                                   = "connecting to mc server (code: %v password: %v) ..."
 	S_invalid_auth_server_user_account                                                          = "invalid auth server user account"
 	S_rental_server_disconnected                                                                = "rental server disconnected"
+	S_message_from_auth_server                                                                  = "message from auth server:"
 	S_auth_server_connection_timeout                                                            = "auth server connection timeout"
 	S_get_token_timeout                                                                         = "get token from auth server timeout"
 	S_connection_to_auth_server_timeout                                                         = "connect to auth server time out"
@@ -125,6 +126,7 @@ var I18nDict_zh_cn map[string]string = map[string]string{
 	S_sending_additional_information:                                      "正在发送附加信息",
 	S_packing_core:                                                        "正在打包关键数据",
 	S_connecting_to_auth_server:                                           "正在连接到验证服务器",
+	S_message_from_auth_server:                                            "来自验证服务器的消息:",
 	S_done_connecting_to_auth_server:                                      "成功与验证服务器建立连接",
 	S_connecting_to_mc_server:                                             "正在连接到网易租赁服(服号: %v 密码: %v)...",
 	S_invalid_auth_server_user_account:                                    "无效的验证服务器账户 -> 请确认没有选错验证服务器，且没有输错账户名",

@@ -9,6 +9,7 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/OmineDev/neomega-core/i18n"
@@ -22,6 +23,7 @@ import (
 	"github.com/OmineDev/neomega-core/neomega/fbauth"
 	"github.com/OmineDev/neomega-core/neomega/minecraft_conn"
 	"github.com/OmineDev/neomega-core/neomega/rental_server_impact/challenges"
+	"github.com/pterm/pterm"
 )
 
 // Copied from phoenixbuilder/core/core
@@ -48,6 +50,12 @@ func loginMCServer(ctx context.Context, authenticator Authenticator) (conn minec
 	}
 	address, _ := authResp["ip_address"].(string)
 	botUid, _ := authResp["uid"].(string)
+
+	serverMessage, _ := authResp["server_msg"].(string)
+	if len(serverMessage) > 0 {
+		fmt.Println(i18n.T(i18n.S_message_from_auth_server))
+		fmt.Println(pterm.LightGreen(strings.ReplaceAll(fmt.Sprintf("    %s", serverMessage), "\n", "\n    ")))
+	}
 
 	fmt.Println(i18n.T(i18n.S_establishing_raknet_connection))
 	rakNetConn, err := base_net.RakNet.DialContext(ctx, address)
