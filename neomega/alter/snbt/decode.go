@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/mitchellh/mapstructure"
 )
 
 type stringNBT struct {
@@ -295,8 +297,8 @@ func (snbt *stringNBT) getListOrArray() (interface{}, error) {
 			if err != nil {
 				return nil, fmt.Errorf("getListOrArray: Invalid TAG_Byte_Array")
 			}
-			GOT, normal := got.(byte)
-			if !normal {
+			var GOT byte
+			if mapstructure.Decode(got, &GOT) != nil {
 				return nil, fmt.Errorf("getListOrArray: Invalid TAG_Byte_Array")
 			}
 			ans = append(ans, GOT)
