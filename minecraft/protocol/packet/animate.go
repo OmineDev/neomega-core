@@ -30,7 +30,7 @@ type Animate struct {
 	// BoatRowingTime ...
 	BoatRowingTime float32
 	// NetEase
-	Unknown1 int64
+	AttackerEntityUniqueID int64
 }
 
 // ID ...
@@ -46,6 +46,6 @@ func (pk *Animate) Marshal(io protocol.IO) {
 	}
 	// NetEase
 	if pk.ActionType == AnimateActionCriticalHit /* 4 */ {
-		io.Varint64(&pk.Unknown1)
+		io.Varint64(&pk.AttackerEntityUniqueID)
 	}
 }
