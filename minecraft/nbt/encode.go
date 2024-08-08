@@ -293,9 +293,6 @@ func (e *Encoder) writeStructValues(val reflect.Value) error {
 
 // writeTag writes a single tag to the io.Writer held by the Encoder. The tag type and the name are written.
 func (e *Encoder) writeTag(t tagType, tagName string) error {
-	if e.depth >= maximumNestingDepth {
-		return MaximumDepthReachedError{}
-	}
 	if err := e.w.WriteByte(byte(t)); err != nil {
 		return err
 	}

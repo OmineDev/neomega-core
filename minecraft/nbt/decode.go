@@ -458,9 +458,6 @@ func (d *Decoder) populateFields(val reflect.Value, m map[string]reflect.Value) 
 
 // tag reads a tag from the decoder, and its name if the tag type is not a TAG_End.
 func (d *Decoder) tag() (t tagType, tagName string, err error) {
-	if d.depth >= maximumNestingDepth {
-		return 0, "", MaximumDepthReachedError{}
-	}
 	// if d.r.off >= maximumNetworkOffset && d.Encoding == NetworkLittleEndian {
 	// 	return 0, "", MaximumBytesReadError{}
 	// }
