@@ -272,7 +272,7 @@ func disableCommandBlock(omegaCoreCtrl neomega.GameCtrl) {
 
 func waitDead(omegaCore neomega.MicroOmega, deadReason chan error) {
 	// SetTime packet will be sent by server every 256 ticks, even dodaylightcycle gamerule disabled
-	period := time.Second * 15
+	threshold := time.Minute * 2
 	startTime := time.Now()
 	lastReceivePacket := time.Now()
 	omegaCore.GetGameListener().SetAnyPacketCallBack(func(p packet.Packet) {
@@ -282,11 +282,13 @@ func waitDead(omegaCore neomega.MicroOmega, deadReason chan error) {
 		time.Sleep(time.Second)
 		nowTime := time.Now()
 		if lastReceivePacket.Add(time.Second * 5).Before(nowTime) {
-			fmt.Println(i18n.T(i18n.S_no_response_after_a_short_time_bot_maybe_down))
-			omegaCore.GetGameControl().SendWebSocketCmdOmitResponse("testforblock ~~~ air")
+			flyTime := nowTime.Sub(lastReceivePacket)
+			deadTime := threshold - flyTime
+			fmt.Printf(i18n.T(i18n.S_bot_no_resp_could_been_feeding_massive_data_reboot_count_down)+"\n", float32(deadTime)/float32(time.Second))
+			omegaCore.GetGameControl().SendWebSocketCmdOmitResponse("errorcmd")
 		}
-		if lastReceivePacket.Add(time.Second * 15).Before(nowTime) {
-			deadReason <- fmt.Errorf(i18n.T(i18n.S_no_response_after_a_long_time_bot_is_down), period*2, time.Since(startTime).Seconds())
+		if lastReceivePacket.Add(threshold).Before(nowTime) {
+			deadReason <- fmt.Errorf(i18n.T(i18n.S_no_response_after_a_long_time_bot_is_down), threshold, time.Since(startTime).Seconds())
 			break
 		}
 	}
