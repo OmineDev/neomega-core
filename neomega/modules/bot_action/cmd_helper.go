@@ -110,9 +110,10 @@ func (c *CommandHelper) ConstructDimensionLimitedGeneralCommand(cmd string) neom
 		} else if dimension == 2 {
 			cmd = "execute in the_end run " + cmd
 		} else {
-			cmd = fmt.Sprintf("execute in dm%v run ", dimension) + cmd
+			cmd = fmt.Sprintf("execute in %v run ", dimension) + cmd
 		}
 	}
+	// fmt.Println(cmd)
 	return &generalCmd{cmd, c.CmdSender}
 }
 
