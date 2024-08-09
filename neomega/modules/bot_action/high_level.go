@@ -181,29 +181,29 @@ func (o *BotActionHighLevel) HighLevelRemoveSpecificBlockSideEffect(pos define.C
 }
 
 func (o *BotActionHighLevel) highLevelRemoveSpecificBlockSideEffect(pos define.CubePos, backupName string) (deferFunc func(), err error) {
-	_, deferFunc, err = o.highLevelGetAndRemoveSpecificBlockSideEffect(pos, backupName)
+	deferFunc, err = o.highLevelGetAndRemoveSpecificBlockSideEffect(pos, backupName)
 	return deferFunc, err
 }
 
-func (o *BotActionHighLevel) highLevelGetAndRemoveSpecificBlockSideEffect(pos define.CubePos, backupName string) (decodedStructure neomega.DecodedStructure, deferFunc func(), err error) {
-	o.highLevelEnsureBotNearby(pos, 8)
+func (o *BotActionHighLevel) highLevelGetAndRemoveSpecificBlockSideEffect(pos define.CubePos, backupName string) (deferFunc func(), err error) {
+	o.highLevelEnsureBotNearby(pos.Add(define.CubePos{0, 2, 0}), 3)
 	ret, err := o.cmdHelper.BackupStructureWithGivenNameCmd(pos, define.CubePos{1, 1, 1}, backupName).SendAndGetResponse().SetTimeout(time.Second * 3).BlockGetResult()
 	if ret == nil || err != nil {
-		return nil, func() {}, fmt.Errorf("cannot backup block for revert")
+		return func() {}, fmt.Errorf("cannot backup block for revert")
 	}
 	deferFunc = func() {
 		o.cmdHelper.RevertStructureWithGivenNameCmd(pos, backupName).Send()
 		o.microAction.SleepTick(1)
 	}
 	o.cmdHelper.SetBlockCmd(pos, "air").AsWebSocket().SendAndGetResponse().BlockGetResult()
-	return decodedStructure, deferFunc, nil
+	return deferFunc, nil
 }
 
 func (o *BotActionHighLevel) HighLevelPlaceSign(targetPos define.CubePos, signBlock string, opt *supported_nbt_data.SignBlockSupportedData) (err error) {
 	if opt == nil {
 		return nil
 	}
-	o.highLevelEnsureBotNearby(targetPos, 8)
+	o.highLevelEnsureBotNearby(targetPos.Add(define.CubePos{0, 2, 0}), 3)
 	release, err := o.occupyBot(time.Second * 3)
 	if err != nil {
 		return err
@@ -308,7 +308,7 @@ func (o *BotActionHighLevel) HighLevelPlaceCommandBlock(targetPos define.CubePos
 }
 
 func (o *BotActionHighLevel) highLevelPlaceCommandBlock(targetPos define.CubePos, option *supported_nbt_data.CommandBlockSupportedData, maxRetry int) error {
-	if err := o.highLevelEnsureBotNearby(targetPos, 8); err != nil {
+	if err := o.highLevelEnsureBotNearby(targetPos.Add(define.CubePos{0, 2, 0}), 3); err != nil {
 		return err
 	}
 	updateOption := option.GenCommandBlockUpdateFromOption(targetPos)
@@ -360,7 +360,7 @@ func (o *BotActionHighLevel) HighLevelMoveItemToContainer(pos define.CubePos, mo
 }
 
 func (o *BotActionHighLevel) highLevelMoveItemToContainer(pos define.CubePos, moveOperations map[uint8]uint8) error {
-	if err := o.highLevelEnsureBotNearby(pos, 8); err != nil {
+	if err := o.highLevelEnsureBotNearby(pos.Add(define.CubePos{0, 2, 0}), 3); err != nil {
 		return err
 	}
 	structureResponse, err := o.areaRequester.LowLevelRequestStructure(pos.Sub(define.CubePos{1, 0, 1}), define.CubePos{3, 1, 3}, o.nextCountName()).SetTimeout(time.Second * 3).BlockGetResult()
@@ -414,14 +414,14 @@ func (o *BotActionHighLevel) highLevelMoveItemToContainer(pos define.CubePos, mo
 			case 5:
 				blockerPos[0] = blockerPos[0] + 1
 			}
-			deferAction, err = o.highLevelRemoveSpecificBlockSideEffect(blockerPos, "_temp_container_blocker"+o.nextCountName())
+			deferAction, err = o.highLevelRemoveSpecificBlockSideEffect(blockerPos, o.nextCountName())
 			if err != nil {
 				return err
 			}
 		}
 	} else if strings.Contains(block.ShortName(), "chest") {
 		o.cmdHelper.BackupStructureWithGivenNameCmd(pos.Add(define.CubePos{0, 1, 0}), define.CubePos{1, 1, 1}, "container_blocker").SendAndGetResponse().SetTimeout(time.Second * 3).BlockGetResult()
-		deferAction, err = o.highLevelRemoveSpecificBlockSideEffect(pos.Add(define.CubePos{0, 1, 0}), "_temp_container_blocker"+o.nextCountName())
+		deferAction, err = o.highLevelRemoveSpecificBlockSideEffect(pos.Add(define.CubePos{0, 1, 0}), o.nextCountName())
 		if err != nil {
 			return err
 		}
@@ -441,26 +441,27 @@ func (o *BotActionHighLevel) HighLevelRenameItemWithAnvil(pos define.CubePos, sl
 }
 
 func (o *BotActionHighLevel) highLevelRenameItemWithAnvil(pos define.CubePos, slot uint8, newName string, autoGenAnvil bool) (err error) {
-	if err := o.highLevelEnsureBotNearby(pos, 8); err != nil {
+	if err := o.highLevelEnsureBotNearby(pos.Add(define.CubePos{0, 2, 0}), 3); err != nil {
 		return err
 	}
 	deferActionStand := func() {}
 	deferAction := func() {}
 	if autoGenAnvil {
-		deferActionStand, err = o.highLevelRemoveSpecificBlockSideEffect(pos.Add(define.CubePos{0, -1, 0}), "_temp_anvil_stand"+o.nextCountName())
+		deferActionStand, err = o.highLevelRemoveSpecificBlockSideEffect(pos.Add(define.CubePos{0, -1, 0}), o.nextCountName())
 		if err != nil {
 			return err
 		}
 		if ret, err := o.cmdHelper.SetBlockCmd(pos.Add(define.CubePos{0, -1, 0}), "glass").AsWebSocket().SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult(); ret == nil || err != nil {
 			return fmt.Errorf("cannot place anvil for operation")
 		}
-		deferAction, err = o.highLevelRemoveSpecificBlockSideEffect(pos, "_temp_anvil"+o.nextCountName())
+		deferAction, err = o.highLevelRemoveSpecificBlockSideEffect(pos, o.nextCountName())
 		if err != nil {
 			return err
 		}
 		if ret, err := o.cmdHelper.SetBlockCmd(pos, "anvil").AsWebSocket().SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult(); ret == nil || err != nil {
 			return fmt.Errorf("cannot place anvil for operation")
 		}
+		o.microAction.SleepTick(6)
 	}
 	// wait until anvil place then get runtime id
 	structureResponse, err := o.areaRequester.LowLevelRequestStructure(pos, define.CubePos{1, 1, 1}, "_temp").BlockGetResult()
@@ -546,7 +547,7 @@ func (o *BotActionHighLevel) HighLevelPickBlock(pos define.CubePos, targetHotBar
 }
 
 func (o *BotActionHighLevel) highLevelPickBlock(pos define.CubePos, targetHotBar uint8, retryTimes int) error {
-	if err := o.highLevelEnsureBotNearby(pos, 8); err != nil {
+	if err := o.highLevelEnsureBotNearby(pos.Add(define.CubePos{0, 2, 0}), 3); err != nil {
 		return err
 	}
 	defer func() {
@@ -588,7 +589,7 @@ func (o *BotActionHighLevel) HighLevelBlockBreakAndPickInHotBar(pos define.CubeP
 }
 
 func (o *BotActionHighLevel) highLevelBlockBreakAndPickInHotBar(pos define.CubePos, recoverBlock bool, targetSlot uint8, maxRetriesTotal int) (err error) {
-	if err := o.highLevelEnsureBotNearby(pos, 8); err != nil {
+	if err := o.highLevelEnsureBotNearby(pos.Add(define.CubePos{0, 2, 0}), 3); err != nil {
 		return err
 	}
 	o.cmdSender.SendWebSocketCmdNeedResponse("clear @s").BlockGetResult()
@@ -609,12 +610,9 @@ func (o *BotActionHighLevel) highLevelBlockBreakAndPickInHotBar(pos define.CubeP
 	if err != nil {
 		return err
 	}
-	currentBlock, recoverAction, err := o.highLevelGetAndRemoveSpecificBlockSideEffect(pos, "_temp_break")
+	recoverAction, err := o.highLevelGetAndRemoveSpecificBlockSideEffect(pos, "_temp_break"+o.nextCountName())
 	if err != nil {
 		return err
-	}
-	if currentBlock.ForeGroundRtidNested()[0] == blocks.AIR_RUNTIMEID && currentBlock.BackGroundRtidNested()[0] == blocks.AIR_RUNTIMEID {
-		return fmt.Errorf("block is air")
 	}
 	defer func() {
 		if err != nil || recoverBlock {
@@ -764,7 +762,7 @@ func (o *BotActionHighLevel) HighLevelPlaceItemFrameItem(pos define.CubePos, slo
 }
 
 func (o *BotActionHighLevel) highLevelPlaceItemFrameItem(pos define.CubePos, slotID uint8) (err error) {
-	o.highLevelEnsureBotNearby(pos, 0)
+	o.highLevelEnsureBotNearby(pos.Add(define.CubePos{0, 2, 0}), 0)
 	block, err := o.areaRequester.LowLevelRequestStructure(pos, define.CubePos{1, 1, 1}, "_t").SetTimeout(time.Second * 3).BlockGetResult()
 	if err != nil {
 		return err
@@ -796,7 +794,7 @@ func (o *BotActionHighLevel) HighLevelSetContainerContent(pos define.CubePos, co
 		return err
 	}
 	defer release()
-	o.highLevelEnsureBotNearby(pos, 8)
+	o.highLevelEnsureBotNearby(pos.Add(define.CubePos{0, 2, 0}), 3)
 	return o.highLevelSetContainerItems(pos, containerInfo)
 }
 
@@ -806,7 +804,7 @@ func (o *BotActionHighLevel) HighLevelGenContainer(pos define.CubePos, container
 		return err
 	}
 	defer release()
-	o.highLevelEnsureBotNearby(pos, 8)
+	o.highLevelEnsureBotNearby(pos.Add(define.CubePos{0, 2, 0}), 3)
 	if ret, err := o.cmdHelper.SetBlockCmd(pos, block).AsWebSocket().SendAndGetResponse().SetTimeout(time.Second * 3).BlockGetResult(); ret == nil || err != nil {
 		return fmt.Errorf("cannot set container")
 	}
@@ -839,9 +837,9 @@ func (o *BotActionHighLevel) highLevelMakeItem(item *supported_item.Item, slotID
 			}
 		}
 		if item.DisplayName != "" {
-			deferActionStand, _ := o.highLevelRemoveSpecificBlockSideEffect(anvilPos.Add(define.CubePos{0, -1, 0}), "_temp_anvil_stand")
+			deferActionStand, _ := o.highLevelRemoveSpecificBlockSideEffect(anvilPos.Add(define.CubePos{0, -1, 0}), o.nextCountName())
 			o.cmdHelper.SetBlockCmd(anvilPos.Add(define.CubePos{0, -1, 0}), "glass").AsWebSocket().SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult()
-			deferAction, _ := o.highLevelRemoveSpecificBlockSideEffect(anvilPos, "_temp_anvil"+o.nextCountName())
+			deferAction, _ := o.highLevelRemoveSpecificBlockSideEffect(anvilPos, o.nextCountName())
 			o.cmdHelper.SetBlockCmd(anvilPos, "anvil").AsWebSocket().SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult()
 			o.highLevelRenameItemWithAnvil(anvilPos, slotID, item.DisplayName, false)
 			deferAction()
@@ -853,7 +851,7 @@ func (o *BotActionHighLevel) highLevelMakeItem(item *supported_item.Item, slotID
 			}
 		}
 	} else {
-		deferActionWorkspace, _ := o.highLevelRemoveSpecificBlockSideEffect(nextContainerPos, "_temp_work"+o.nextCountName())
+		deferActionWorkspace, _ := o.highLevelRemoveSpecificBlockSideEffect(nextContainerPos, o.nextCountName())
 		defer deferActionWorkspace()
 		o.cmdHelper.SetBlockCmd(nextContainerPos, fmt.Sprintf("%v %v", item.Name, item.RelatedBlockBedrockStateString)).AsWebSocket().SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult()
 		if err := o.highLevelSetContainerItems(nextContainerPos, item.RelateComplexBlockData.Container); err != nil {
@@ -862,7 +860,7 @@ func (o *BotActionHighLevel) highLevelMakeItem(item *supported_item.Item, slotID
 		// if err := o.highLevelPickBlock(nextContainerPos, slotID, 3); err != nil {
 		// 	return err
 		// }
-		if err := o.highLevelPickBlock(nextContainerPos, slotID, 2); err != nil {
+		if err := o.highLevelBlockBreakAndPickInHotBar(nextContainerPos, false, slotID, 2); err != nil {
 			return err
 		}
 		// give complex block enchant and name
@@ -881,7 +879,7 @@ func (o *BotActionHighLevel) highLevelMakeItem(item *supported_item.Item, slotID
 }
 
 func (o *BotActionHighLevel) highLevelSetContainerItems(pos define.CubePos, containerInfo map[uint8]*supported_item.ContainerSlotItemStack) (err error) {
-	o.highLevelEnsureBotNearby(pos, 8)
+	o.highLevelEnsureBotNearby(pos.Add(define.CubePos{0, 2, 0}), 3)
 	updateErr := func(newErr error) {
 		if newErr == nil {
 			return
@@ -920,9 +918,9 @@ func (o *BotActionHighLevel) highLevelSetContainerItems(pos define.CubePos, cont
 
 		for _, stack := range slotAndEnchant {
 			if stack.Item.DisplayName != "" {
-				deferActionStand, _ = o.highLevelRemoveSpecificBlockSideEffect(anvilPos.Add(define.CubePos{0, -1, 0}), "_temp_anvil_stand"+o.nextCountName())
+				deferActionStand, _ = o.highLevelRemoveSpecificBlockSideEffect(anvilPos.Add(define.CubePos{0, -1, 0}), o.nextCountName())
 				o.cmdHelper.SetBlockCmd(anvilPos.Add(define.CubePos{0, -1, 0}), "glass").AsWebSocket().SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult()
-				deferAction, _ = o.highLevelRemoveSpecificBlockSideEffect(anvilPos, "_temp_anvil"+o.nextCountName())
+				deferAction, _ = o.highLevelRemoveSpecificBlockSideEffect(anvilPos, o.nextCountName())
 				o.cmdHelper.SetBlockCmd(anvilPos, "anvil").AsWebSocket().SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult()
 				break
 			}
@@ -973,13 +971,13 @@ func (o *BotActionHighLevel) highLevelSetContainerItems(pos define.CubePos, cont
 		slot, stack := _slot, _stack
 		if stack.Item.GetTypeDescription().IsComplexBlock() {
 			o.microAction.SleepTick(5)
-			deferActionWorkspace, _ := o.highLevelRemoveSpecificBlockSideEffect(nextContainerPos, "_temp_work"+o.nextCountName())
+			deferActionWorkspace, _ := o.highLevelRemoveSpecificBlockSideEffect(nextContainerPos, o.nextCountName())
 			defer deferActionWorkspace()
 			o.cmdHelper.SetBlockCmd(nextContainerPos, fmt.Sprintf("%v %v", stack.Item.Name, stack.Item.RelatedBlockBedrockStateString)).AsWebSocket().SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult()
 			o.microAction.SleepTick(5)
 			updateErr(o.highLevelSetContainerItems(nextContainerPos, stack.Item.RelateComplexBlockData.Container))
 			// err := o.highLevelPickBlock(nextContainerPos, 0, 3)
-			err := o.highLevelPickBlock(nextContainerPos, 0, 3)
+			err := o.highLevelBlockBreakAndPickInHotBar(nextContainerPos, false, 0, 3)
 			updateErr(err)
 			// give complex block enchant and name
 			if len(stack.Item.Enchants) > 0 {

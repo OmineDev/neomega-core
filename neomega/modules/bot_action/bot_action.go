@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
@@ -24,6 +25,7 @@ type AccessPointBotActionWithPersistData struct {
 	listener                         neomega.ReactCore
 	ctrl                             neomega.InteractCore
 	cmdSender                        neomega.CmdSender
+	listenerMu                       sync.Mutex
 	currentContainerOpenListener     func(*packet.ContainerOpen)
 	currentContainerCloseListener    func(*packet.ContainerClose)
 	currentItemStackResponseListener func(*packet.ItemStackResponse)
@@ -41,6 +43,7 @@ func NewAccessPointBotActionWithPersistData(
 		uq:              uq,
 		ctrl:            ctrl,
 		listener:        listener,
+		listenerMu:      sync.Mutex{},
 		cmdSender:       cmdSender,
 		clientInfo:      NewMaintainedGameInfo(listener),
 		node:            nodes.NewGroup("bot_action", node, false),
@@ -69,9 +72,12 @@ func NewAccessPointBotActionWithPersistData(
 		})
 	}, false)
 	listener.SetTypedPacketCallBack(packet.IDContainerOpen, func(p packet.Packet) {
+
 		if ba.currentContainerOpenListener == nil {
+			// fmt.Println("container open, no listener!")
 			return
 		}
+		// fmt.Println("container open!")
 		listener := ba.currentContainerOpenListener
 		ba.currentContainerOpenListener = nil
 		listener(p.(*packet.ContainerOpen))
@@ -295,6 +301,72 @@ func (o *AccessPointBotActionWithPersistData) copyItemInstance(instance *protoco
 	return newInstance
 }
 
+type listenerComplex struct {
+	openRetry            int
+	openTimeout          time.Duration
+	closeTimeout         time.Duration
+	containerOpenWaiter  chan *packet.ContainerOpen
+	containerCloseWaiter chan *packet.ContainerClose
+	itemResponseWaiter   chan *packet.ItemStackResponse
+}
+
+func (cpx *listenerComplex) WaitOpen() (container *packet.ContainerOpen, err error) {
+	select {
+	case <-time.NewTimer(cpx.openTimeout).C:
+		return nil, fmt.Errorf("open container time out")
+	case container = <-cpx.containerOpenWaiter:
+		return container, nil
+	}
+}
+
+func (cpx *listenerComplex) WaitClose(o *AccessPointBotActionWithPersistData) {
+	container, found := o.uq.GetCurrentOpenedContainer()
+	if found {
+		o.ctrl.SendPacket(&packet.ContainerClose{
+			WindowID:   container.WindowID,
+			ServerSide: false,
+		})
+		select {
+		case <-time.NewTimer(cpx.closeTimeout).C:
+			o.forceGetRidOfUnrecoverableState("fail to close container")
+		case <-cpx.containerCloseWaiter:
+			o.SleepTick(4)
+		}
+	}
+}
+
+func newListenerComplex() *listenerComplex {
+	return &listenerComplex{
+		containerOpenWaiter:  make(chan *packet.ContainerOpen, 1),
+		containerCloseWaiter: make(chan *packet.ContainerClose, 1),
+		itemResponseWaiter:   make(chan *packet.ItemStackResponse, 1),
+		openTimeout:          time.Second * 5,
+		closeTimeout:         time.Second * 5,
+	}
+}
+
+func (o *AccessPointBotActionWithPersistData) occupyListener() (*listenerComplex, func(), error) {
+	o.listenerMu.Lock()
+	if _, opened := o.uq.GetCurrentOpenedContainer(); opened || o.currentContainerOpenListener != nil || o.currentContainerCloseListener != nil || o.currentItemStackResponseListener != nil {
+		criticalInfo := "another operation is already proceeding @ move item"
+		pterm.Error.Println(criticalInfo)
+		o.forceGetRidOfUnrecoverableState(criticalInfo)
+		return nil, nil, errors.New(criticalInfo)
+	}
+	cpx := newListenerComplex()
+	o.currentContainerOpenListener = func(co *packet.ContainerOpen) { cpx.containerOpenWaiter <- co }
+	o.currentContainerCloseListener = func(cc *packet.ContainerClose) { cpx.containerCloseWaiter <- cc }
+	o.currentItemStackResponseListener = func(ir *packet.ItemStackResponse) { cpx.itemResponseWaiter <- ir }
+
+	unlock := func() {
+		o.currentContainerOpenListener = nil
+		o.currentContainerCloseListener = nil
+		o.currentItemStackResponseListener = nil
+		o.listenerMu.Unlock()
+	}
+	return cpx, unlock, nil
+}
+
 // 1. 玩家 Inventory(背包) 对应位置必须不为空
 // 2. 被移动的位置必须为空
 func (o *AccessPointBotActionWithPersistData) MoveItemFromInventoryToEmptyContainerSlots(pos define.CubePos, blockNemcRtid uint32, blockName string, moveOperations map[uint8]uint8) error {
@@ -309,53 +381,27 @@ func (o *AccessPointBotActionWithPersistData) MoveItemFromInventoryToEmptyContai
 	}
 	defer release()
 
-	if _, opened := o.uq.GetCurrentOpenedContainer(); opened {
-		criticalInfo := "another operation is already proceeding @ move item"
-		pterm.Error.Println(criticalInfo)
-		o.forceGetRidOfUnrecoverableState(criticalInfo)
-		return errors.New(criticalInfo)
+	listenerComplex, listenerRelease, err := o.occupyListener()
+	if err != nil {
+		return err
 	}
-
-	defer func() {
-		o.currentContainerOpenListener = nil
-		o.currentContainerCloseListener = nil
-		o.currentItemStackResponseListener = nil
-	}()
-
-	openWaiter := make(chan *packet.ContainerOpen, 1)
-	closeWaitor := make(chan struct{}, 1)
-	itemResponseWaitor := make(chan *packet.ItemStackResponse, 1)
-
-	o.currentContainerOpenListener = func(co *packet.ContainerOpen) { openWaiter <- co }
-	o.currentContainerCloseListener = func(co *packet.ContainerClose) { closeWaitor <- struct{}{} }
-	o.currentItemStackResponseListener = func(co *packet.ItemStackResponse) { itemResponseWaitor <- co }
-
+	defer listenerRelease()
 	var container *packet.ContainerOpen
-	o.tapBlockUsingHotBarItem(pos, blockNemcRtid, 0)
-	select {
-	case <-time.NewTimer(time.Second * 3).C:
-		return fmt.Errorf("open container time out")
-	case container = <-openWaiter:
-		if container.ContainerPosition.X() != int32(pos.X()) || container.ContainerPosition.Y() != int32(pos.Y()) || container.ContainerPosition.Z() != int32(pos.Z()) {
-			return fmt.Errorf("not this container opened")
+	for i := 0; i < 3; i++ {
+		o.tapBlockUsingHotBarItem(pos, blockNemcRtid, 0)
+		container, err = listenerComplex.WaitOpen()
+		if err == nil {
+			break
 		}
 	}
+	if err != nil {
+		return fmt.Errorf("move item err: %v", err)
+	}
+	if container.ContainerPosition.X() != int32(pos.X()) || container.ContainerPosition.Y() != int32(pos.Y()) || container.ContainerPosition.Z() != int32(pos.Z()) {
+		return fmt.Errorf("not this container opened")
+	}
 
-	defer func() {
-		container, found := o.uq.GetCurrentOpenedContainer()
-		if found {
-			o.ctrl.SendPacket(&packet.ContainerClose{
-				WindowID:   container.WindowID,
-				ServerSide: false,
-			})
-			select {
-			case <-time.NewTimer(time.Second * 5).C:
-				o.forceGetRidOfUnrecoverableState("fail to close container")
-			case <-closeWaitor:
-				o.SleepTick(1)
-			}
-		}
-	}()
+	defer listenerComplex.WaitClose(o)
 
 	containerWindow := container.WindowID
 	var containerSlots *sync_wrapper.SyncKVMap[uint8, *protocol.ItemInstance]
@@ -430,7 +476,7 @@ func (o *AccessPointBotActionWithPersistData) MoveItemFromInventoryToEmptyContai
 	case <-time.NewTimer(time.Second * 3).C:
 		// fmt.Println("timeout in getting item stack response")
 		return fmt.Errorf("timeout in getting item stack response")
-	case resps := <-itemResponseWaitor:
+	case resps := <-listenerComplex.itemResponseWaiter:
 		for _, response := range resps.Responses {
 			if response.Status == protocol.ItemStackResponseStatusOK {
 				containers := response.ContainerInfo
@@ -476,53 +522,34 @@ func (o *AccessPointBotActionWithPersistData) UseAnvil(pos define.CubePos, block
 		return errors.New(criticalInfo)
 	}
 
-	defer func() {
-		o.currentContainerOpenListener = nil
-		o.currentContainerCloseListener = nil
-		o.currentItemStackResponseListener = nil
-	}()
+	listenerComplex, listenerRelease, err := o.occupyListener()
+	if err != nil {
+		return err
+	}
+	defer listenerRelease()
 
-	openWaiter := make(chan *packet.ContainerOpen, 1)
-	closeWaitor := make(chan struct{}, 1)
-	itemResponseWaitor := make(chan *packet.ItemStackResponse, 1)
-
-	o.currentContainerOpenListener = func(co *packet.ContainerOpen) { openWaiter <- co }
-	o.currentContainerCloseListener = func(co *packet.ContainerClose) { closeWaitor <- struct{}{} }
-	o.currentItemStackResponseListener = func(co *packet.ItemStackResponse) { itemResponseWaitor <- co }
-
-	// open anvil
-	o.ctrl.SendPacket(&packet.PlayerAction{
-		EntityRuntimeID: o.uq.GetBotRuntimeID(),
-		ActionType:      protocol.PlayerActionStartBuildingBlock,
-		BlockPosition:   protocol.BlockPos{int32(pos.X()), int32(pos.Y()), int32(pos.Z())},
-	})
-	o.tapBlockUsingHotBarItem(pos, blockNemcRtid, 0)
 	var container *packet.ContainerOpen
-	select {
-	case <-time.NewTimer(time.Second * 3).C:
-		return fmt.Errorf("open anvil time out")
-	case container = <-openWaiter:
-		if container.ContainerPosition.X() != int32(pos.X()) || container.ContainerPosition.Y() != int32(pos.Y()) || container.ContainerPosition.Z() != int32(pos.Z()) {
-			return fmt.Errorf("not this anvil opened")
+	for i := 0; i < 3; i++ {
+		o.ctrl.SendPacket(&packet.PlayerAction{
+			EntityRuntimeID: o.uq.GetBotRuntimeID(),
+			ActionType:      protocol.PlayerActionStartBuildingBlock,
+			BlockPosition:   protocol.BlockPos{int32(pos.X()), int32(pos.Y()), int32(pos.Z())},
+		})
+		o.tapBlockUsingHotBarItem(pos, blockNemcRtid, 0)
+		container, err = listenerComplex.WaitOpen()
+		if err == nil {
+			break
 		}
 	}
 
-	//close anvil
-	defer func() {
-		container, found := o.uq.GetCurrentOpenedContainer()
-		if found {
-			o.ctrl.SendPacket(&packet.ContainerClose{
-				WindowID:   container.WindowID,
-				ServerSide: false,
-			})
-			select {
-			case <-time.NewTimer(time.Second * 5).C:
-				o.forceGetRidOfUnrecoverableState("fail to close anvil")
-			case <-closeWaitor:
-				o.SleepTick(1)
-			}
-		}
-	}()
+	if err != nil {
+		return fmt.Errorf("use anvil err: %v", err)
+	}
+	if container.ContainerPosition.X() != int32(pos.X()) || container.ContainerPosition.Y() != int32(pos.Y()) || container.ContainerPosition.Z() != int32(pos.Z()) {
+		return fmt.Errorf("not this anvil opened")
+	}
+
+	defer listenerComplex.WaitClose(o)
 
 	// wait anvil window open
 	containerWindow := container.WindowID
@@ -646,7 +673,7 @@ func (o *AccessPointBotActionWithPersistData) UseAnvil(pos define.CubePos, block
 	case <-time.NewTimer(time.Second * 3).C:
 		// fmt.Println("timeout in getting item stack response")
 		return fmt.Errorf("timeout in getting item stack response")
-	case resps := <-itemResponseWaitor:
+	case resps := <-listenerComplex.itemResponseWaiter:
 		// for _, response := range resps.Responses {
 		// 	bs, _ := json.Marshal(response)
 		// 	fmt.Printf("%v\n", string(bs))
@@ -832,51 +859,33 @@ func (o *AccessPointBotActionWithPersistData) MoveItemInsideHotBarOrInventory(so
 	}
 	defer release()
 
+	listenerComplex, listenerRelease, err := o.occupyListener()
+	if err != nil {
+		return err
+	}
+	defer listenerRelease()
+
+	for i := 0; i < 3; i++ {
+		o.ctrl.SendPacket(&packet.Interact{
+			ActionType:            packet.InteractActionOpenInventory,
+			TargetEntityRuntimeID: o.uq.GetBotRuntimeID(),
+		})
+
+		_, err = listenerComplex.WaitOpen()
+		if err == nil {
+			break
+		}
+	}
+	if err != nil {
+		return err
+	}
+
+	defer listenerComplex.WaitClose(o)
+
 	defer func() {
 		o.currentContainerOpenListener = nil
 		o.currentContainerCloseListener = nil
 		o.currentItemStackResponseListener = nil
-	}()
-
-	openWaiter := make(chan *packet.ContainerOpen, 1)
-	closeWaitor := make(chan struct{}, 1)
-	itemResponseWaitor := make(chan *packet.ItemStackResponse, 1)
-
-	o.currentContainerOpenListener = func(co *packet.ContainerOpen) { openWaiter <- co }
-	o.currentContainerCloseListener = func(co *packet.ContainerClose) { closeWaitor <- struct{}{} }
-	o.currentItemStackResponseListener = func(co *packet.ItemStackResponse) { itemResponseWaitor <- co }
-
-	o.ctrl.SendPacket(&packet.Interact{
-		ActionType:            packet.InteractActionOpenInventory,
-		TargetEntityRuntimeID: o.uq.GetBotRuntimeID(),
-	})
-
-	// var container *packet.ContainerOpen
-	select {
-	case <-time.NewTimer(time.Second * 3).C:
-		return fmt.Errorf("open inventory (bot bag) time out")
-	case <-openWaiter:
-		// fmt.Println(container)
-		// WindowID:2
-		// ContainerIDType 255
-		// Pos: bot pos
-		// EntityRuntimeID -1
-	}
-
-	defer func() {
-		container, found := o.uq.GetCurrentOpenedContainer()
-		if found {
-			o.ctrl.SendPacket(&packet.ContainerClose{
-				WindowID:   container.WindowID,
-				ServerSide: false,
-			})
-			select {
-			case <-time.NewTimer(time.Second * 5).C:
-				o.forceGetRidOfUnrecoverableState("fail to close inventory")
-			case <-closeWaitor:
-				o.SleepTick(1)
-			}
-		}
 	}()
 
 	RequestIDMoveItem := o.clientInfo.NextItemRequestID()
@@ -919,7 +928,7 @@ func (o *AccessPointBotActionWithPersistData) MoveItemInsideHotBarOrInventory(so
 	case <-time.NewTimer(time.Second * 3).C:
 		// fmt.Println("timeout in getting item stack response")
 		return fmt.Errorf("timeout in getting item stack response")
-	case resps := <-itemResponseWaitor:
+	case resps := <-listenerComplex.itemResponseWaiter:
 		moveItemResponse := resps.Responses[0]
 		if moveItemResponse.RequestID != RequestIDMoveItem {
 			o.forceGetRidOfUnrecoverableState("client and server out of sync in maintained info")
