@@ -272,7 +272,7 @@ func disableCommandBlock(omegaCoreCtrl neomega.GameCtrl) {
 
 func waitDead(omegaCore neomega.MicroOmega, deadReason chan error) {
 	// SetTime packet will be sent by server every 256 ticks, even dodaylightcycle gamerule disabled
-	threshold := time.Minute * 2
+	threshold := time.Minute
 	startTime := time.Now()
 	lastReceivePacket := time.Now()
 	omegaCore.GetGameListener().SetAnyPacketCallBack(func(p packet.Packet) {

@@ -136,7 +136,7 @@ func NewMicroOmega(
 		omega.PostponeActionsAfterChallengePassed("check bot command status each 10s", func() {
 			go func() {
 				for {
-					ret, err := omega.SendWebSocketCmdNeedResponse("errcmd").SetTimeout(time.Second * 120).BlockGetResult()
+					ret, err := omega.SendWebSocketCmdNeedResponse("errcmd").SetTimeout(time.Minute).BlockGetResult()
 					if err != nil || ret == nil {
 						panic("for some reason, end point cannot communicate with server, reload")
 					} else {
