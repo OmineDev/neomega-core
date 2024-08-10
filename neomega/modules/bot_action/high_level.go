@@ -187,12 +187,13 @@ func (o *BotActionHighLevel) highLevelRemoveSpecificBlockSideEffect(pos define.C
 
 func (o *BotActionHighLevel) highLevelGetAndRemoveSpecificBlockSideEffect(pos define.CubePos, backupName string) (deferFunc func(), err error) {
 	o.highLevelEnsureBotNearby(pos.Add(define.CubePos{0, 2, 0}), 3)
-	ret, err := o.cmdHelper.BackupStructureWithGivenNameCmd(pos, define.CubePos{1, 1, 1}, backupName).SendAndGetResponse().SetTimeout(time.Second * 3).BlockGetResult()
+	enlargedStart := pos.Sub(define.CubePos{1, 1, 1})
+	ret, err := o.cmdHelper.BackupStructureWithGivenNameCmd(enlargedStart, define.CubePos{3, 3, 3}, backupName).SendAndGetResponse().SetTimeout(time.Second * 3).BlockGetResult()
 	if ret == nil || err != nil {
 		return func() {}, fmt.Errorf("cannot backup block for revert")
 	}
 	deferFunc = func() {
-		o.cmdHelper.RevertStructureWithGivenNameCmd(pos, backupName).Send()
+		o.cmdHelper.RevertStructureWithGivenNameCmd(enlargedStart, backupName).Send()
 		o.microAction.SleepTick(1)
 	}
 	o.cmdHelper.SetBlockCmd(pos, "air").AsWebSocket().SendAndGetResponse().BlockGetResult()
@@ -752,18 +753,19 @@ func (o *BotActionHighLevel) highLevelWriteBookAndClose(slotID uint8, pages []st
 	return nil
 }
 
-func (o *BotActionHighLevel) HighLevelPlaceItemFrameItem(pos define.CubePos, slotID uint8) (err error) {
+func (o *BotActionHighLevel) HighLevelPlaceItemFrameItem(pos define.CubePos, slotID uint8, rotation int) (err error) {
 	release, err := o.occupyBot(time.Second * 3)
 	if err != nil {
 		return err
 	}
 	defer release()
-	return o.highLevelPlaceItemFrameItem(pos, slotID)
+	return o.highLevelPlaceItemFrameItem(pos, slotID, rotation)
 }
 
-func (o *BotActionHighLevel) highLevelPlaceItemFrameItem(pos define.CubePos, slotID uint8) (err error) {
-	o.highLevelEnsureBotNearby(pos.Add(define.CubePos{0, 2, 0}), 0)
-	block, err := o.areaRequester.LowLevelRequestStructure(pos, define.CubePos{1, 1, 1}, "_t").SetTimeout(time.Second * 3).BlockGetResult()
+func (o *BotActionHighLevel) highLevelPlaceItemFrameItem(pos define.CubePos, slotID uint8, rotation int) (err error) {
+	o.highLevelEnsureBotNearby(pos.Add(define.CubePos{0, 0, 0}), 0)
+	o.microAction.SleepTick(2)
+	block, err := o.areaRequester.LowLevelRequestStructure(pos, define.CubePos{1, 1, 1}, o.nextCountName()).SetTimeout(time.Second * 3).BlockGetResult()
 	if err != nil {
 		return err
 	}
@@ -773,6 +775,9 @@ func (o *BotActionHighLevel) highLevelPlaceItemFrameItem(pos define.CubePos, slo
 	}
 	runtimeID := decoded.ForeGroundRtidNested()[0]
 	// nemcRuntimeID := chunk.StandardRuntimeIDToNEMCRuntimeID(runtimeID)
+	if len(decoded.ForeGroundRtidNested()) == 0 {
+		return fmt.Errorf("item frame nbt not found")
+	}
 	_, states, _ := blocks.RuntimeIDToState(decoded.ForeGroundRtidNested()[0])
 	face, ok := states["facing_direction"]
 	if !ok {
@@ -783,9 +788,40 @@ func (o *BotActionHighLevel) highLevelPlaceItemFrameItem(pos define.CubePos, slo
 		return fmt.Errorf("facing not found")
 	}
 	o.microAction.SleepTick(1)
-	err = o.microAction.UseHotBarItemOnBlock(pos, runtimeID, facing, slotID)
-	o.microAction.SleepTick(1)
-	return err
+
+	for i := 0; i < 20; i++ {
+		err = o.microAction.UseHotBarItemOnBlock(pos, runtimeID, facing, slotID)
+		if err != nil {
+			// fmt.Println(err)
+			continue
+		}
+		o.microAction.SleepTick(1)
+		block, err = o.areaRequester.LowLevelRequestStructure(pos, define.CubePos{1, 1, 1}, o.nextCountName()).SetTimeout(time.Second * 3).BlockGetResult()
+		if err != nil {
+			// fmt.Println(err)
+			continue
+		}
+		decoded, err := block.Decode()
+		if err != nil {
+			// fmt.Println(err)
+			continue
+		}
+		if len(decoded.ForeGroundRtidNested()) == 0 {
+			// fmt.Println("item frame nbt not found")
+			continue
+		}
+		currentNBT := decoded.NBTsInAbsolutePos()[pos]
+		rotationInfoF, ok := currentNBT["ItemRotation"].(float32)
+		if !ok {
+			// fmt.Println("cannot get item rotation")
+			continue
+		}
+		rotationNow := int(rotationInfoF)
+		if rotationNow == rotation || rotationNow == rotation*45 {
+			return nil
+		}
+	}
+	return fmt.Errorf("cannot place item or rotate to correct angle")
 }
 
 func (o *BotActionHighLevel) HighLevelSetContainerContent(pos define.CubePos, containerInfo map[uint8]*supported_item.ContainerSlotItemStack) (err error) {

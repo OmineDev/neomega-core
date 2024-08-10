@@ -65,7 +65,7 @@ type BotActionHighLevel interface {
 	HighLevelGenContainer(pos define.CubePos, containerInfo map[uint8]*supported_item.ContainerSlotItemStack, block string) (err error)
 	HighLevelWriteBook(slotID uint8, pages []string) (err error)
 	HighLevelWriteBookAndClose(slotID uint8, pages []string, bookTitle string, bookAuthor string) (err error)
-	HighLevelPlaceItemFrameItem(pos define.CubePos, slotID uint8) error
+	HighLevelPlaceItemFrameItem(pos define.CubePos, slotID uint8, rotation int) error
 	HighLevelMakeItem(item *supported_item.Item, slotID uint8, anvilPos, nextContainerPos define.CubePos) error
 	HighLevelRequestLargeArea(startPos define.CubePos, size define.CubePos, dst chunks.ChunkProvider, withMove bool) error
 }
