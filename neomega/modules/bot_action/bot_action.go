@@ -340,8 +340,8 @@ func newListenerComplex() *listenerComplex {
 		containerOpenWaiter:  make(chan *packet.ContainerOpen, 1),
 		containerCloseWaiter: make(chan *packet.ContainerClose, 1),
 		itemResponseWaiter:   make(chan *packet.ItemStackResponse, 1),
-		openTimeout:          time.Second * 5,
-		closeTimeout:         time.Second * 5,
+		openTimeout:          time.Second / 2,
+		closeTimeout:         time.Second / 2,
 	}
 }
 

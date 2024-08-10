@@ -187,16 +187,16 @@ func (o *BotActionHighLevel) highLevelRemoveSpecificBlockSideEffect(pos define.C
 
 func (o *BotActionHighLevel) highLevelGetAndRemoveSpecificBlockSideEffect(pos define.CubePos, backupName string) (deferFunc func(), err error) {
 	o.highLevelEnsureBotNearby(pos.Add(define.CubePos{0, 2, 0}), 3)
-	enlargedStart := pos.Sub(define.CubePos{1, 1, 1})
-	ret, err := o.cmdHelper.BackupStructureWithGivenNameCmd(enlargedStart, define.CubePos{3, 3, 3}, backupName).SendAndGetResponse().SetTimeout(time.Second * 3).BlockGetResult()
+	// enlargedStart := pos.Sub(define.CubePos{1, 1, 1})
+	ret, err := o.cmdHelper.BackupStructureWithGivenNameCmd(pos, define.CubePos{1, 1, 1}, backupName).SendAndGetResponse().SetTimeout(time.Second * 3).BlockGetResult()
 	if ret == nil || err != nil {
 		return func() {}, fmt.Errorf("cannot backup block for revert")
 	}
 	deferFunc = func() {
-		o.cmdHelper.RevertStructureWithGivenNameCmd(enlargedStart, backupName).Send()
+		o.cmdHelper.RevertStructureWithGivenNameCmd(pos, backupName).Send()
 		o.microAction.SleepTick(1)
 	}
-	o.cmdHelper.SetBlockCmd(pos, "air").AsWebSocket().SendAndGetResponse().BlockGetResult()
+	// o.cmdHelper.SetBlockCmd(pos, "air").AsWebSocket().SendAndGetResponse().BlockGetResult()
 	return deferFunc, nil
 }
 
@@ -893,12 +893,12 @@ func (o *BotActionHighLevel) highLevelMakeItem(item *supported_item.Item, slotID
 		if err := o.highLevelSetContainerItems(nextContainerPos, item.RelateComplexBlockData.Container); err != nil {
 			return err
 		}
-		// if err := o.highLevelPickBlock(nextContainerPos, slotID, 3); err != nil {
-		// 	return err
-		// }
-		if err := o.highLevelBlockBreakAndPickInHotBar(nextContainerPos, false, slotID, 2); err != nil {
+		if err := o.highLevelPickBlock(nextContainerPos, slotID, 3); err != nil {
 			return err
 		}
+		// if err := o.highLevelBlockBreakAndPickInHotBar(nextContainerPos, false, slotID, 2); err != nil {
+		// 	return err
+		// }
 		// give complex block enchant and name
 		if len(item.Enchants) > 0 {
 			if err := o.highLevelEnchantItem(slotID, item.Enchants); err != nil {
@@ -1012,8 +1012,8 @@ func (o *BotActionHighLevel) highLevelSetContainerItems(pos define.CubePos, cont
 			o.cmdHelper.SetBlockCmd(nextContainerPos, fmt.Sprintf("%v %v", stack.Item.Name, stack.Item.RelatedBlockBedrockStateString)).AsWebSocket().SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult()
 			o.microAction.SleepTick(5)
 			updateErr(o.highLevelSetContainerItems(nextContainerPos, stack.Item.RelateComplexBlockData.Container))
-			// err := o.highLevelPickBlock(nextContainerPos, 0, 3)
-			err := o.highLevelBlockBreakAndPickInHotBar(nextContainerPos, false, 0, 3)
+			err := o.highLevelPickBlock(nextContainerPos, 0, 3)
+			// err := o.highLevelBlockBreakAndPickInHotBar(nextContainerPos, false, 0, 3)
 			updateErr(err)
 			// give complex block enchant and name
 			if len(stack.Item.Enchants) > 0 {
