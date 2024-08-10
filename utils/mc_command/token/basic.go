@@ -30,6 +30,10 @@ func ReadPosition(r TextReader) (ok bool, token string) {
 	return fsm.DoLogic(r, fsm.PositionGroupLogic)
 }
 
+func ReadPositionWithOrWithoutFacing(r TextReader) (ok bool, token string) {
+	return fsm.DoLogic(r, fsm.PositionWithOrWithoutFacingGroupLogic)
+}
+
 func ReadUntilEnd(r TextReader) (ok bool, token string) {
 	return fsm.DoLogic(r, fsm.ReadUntilEndLogic)
 }

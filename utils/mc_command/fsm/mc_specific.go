@@ -120,3 +120,27 @@ func MakePositionGroupNode() *MachineNodeWrapper {
 		Logic: PositionGroupLogic,
 	}
 }
+
+func PositionWithOrWithoutFacingGroupLogic(end, fail AutomataNode) AutomataNode {
+	_1 := MakePositionNode()
+	_2 := MakePositionNode()
+	_3 := MakePositionNode()
+	_4 := MakePositionNode()
+	_5 := MakePositionNode()
+	_1.Next = _2
+	_1.Else = fail
+	_2.Next = _3
+	_2.Else = fail
+	_3.Next = _4
+	_3.Else = fail
+	_4.Next = _5
+	_4.Else = end
+	_5.Next = end
+	_5.Else = end
+	return _1
+}
+func MakePositionWithOrWithoutFacingGroupNode() *MachineNodeWrapper {
+	return &MachineNodeWrapper{
+		Logic: PositionWithOrWithoutFacingGroupLogic,
+	}
+}

@@ -183,7 +183,7 @@ func UpdateLegacySummonCommand(command string) string {
 	if c == nil {
 		return command
 	}
-	newCommand := fmt.Sprintf("summon %v %v facing %v %v %v", c.EntityType, c.Pos, c.Pos, c.Event, c.EntityName)
+	newCommand := fmt.Sprintf("summon %v %v facing %v %v %v", c.EntityType, c.Pos, c.FacingPos, c.Event, c.EntityName)
 	return newCommand
 }
 

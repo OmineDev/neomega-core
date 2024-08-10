@@ -327,6 +327,7 @@ func ParseLegacyTestForBlockCommand(command string) *LegacyTestForBlockCommand {
 type LegacySummonCommand struct {
 	EntityType string
 	Pos        string
+	FacingPos  string
 	Event      string
 	EntityName string
 }
@@ -354,8 +355,17 @@ func ParseLegacySummonCommand(command string) *LegacySummonCommand {
 	c.EntityType = t
 	_, _ = token.ReadWhiteSpace(reader)
 
-	// position
+	revert := reader.Snapshot()
 	ok, t = token.ReadPosition(reader)
+	if !ok {
+		return nil
+	}
+	c.FacingPos = t
+
+	revert()
+
+	// position
+	ok, t = token.ReadPositionWithOrWithoutFacing(reader)
 	if !ok {
 		return nil
 	}

@@ -43,6 +43,7 @@ func main() {
 	command = `clone 0 0 0 ^10 100 ~20 ~~~ filtered normal stone 1`
 	command = `execute as @a[scores={撤离=0}] at @s positioned ~ ~ ~ if block ~ ~0.1 ~ lime_carpet [] run scoreboard players add @s 撤离 10`
 	command = `fill ~~~~~~ stained_glass -1 replace stone -1`
+	command = `summon armor_stand -5025 304 -4974 ~ ~ a 草方包`
 	fmt.Println(command)
 	fmt.Println(mc_command.UpdateLegacyCommand(command))
 }
