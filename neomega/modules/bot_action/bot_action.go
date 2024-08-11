@@ -72,20 +72,23 @@ func NewAccessPointBotActionWithPersistData(
 		})
 	}, false)
 	listener.SetTypedPacketCallBack(packet.IDContainerOpen, func(p packet.Packet) {
-
+		// fmt.Println("container open!")
 		if ba.currentContainerOpenListener == nil {
 			// fmt.Println("container open, no listener!")
 			return
 		}
-		// fmt.Println("container open!")
+
 		listener := ba.currentContainerOpenListener
 		ba.currentContainerOpenListener = nil
 		listener(p.(*packet.ContainerOpen))
 	}, true)
 	listener.SetTypedPacketCallBack(packet.IDContainerClose, func(p packet.Packet) {
+		// fmt.Println("container close!")
 		if ba.currentContainerCloseListener == nil {
+			// fmt.Println("container close, no listener!")
 			return
 		}
+
 		listener := ba.currentContainerCloseListener
 		ba.currentContainerCloseListener = nil
 		listener(p.(*packet.ContainerClose))
@@ -881,12 +884,6 @@ func (o *AccessPointBotActionWithPersistData) MoveItemInsideHotBarOrInventory(so
 	}
 
 	defer listenerComplex.WaitClose(o)
-
-	defer func() {
-		o.currentContainerOpenListener = nil
-		o.currentContainerCloseListener = nil
-		o.currentItemStackResponseListener = nil
-	}()
 
 	RequestIDMoveItem := o.clientInfo.NextItemRequestID()
 
