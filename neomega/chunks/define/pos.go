@@ -28,6 +28,53 @@ var WorldRange = Range{-64, 319}
 // where the y value is positive.
 type CubePos [3]int
 
+func (c CubePos) SortStartAndEndPos(another CubePos) (start, end CubePos) {
+	return SortStartAndEndPos(c, another)
+}
+
+func SortStartAndEndPos(_start, _end CubePos) (start, end CubePos) {
+	if _start.X() > _end.X() {
+		start[0] = _end.X()
+		end[0] = _start.X()
+	} else {
+		start[0] = _start.X()
+		end[0] = _end.X()
+	}
+	if _start.Y() > _end.Y() {
+		start[1] = _end.Y()
+		end[1] = _start.Y()
+	} else {
+		start[1] = _start.Y()
+		end[1] = _end.Y()
+	}
+	if _start.Z() > _end.Z() {
+		start[2] = _end.Z()
+		end[2] = _start.Z()
+	} else {
+		start[2] = _start.Z()
+		end[2] = _end.Z()
+	}
+	return start, end
+}
+
+func (c CubePos) CubeSize(another CubePos) CubePos {
+	return CubeSize(c, another)
+}
+
+func CubeSize(start, end CubePos) CubePos {
+	size := end.Sub(start)
+	if size[0] < 0 {
+		size[0] = -size[0]
+	}
+	if size[1] < 0 {
+		size[1] = -size[1]
+	}
+	if size[2] < 0 {
+		size[2] = -size[2]
+	}
+	return size
+}
+
 func (p CubePos) OutOfYBounds() bool {
 	y := p[1]
 	return y > WorldRange[1] || y < WorldRange[0]
