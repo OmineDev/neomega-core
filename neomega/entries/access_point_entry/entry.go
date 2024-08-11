@@ -59,7 +59,7 @@ func Entry(args *Args, individual bool) (omegaCore neomega.MicroOmega, node defi
 	fmt.Println(i18n.T(i18n.S_neomega_access_point_ready))
 
 	if individual {
-		panic(<-omegaCore.Dead())
+		panic(<-omegaCore.WaitClosed())
 	}
 	return
 }

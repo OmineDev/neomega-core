@@ -11,7 +11,10 @@ import (
 type rakNet struct{}
 
 // DialContext ...
-func (r rakNet) DialContext(ctx context.Context, address string) (net.Conn, error) {
+func (r rakNet) DialContext(ctx context.Context, address string) (interface {
+	net.Conn
+	WaitClosed() chan struct{}
+}, error) {
 	return raknet.DialContext(ctx, address)
 }
 

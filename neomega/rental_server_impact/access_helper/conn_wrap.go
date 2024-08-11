@@ -73,7 +73,7 @@ func NewInfinityQueue() *InfinityQueue {
 }
 
 type shallowWrap struct {
-	defines.ByteFrameConnBase
+	byteFrameConn defines.ByteFrameConnBase
 	defines.PacketConnBase
 	*login_and_spawn_core.Core
 	*InfinityQueue
@@ -86,4 +86,8 @@ func (w *shallowWrap) IdentityData() login.IdentityData {
 
 func (w *shallowWrap) WritePacket(pk packet.Packet) {
 	w.PacketConnBase.WritePacket(pk)
+}
+
+func (w *shallowWrap) WriteBytePacket(data []byte) {
+	w.byteFrameConn.WriteBytePacket(data)
 }

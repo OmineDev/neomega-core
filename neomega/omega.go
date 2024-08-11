@@ -2,6 +2,7 @@ package neomega
 
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
+	"github.com/OmineDev/neomega-core/minecraft_neo/can_close"
 	"github.com/OmineDev/neomega-core/utils/async_wrapper"
 	"github.com/OmineDev/neomega-core/utils/pressure_metric"
 
@@ -29,7 +30,7 @@ type PacketDispatcher interface {
 }
 
 type ReactCore interface {
-	Dead() chan error
+	can_close.CanCloseWithError
 	PacketDispatcher
 }
 
@@ -181,7 +182,7 @@ func NewGameCtrlBox(c GameCtrl, m *pressure_metric.FreqMetric) GameCtrlBox {
 }
 
 type MicroOmega interface {
-	Dead() chan error
+	can_close.CanCloseWithError
 	GetGameControl() GameCtrl
 	GetReactCore() ReactCore
 	GetGameListener() PacketDispatcher

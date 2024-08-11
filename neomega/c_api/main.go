@@ -1008,7 +1008,7 @@ func prepareOmegaAPIs(omegaCore neomega.MicroOmega) {
 	}
 	GPool = packet.NewPool()
 	go func() {
-		err := <-omegaCore.Dead()
+		err := <-omegaCore.WaitClosed()
 		GOmegaCore = nil
 		GEventsChan <- &GEvent{
 			EventTypeOmegaConnErr,

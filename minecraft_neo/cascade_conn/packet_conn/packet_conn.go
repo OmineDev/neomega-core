@@ -30,7 +30,8 @@ func NewPacketConn(conn defines.ByteFrameConn, disconnectOnInvalidPackets bool) 
 	}
 	go func() {
 		// close when underlay err
-		c.CloseWithError(<-conn.WaitClosed())
+		err := <-conn.WaitClosed()
+		c.CloseWithError(err)
 	}()
 	return c
 }

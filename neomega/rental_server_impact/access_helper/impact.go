@@ -72,7 +72,7 @@ func ImpactServer(ctx context.Context, node defines.Node, options *Options) (ome
 		}
 	}
 	if options.ReasonWithPrivilegeStuff {
-		err := reasonWithPrivilegeStuff(ctx, omegaCore.Dead(), omegaCore, options.PrivilegeStuffOptions)
+		err := reasonWithPrivilegeStuff(ctx, omegaCore, options.PrivilegeStuffOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -88,7 +88,7 @@ func ImpactServer(ctx context.Context, node defines.Node, options *Options) (ome
 		})
 	}
 	unReadyOmega.NotifyChallengePassed()
-	go waitDead(omegaCore, omegaCore.Dead())
+	go waitDead(omegaCore)
 	// wait everything stable
 	// we need to wait until some packets received before using some api
 	time.Sleep(time.Second * 3)

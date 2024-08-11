@@ -158,11 +158,11 @@ func loginMCServer(ctx context.Context, authenticator Authenticator) (conn minec
 	packetConn.Flush()
 	fmt.Println(i18n.T(i18n.S_packing_core))
 	return &shallowWrap{
-		ByteFrameConnBase: byteFrameConn,
-		PacketConnBase:    packetConn,
-		Core:              loginAndSpawnCore,
-		InfinityQueue:     readQueue,
-		identityData:      loginAndSpawnCore.IdentityData,
+		byteFrameConn:  byteFrameConn,
+		PacketConnBase: packetConn,
+		Core:           loginAndSpawnCore,
+		InfinityQueue:  readQueue,
+		identityData:   loginAndSpawnCore.IdentityData,
 	}, nil
 }
 
@@ -222,14 +222,14 @@ func copeWithRentalServerChallenge(ctx context.Context, omegaCore neomega.MicroO
 	return nil
 }
 
-func reasonWithPrivilegeStuff(ctx context.Context, deadReason chan error, omegaCore neomega.MicroOmega, options *PrivilegeStuffOptions) (err error) {
+func reasonWithPrivilegeStuff(ctx context.Context, omegaCore neomega.MicroOmega, options *PrivilegeStuffOptions) (err error) {
 	fmt.Println(i18n.T(i18n.S_checking_bot_op_permission_and_game_cheat_mode))
 	helper := challenges.NewOperatorChallenge(omegaCore, func() {
 		if options.OpPrivilegeRemovedCallBack != nil {
 			options.OpPrivilegeRemovedCallBack()
 		}
 		if options.DieOnLosingOpPrivilege {
-			deadReason <- ErrBotOpPrivilegeRemoved
+			omegaCore.CloseWithError(ErrBotOpPrivilegeRemoved)
 		}
 	})
 	waitErr := make(chan error)
@@ -238,7 +238,7 @@ func reasonWithPrivilegeStuff(ctx context.Context, deadReason chan error, omegaC
 	}()
 	select {
 	case err = <-waitErr:
-	case err = <-deadReason:
+	case err = <-omegaCore.WaitClosed():
 	}
 	if err != nil {
 		return err
@@ -270,7 +270,7 @@ func disableCommandBlock(omegaCoreCtrl neomega.GameCtrl) {
 	// <-waitor
 }
 
-func waitDead(omegaCore neomega.MicroOmega, deadReason chan error) {
+func waitDead(omegaCore neomega.MicroOmega) {
 	// SetTime packet will be sent by server every 256 ticks, even dodaylightcycle gamerule disabled
 	threshold := time.Minute
 	startTime := time.Now()
@@ -288,7 +288,7 @@ func waitDead(omegaCore neomega.MicroOmega, deadReason chan error) {
 			omegaCore.GetGameControl().SendWebSocketCmdOmitResponse("errorcmd")
 		}
 		if lastReceivePacket.Add(threshold).Before(nowTime) {
-			deadReason <- fmt.Errorf(i18n.T(i18n.S_no_response_after_a_long_time_bot_is_down), threshold, time.Since(startTime).Seconds())
+			omegaCore.CloseWithError(fmt.Errorf(i18n.T(i18n.S_no_response_after_a_long_time_bot_is_down), threshold, time.Since(startTime).Seconds()))
 			break
 		}
 	}

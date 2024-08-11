@@ -3,6 +3,7 @@ package minecraft_conn
 import (
 	"github.com/OmineDev/neomega-core/minecraft/protocol/login"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
+	"github.com/OmineDev/neomega-core/minecraft_neo/can_close"
 	"github.com/OmineDev/neomega-core/minecraft_neo/game_data"
 )
 
@@ -13,4 +14,5 @@ type Conn interface {
 	ReadPacketAndBytes() (packet.Packet, []byte)
 	WritePacket(packet.Packet)
 	WriteBytePacket([]byte)
+	can_close.CanCloseWithError
 }

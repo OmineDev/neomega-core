@@ -2,6 +2,7 @@ package byte_frame_conn
 
 import (
 	"context"
+	"errors"
 
 	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
 	"github.com/OmineDev/neomega-core/minecraft_neo/can_close"
@@ -24,7 +25,10 @@ type ByteFrameConnection struct {
 	sendMu       sync.Mutex
 }
 
-func NewConnectionFromNet(netConn net.Conn) *ByteFrameConnection {
+func NewConnectionFromNet(netConn interface {
+	net.Conn
+	WaitClosed() chan struct{}
+}) *ByteFrameConnection {
 	conn := &ByteFrameConnection{
 		// close underlay conn on err
 		CanCloseWithError: can_close.NewClose(func() { netConn.Close() }),
@@ -32,12 +36,23 @@ func NewConnectionFromNet(netConn net.Conn) *ByteFrameConnection {
 		enc:               packet.NewEncoder(netConn),
 		dec:               packet.NewDecoder(netConn),
 	}
+	go func() {
+		<-conn.WaitClosed()
+		netConn.Close()
+	}()
+	go func() {
+		<-netConn.WaitClosed()
+		conn.CloseWithError(errors.New("netConn closed"))
+	}()
 	conn.dec.DisableBatchPacketLimit()
 	go conn.writeRoutine(time.Second / 20)
 	return conn
 }
 
-func NewConnectionFromNetWithCtx(netConn net.Conn, ctx context.Context) *ByteFrameConnection {
+func NewConnectionFromNetWithCtx(netConn interface {
+	net.Conn
+	WaitClosed() chan struct{}
+}, ctx context.Context) *ByteFrameConnection {
 	conn := NewConnectionFromNet(netConn)
 	go func() {
 		select {

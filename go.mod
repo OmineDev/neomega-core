@@ -11,13 +11,15 @@ require (
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pterm/pterm v0.12.29
-	github.com/sandertv/go-raknet v1.12.0
+	github.com/sandertv/go-raknet v0.0.0
 	github.com/ugorji/go/codec v1.2.12
 	golang.org/x/net v0.10.0
 	golang.org/x/term v0.17.0
 	golang.org/x/text v0.14.0
 	gopkg.in/square/go-jose.v2 v2.6.0
 )
+
+replace github.com/sandertv/go-raknet v0.0.0 => ../go-raknet
 
 require (
 	github.com/atomicgo/cursor v0.0.1 // indirect

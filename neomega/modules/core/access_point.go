@@ -44,10 +44,17 @@ func NewAccessPointInteractCore(node defines.APINode, conn minecraft_conn.Conn) 
 
 func NewAccessPointReactCore(node defines.Node, conn minecraft_conn.Conn) neomega.UnStartedReactCore {
 	core := NewReactCore()
+	core.closeHooks = append(core.closeHooks, node.Close)
 	go func() {
 		nodeDead := <-node.WaitClosed()
 		err := fmt.Errorf("node dead: %v", nodeDead)
-		core.DeadReason <- err
+		core.CloseWithError(err)
+	}()
+	core.closeHooks = append(core.closeHooks, conn.Close)
+	go func() {
+		connDead := <-conn.WaitClosed()
+		err := fmt.Errorf("conn dead: %v", connDead)
+		core.CloseWithError(err)
 	}()
 	pressureMetric := pressure_metric.NewPressureMetric(time.Second*3, func(e float32) {
 		if e > 0.5 {
@@ -93,7 +100,7 @@ func NewAccessPointReactCore(node defines.Node, conn minecraft_conn.Conn) neomeg
 			// }, time.Second/5)
 			if pkt.ID() == packet.IDDisconnect {
 				pk := pkt.(*packet.Disconnect)
-				core.DeadReason <- fmt.Errorf("%v: %v", i18n.T(i18n.S_mc_server_disconnect), pk.Message)
+				core.CloseWithError(fmt.Errorf("%v: %v", i18n.T(i18n.S_mc_server_disconnect), pk.Message))
 			}
 			core.handlePacket(pkt)
 			if pkt.ID() == packet.IDCommandOutput {
@@ -128,7 +135,7 @@ func NewAccessPointReactCore(node defines.Node, conn minecraft_conn.Conn) neomeg
 			// node.PublishMessage("packet", nodes.FromInt32(conn.GetShieldID()).ExtendFrags(packetData))
 			// prob.MarkEventFinished(mark)
 		}
-		core.DeadReason <- fmt.Errorf("%v: %v", ErrRentalServerDisconnected, i18n.FuzzyTransErr(err))
+		core.CloseWithError(fmt.Errorf("%v: %v", ErrRentalServerDisconnected, i18n.FuzzyTransErr(err)))
 	}
 	return core
 }

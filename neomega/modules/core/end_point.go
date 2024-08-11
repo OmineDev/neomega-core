@@ -121,7 +121,7 @@ func NewEndPointReactCore(node defines.Node) interface {
 	go func() {
 		nodeDead := <-node.WaitClosed()
 		err := fmt.Errorf("node dead: %v", nodeDead)
-		core.DeadReason <- err
+		core.CloseWithError(err)
 	}()
 	shieldIDUpdateNotifier := &ShieldIDUpdateNotifier{
 		first:           true,
@@ -133,7 +133,7 @@ func NewEndPointReactCore(node defines.Node) interface {
 		shieldID, err := msg.ToInt32()
 		if err != nil {
 			err := fmt.Errorf("end point get shield id dead: %v", err)
-			core.DeadReason <- err
+			core.CloseWithError(err)
 			return
 		}
 		shieldIDUpdateNotifier.updateShieldID(shieldID)
@@ -141,7 +141,7 @@ func NewEndPointReactCore(node defines.Node) interface {
 		packetData, err := msg.ToBytes()
 		if err != nil {
 			err := fmt.Errorf("end point get msg dead: %v", err)
-			core.DeadReason <- err
+			core.CloseWithError(err)
 			return
 		}
 		// batchedBytes := bytesToBytesSlices(catBytes)
@@ -150,7 +150,7 @@ func NewEndPointReactCore(node defines.Node) interface {
 			reader := bytes.NewBuffer(packetData)
 			header := &packet.Header{}
 			if err := header.Read(reader); err != nil {
-				core.DeadReason <- fmt.Errorf("end point error reading packet header: %v", err)
+				core.CloseWithError(fmt.Errorf("end point error reading packet header: %v", err))
 				return
 			}
 			r := protocol.NewReader(reader, shieldID, false)

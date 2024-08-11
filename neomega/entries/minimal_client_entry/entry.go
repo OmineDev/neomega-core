@@ -74,5 +74,5 @@ func Entry(args *access_helper.ImpactOption) {
 		}
 	}()
 	omegaCore.GetBotAction().DropItemFromHotBar(3)
-	panic(<-omegaCore.Dead())
+	panic(<-omegaCore.WaitClosed())
 }

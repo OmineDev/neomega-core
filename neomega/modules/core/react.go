@@ -6,6 +6,7 @@ import (
 
 	"github.com/OmineDev/neomega-core/i18n"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
+	"github.com/OmineDev/neomega-core/minecraft_neo/can_close"
 	"github.com/OmineDev/neomega-core/neomega"
 	"github.com/OmineDev/neomega-core/utils/sync_wrapper"
 
@@ -27,10 +28,11 @@ func init() {
 }
 
 type ReactCore struct {
+	can_close.CanCloseWithError
+	closeHooks                    []func()
 	onAnyPacketCallBack           []func(packet.Packet)
 	onTypedPacketCallBacks        [][]func(packet.Packet)
 	noBlockAndDetachableCallbacks []*sync_wrapper.SyncKVMap[string, neomega.NoBlockAndDetachablePacketCallback]
-	DeadReason                    chan error
 	deferredStart                 func()
 	// oneTimeTypedPacketCallBacks *sync_wrapper.SyncKVMap[string,*sync_wrapper.SyncKVMap[string,func(packet.Packet) bool]]
 	// slowPacketChan              chan packet.Packet
@@ -38,13 +40,14 @@ type ReactCore struct {
 
 func NewReactCore() *ReactCore {
 	core := &ReactCore{
+		closeHooks:                    make([]func(), 0),
 		onAnyPacketCallBack:           make([]func(packet.Packet), 0),
 		onTypedPacketCallBacks:        make([][]func(packet.Packet), 0, 400),
 		noBlockAndDetachableCallbacks: make([]*sync_wrapper.SyncKVMap[string, neomega.NoBlockAndDetachablePacketCallback], 0, 400),
-		DeadReason:                    make(chan error, 16),
 		// oneTimeTypedPacketCallBacks: sync_wrapper.NewSyncKVMap[string,*sync_wrapper.SyncKVMap[string,func(packet.Packet) bool]](),
 		// slowPacketChan:              make(chan packet.Packet, 1024),
 	}
+	core.CanCloseWithError = can_close.NewClose(core.onClose)
 	maxID := 0
 	for _, id := range mcPacketNameIDMapping {
 		if id > uint32(maxID) {
@@ -63,8 +66,10 @@ func NewReactCore() *ReactCore {
 	return core
 }
 
-func (r *ReactCore) Dead() chan error {
-	return r.DeadReason
+func (r *ReactCore) onClose() {
+	for _, hook := range r.closeHooks {
+		hook()
+	}
 }
 
 func (r *ReactCore) Start() {
