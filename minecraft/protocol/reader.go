@@ -373,7 +373,7 @@ func (r *Reader) PlayerInventoryAction(x *UseItemTransactionData) {
 	}
 	Slice(r, &x.Actions)
 	r.Varuint32(&x.ActionType)
-	r.BlockPos(&x.BlockPosition)
+	r.UBlockPos(&x.BlockPosition) // Netease
 	r.Varint32(&x.BlockFace)
 	r.Varint32(&x.HotBarSlot)
 	r.ItemInstance(&x.HeldItem)

@@ -122,10 +122,20 @@ type PlayerAuthInput struct {
 	// AnalogueMoveVector is a Vec2 that specifies the direction in which the player moved, as a combination of X/Z
 	// values which are created using an analogue input.
 	AnalogueMoveVector mgl32.Vec2
+
+	// 指代玩家的俯仰角 (xBot)。
+	// 该字段看起来与 Pitch 字段是完全相同的，
+	// 目前尚不清楚网易重复这些字段的用途
+	PitchRepeat float32 // Netease
+	// 指代玩家的偏航角 (yBot)。
+	// 该字段看起来与 Yaw 字段是完全相同的，
+	// 目前尚不清楚网易重复这些字段的用途
+	YawRepeat float32 // Netease
+
 	// Netease
 	Unknown1 bool
 	// Netease
-	Unknown2 mgl32.Vec2
+	Unknown2 bool
 	// Netease
 	Unknown3 bool
 }
@@ -144,12 +154,13 @@ func (pk *PlayerAuthInput) Marshal(io protocol.IO) {
 	io.Varuint64(&pk.InputData)
 	io.Varuint32(&pk.InputMode)
 	io.Varuint32(&pk.PlayMode)
-	io.Varuint32(&pk.InteractionModel)
+	io.Varuint32(&pk.InteractionModel) // Netease
 	if pk.PlayMode == PlayModeReality {
 		io.Vec3(&pk.GazeDirection)
 	}
 	io.Varuint64(&pk.Tick)
 	io.Vec3(&pk.Delta)
+	io.Bool(&pk.Unknown1) // Netease
 
 	if pk.InputData&InputFlagPerformItemInteraction != 0 {
 		io.PlayerInventoryAction(&pk.ItemInteractionData)
@@ -166,7 +177,8 @@ func (pk *PlayerAuthInput) Marshal(io protocol.IO) {
 	io.Vec2(&pk.AnalogueMoveVector)
 
 	// Netease
-	io.Bool(&pk.Unknown1)
-	io.Vec2(&pk.Unknown2)
+	io.Bool(&pk.Unknown2)
+	io.Float32(&pk.PitchRepeat)
+	io.Float32(&pk.YawRepeat)
 	io.Bool(&pk.Unknown3)
 }
