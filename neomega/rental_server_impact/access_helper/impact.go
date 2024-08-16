@@ -83,7 +83,7 @@ func ImpactServer(ctx context.Context, node defines.Node, options *Options) (ome
 		})
 	}
 	if options.DisableCommandBlock {
-		unReadyOmega.PostponeActionsAfterChallengePassed("make bot creative", func() {
+		unReadyOmega.PostponeActionsAfterChallengePassed("disable command block", func() {
 			disableCommandBlock(omegaCore.GetGameControl())
 		})
 	}

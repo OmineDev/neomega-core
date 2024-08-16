@@ -254,6 +254,8 @@ func makeBotCreative(omegaCoreCtrl neomega.GameCtrl) {
 		if err == nil && output != nil {
 			fmt.Println(i18n.T(i18n.S_done_setting_bot_to_creative_mode))
 			close(waitor)
+		} else {
+			panic("failed to set bot to creative mode")
 		}
 	})
 	<-waitor
