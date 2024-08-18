@@ -2,8 +2,8 @@ package access_helper
 
 import (
 	"context"
-	"crypto"
-	"encoding/base64"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -59,7 +59,12 @@ func ImpactServer(ctx context.Context, node defines.Node, options *Options) (ome
 			return nil, err
 		}
 		unReadyOmega = bundle.NewAccessPointMicroOmega(node, conn)
-		node.SetValue("HashedServerCode", defines.FromString(base64.StdEncoding.EncodeToString(crypto.SHA256.New().Sum([]byte(conn.IdentityData().NeteaseSid)))))
+		s := sha256.Sum256([]byte(conn.IdentityData().NeteaseSid))
+		c := sha256.Sum256([]byte(options.ImpactOption.ServerCode))
+		for i := range s {
+			s[i] ^= c[i]
+		}
+		node.SetValue("HashedServerCode", defines.FromString(hex.EncodeToString(s[:])))
 	}
 	// unReadyOmega, err = makeNodeOmegaCoreFromConn(node, conn)
 	omegaCore = unReadyOmega
