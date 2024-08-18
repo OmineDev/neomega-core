@@ -123,40 +123,18 @@ type PlayerAuthInput struct {
 	// values which are created using an analogue input.
 	AnalogueMoveVector mgl32.Vec2
 
-	/*
-		网易专有字段，
-		指代玩家的俯仰角 (xBot)。
+	// Netease
+	// 该字段看起来与 Pitch, Yaw 字段是相似的，但可能有微小偏差
+	// 目前尚不清楚这些字段的具体用途
+	PitchRepeat, YawRepeat float32
 
-		该字段看起来与 Pitch 字段是完全相同的，
-		目前尚不清楚网易重复这些字段的用途
-	*/
-	PitchRepeat float32 // Netease
-	/*
-		网易专有字段，
-		指代玩家的偏航角 (yBot)。
+	// Netease
+	// 可能用于描述玩家是否可以飞行(或正在飞行)。
+	IsFlying bool
 
-		该字段看起来与 Yaw 字段是完全相同的，
-		目前尚不清楚网易重复这些字段的用途
-	*/
-	YawRepeat float32 // Netease
-	/*
-		网易专有字段，
-		可能用于描述玩家是否可以飞行(或正在飞行)。
-
-		正常客户端似乎总是为此提交 false，
-		但对于外挂来说，此字段和 CheatOnGround
-		同时提交 true 可以在飞行时避免拉回
-	*/
-	CheatCouldFly bool // Netease
-	/*
-		网易专有字段，
-		可能用于描述玩家是否正在地面上。
-
-		正常客户端似乎总是为此提交 false，
-		但对于外挂来说，提交 true 可以在飞行时避免拉回，
-		同时，也将成功避免落地伤害
-	*/
-	CheatOnGround bool // Netease
+	// Netease
+	// 可能用于描述玩家是否正在地面上。
+	IsOnGround bool
 
 	// Netease
 	Unknown1 bool
@@ -182,7 +160,7 @@ func (pk *PlayerAuthInput) Marshal(io protocol.IO) {
 	}
 	io.Varuint64(&pk.Tick)
 	io.Vec3(&pk.Delta)
-	io.Bool(&pk.CheatCouldFly) // Netease
+	io.Bool(&pk.IsFlying) // Netease
 
 	if pk.InputData&InputFlagPerformItemInteraction != 0 {
 		io.PlayerInventoryAction(&pk.ItemInteractionData)
@@ -202,5 +180,5 @@ func (pk *PlayerAuthInput) Marshal(io protocol.IO) {
 	io.Bool(&pk.Unknown1)
 	io.Float32(&pk.PitchRepeat)
 	io.Float32(&pk.YawRepeat)
-	io.Bool(&pk.CheatOnGround)
+	io.Bool(&pk.IsOnGround)
 }
