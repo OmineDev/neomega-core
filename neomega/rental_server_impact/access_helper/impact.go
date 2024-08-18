@@ -57,6 +57,7 @@ func ImpactServer(ctx context.Context, node defines.Node, options *Options) (ome
 			return nil, err
 		}
 		unReadyOmega = bundle.NewAccessPointMicroOmega(node, conn)
+		node.SetValue("HashedServerCode", defines.FromString(conn.IdentityData().NeteaseSid))
 	}
 	// unReadyOmega, err = makeNodeOmegaCoreFromConn(node, conn)
 	omegaCore = unReadyOmega
