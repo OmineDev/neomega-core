@@ -100,11 +100,12 @@ func loginMCServer(ctx context.Context, authenticator Authenticator) (conn minec
 	// 		nil,
 	// 	}),
 	// })
+	usingMod, _ := authResp["mod_uuids"].([]any)
 	packetConn.WritePacket(&packet.PyRpc{
 		Value: []any{
 			"SyncUsingMod",
 			[]any{
-				[]any{},
+				usingMod,
 				opt.ClientData.SkinID,
 				opt.ClientData.SkinItemID,
 				true,
