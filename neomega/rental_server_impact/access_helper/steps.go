@@ -100,12 +100,12 @@ func loginMCServer(ctx context.Context, authenticator Authenticator) (conn minec
 	// 		nil,
 	// 	}),
 	// })
-	outfixInfo, _ := authResp["outfit_info"].(map[string]any)
+	outfitInfo, _ := authResp["outfit_info"].(map[string]any)
 	usingModList := []string{}
-	for uuid, level := range outfixInfo {
+	for uuid, level := range outfitInfo {
 		usingModList = append(usingModList, uuid)
 		if level == nil {
-			delete(outfixInfo, uuid)
+			delete(outfitInfo, uuid)
 		}
 	}
 	packetConn.WritePacket(&packet.PyRpc{
@@ -116,7 +116,7 @@ func loginMCServer(ctx context.Context, authenticator Authenticator) (conn minec
 				opt.ClientData.SkinID,
 				opt.ClientData.SkinItemID,
 				true,
-				outfixInfo,
+				outfitInfo,
 			},
 			nil,
 		},
