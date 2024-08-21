@@ -9,6 +9,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/OmineDev/neomega-core/i18n"
 	"github.com/OmineDev/neomega-core/minecraft/nbt"
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/login"
@@ -255,6 +256,7 @@ func (core *Core) handleServerToClientHandshake(pk *packet.ServerToClientHandsha
 	// core.dec.EnableEncryption(keyBytes)
 
 	// We write a ClientToServerHandshake packet (which has no payload) as a response.
+	fmt.Println(i18n.T(i18n.S_sending_client_to_server_handshake_packet))
 	_ = core.packetConn.WritePacket(&packet.ClientToServerHandshake{})
 	return nil
 }

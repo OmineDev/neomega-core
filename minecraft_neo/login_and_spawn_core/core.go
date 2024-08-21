@@ -2,9 +2,11 @@ package login_and_spawn_core
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
 
+	"github.com/OmineDev/neomega-core/i18n"
 	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
 	"github.com/OmineDev/neomega-core/minecraft/resource"
@@ -82,6 +84,7 @@ func NewLoginAndSpawnCore(packetConn defines.PacketConn, opt *options.Options) *
 func (core *Core) Login(ctx context.Context) (err error) {
 	// core.expectedIDs.Store([]uint32{packet.IDRequestNetworkSettings})
 	core.expect(packet.IDNetworkSettings, packet.IDPlayStatus)
+	fmt.Println(i18n.T(i18n.S_sending_request_network_settings_packet))
 	if err := core.packetConn.WritePacket(&packet.RequestNetworkSettings{ClientProtocol: protocol.CurrentProtocol}); err != nil {
 		return err
 	}
@@ -95,6 +98,7 @@ func (core *Core) Login(ctx context.Context) (err error) {
 	case <-core.readyToLoginSignal:
 		// We've received our network settings, so we can now send our login request.
 		core.expect(packet.IDServerToClientHandshake, packet.IDPlayStatus)
+		fmt.Println(i18n.T(i18n.S_sending_login_packet))
 		if err := core.packetConn.WritePacket(&packet.Login{ConnectionRequest: core.Request, ClientProtocol: protocol.CurrentProtocol}); err != nil {
 			return err
 		}

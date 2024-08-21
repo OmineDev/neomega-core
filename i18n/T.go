@@ -91,7 +91,9 @@ const (
 	S_establishing_byte_frame_connection                                                        = "establishing byte frame connection"
 	S_generating_packet_connection                                                              = "generating packet connection"
 	S_generating_key_login_request                                                              = "generating key login request"
-	S_exchanging_login_data                                                                     = "exchanging login data"
+	S_sending_request_network_settings_packet                                                   = "requesting network settings from Minecraft server"
+	S_sending_login_packet                                                                      = "requesting game login to Minecraft server"
+	S_sending_client_to_server_handshake_packet                                                 = "confirming handshake from Minecraft server"
 	S_login_accomplished                                                                        = "login accomplished"
 	S_sending_additional_information                                                            = "sending additional information"
 	S_packing_core                                                                              = "packing core"
@@ -121,8 +123,10 @@ var I18nDict_zh_cn map[string]string = map[string]string{
 	S_establishing_byte_frame_connection:                                  "正在封装数据帧连接层",
 	S_generating_packet_connection:                                        "正在封装数据包连接层",
 	S_generating_key_login_request:                                        "正在生成关键登陆数据",
-	S_exchanging_login_data:                                               "正在和 Minecraft 服务器交换登陆信息",
-	S_login_accomplished:                                                  "登陆序列完成",
+	S_sending_request_network_settings_packet:                             "正在向 Minecraft 服务器请求网络参数",
+	S_sending_login_packet:                                                "正在向 Minecraft 服务器请求游戏登录",
+	S_sending_client_to_server_handshake_packet:                           "正在向 Minecraft 服务器确认握手请求",
+	S_login_accomplished:                                                  "登录序列完成",
 	S_sending_additional_information:                                      "正在发送附加信息",
 	S_packing_core:                                                        "正在打包关键数据",
 	S_connecting_to_auth_server:                                           "正在连接到验证服务器",

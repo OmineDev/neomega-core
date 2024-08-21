@@ -72,7 +72,6 @@ func loginMCServer(ctx context.Context, authenticator Authenticator) (conn minec
 	fmt.Println(i18n.T(i18n.S_generating_key_login_request))
 	opt := options.NewDefaultOptions(address, authResp, privateKey)
 
-	fmt.Println(i18n.T(i18n.S_exchanging_login_data))
 	readQueue := NewInfinityQueue()
 	loginAndSpawnCore := login_and_spawn_core.NewLoginAndSpawnCore(packetConn, opt)
 	go packetConn.ListenRoutine(func(pk packet.Packet, raw []byte) {
