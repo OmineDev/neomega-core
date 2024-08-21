@@ -50,6 +50,9 @@ func NewServerFromBasicNet(addr string) (defines.NewMasterNodeAPIServer, error) 
 	server := NewFrameAPIServer(func() { listen.Close() })
 	go func() {
 		for {
+			if server.Closed() {
+				break
+			}
 			conn, err := listen.Accept()
 			if err != nil {
 				fmt.Println("Accept() failed, err: ", err)
