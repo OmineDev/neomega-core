@@ -125,6 +125,14 @@ func (c *CommandHelper) ReplaceHotBarItemCmd(slotID int32, item string) neomega.
 	return c.constructWebSocketCommand(fmt.Sprintf("replaceitem entity @s slot.hotbar %v %v", slotID, item))
 }
 
+// 部分物品无法在网易用原物品名生成
+func convertItemToSpawnConfig(itemName string, value int32) (string, int32) {
+	if itemName == "minecraft:npc_spawn_egg" || itemName == "npc_spawn_egg" {
+		return "spawn_egg", 51
+	}
+	return itemName, value
+}
+
 func (c *CommandHelper) ReplaceBotHotBarItemFullCmd(slotID int32, itemName string, count uint8, value int32, components *supported_item.ItemPropsInGiveOrReplace) neomega.CmdCanGetResponse {
 	componentsStr := ""
 	if components != nil {
@@ -138,6 +146,7 @@ func (c *CommandHelper) ReplaceBotHotBarItemFullCmd(slotID int32, itemName strin
 		}
 		componentsStr = (components).CmdString()
 	}
+	itemName, value = convertItemToSpawnConfig(itemName, value)
 	return c.constructWebSocketCommand(fmt.Sprintf("/replaceitem entity @s slot.hotbar %v destroy %v %v %v "+componentsStr, slotID, itemName, count, value))
 }
 
@@ -147,6 +156,7 @@ func (c *CommandHelper) ReplaceContainerItemFullCmd(pos define.CubePos, slotID i
 		itemName = strings.Split(itemName, " ")[0]
 	}
 	componentsStr := (components).CmdString()
+	itemName, value = convertItemToSpawnConfig(itemName, value)
 	return c.constructWebSocketCommand(fmt.Sprintf("/replaceitem block %v %v %v slot.container %v destroy %v %v %v "+componentsStr, pos.X(), pos.Y(), pos.Z(), slotID, itemName, count, value))
 }
 
