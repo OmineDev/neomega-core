@@ -48,6 +48,8 @@ type Text struct {
 	PlatformChatID string
 	// Netease extra data
 	NeteaseExtraData []string
+	// Netease
+	Unknown string
 }
 
 // ID ...
@@ -70,8 +72,12 @@ func (pk *Text) Marshal(io protocol.IO) {
 	}
 	io.String(&pk.XUID)
 	io.String(&pk.PlatformChatID)
+
 	// Netease
-	if pk.TextType == TextTypeChat {
+	switch pk.TextType {
+	case TextTypeChat:
 		protocol.FuncSlice(io, &pk.NeteaseExtraData, io.String)
+	case TextTypePopup:
+		io.String(&pk.Unknown)
 	}
 }
