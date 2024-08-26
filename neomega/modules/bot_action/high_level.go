@@ -927,8 +927,11 @@ func (o *BotActionHighLevel) highLevelSetContainerItems(pos define.CubePos, cont
 		}
 	}
 	targetContainerPos := pos
+	possibleBlockerPos := targetContainerPos.Add(define.CubePos{0, 1, 0})
 	anvilPos := targetContainerPos.Add(define.CubePos{1, 0, -1})
 	nextContainerPos := targetContainerPos.Add(define.CubePos{1, 0, 1})
+	recoverPossibleBlocker, _ := o.highLevelRemoveSpecificBlockSideEffect(possibleBlockerPos, o.nextCountName())
+	defer recoverPossibleBlocker()
 	// put simple block/item in container first
 	for slot, stack := range containerInfo {
 		if stack.Item.GetTypeDescription().IsSimple() {
