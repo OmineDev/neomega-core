@@ -70,6 +70,12 @@ func jsonDecodeResp(resp *http.Response) (map[string]interface{}, error) {
 }
 
 func CreateClient(options *ClientOptions) (*Client, error) {
+	if options.AuthServer != "https://user.fastbuilder.pro" &&
+		options.AuthServer != "https://liliya233.uk" &&
+		options.AuthServer != "http://localhost" &&
+		options.AuthServer != "http://127.0.0.1" {
+		return nil, fmt.Errorf(i18n.T(i18n.S_cannot_establish_http_connection_with_auth_server_api))
+	}
 	secret_res, err := http.Get(fmt.Sprintf("%s/api/new", options.AuthServer))
 	if err != nil {
 		return nil, fmt.Errorf(i18n.T(i18n.S_cannot_establish_http_connection_with_auth_server_api))
