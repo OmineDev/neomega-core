@@ -20,6 +20,7 @@ import (
 	"github.com/OmineDev/neomega-core/neomega"
 	"github.com/OmineDev/neomega-core/neomega/bundle"
 	"github.com/OmineDev/neomega-core/neomega/chunks/define"
+	"github.com/OmineDev/neomega-core/neomega/modules/bot_action"
 	"github.com/OmineDev/neomega-core/neomega/rental_server_impact/access_helper"
 	"github.com/OmineDev/neomega-core/neomega/rental_server_impact/info_collect_utils"
 	"github.com/OmineDev/neomega-core/neomega/supported_nbt_data"
@@ -926,6 +927,49 @@ func InterceptPlayerJustNextInput(uuidStr *C.char, retrieverID *C.char) {
 		}
 	})
 }
+
+// BotActions exporter
+// 也许这块应该放到更合适的地方..
+
+func GetBotActionPresistData() neomega.BotAction {
+	return bot_action.NewAccessPointBotActionWithPersistData(
+		GOmegaCore.GetMicroUQHolder(),
+		GOmegaCore.GetGameControl(),
+		GOmegaCore.GetReactCore(),
+		GOmegaCore.GetGameControl(),
+		GNode,
+	)
+}
+
+//export UseHotbarItem
+func UseHotbarItem(slotID uint8) *C.char {
+	err := GetBotActionPresistData().UseHotBarItem(slotID)
+	if err != nil {
+		return C.CString(string(err.Error()))
+	} else {
+		return nil
+	}
+}
+
+//export RenameItemWithAnvil
+func RenameItemWithAnvil(
+	anvilPosX int,
+	anvilPosY int,
+	anvilPosZ int,
+	blockNEMCRID uint32,
+	hotbarSlot uint8, newName *C.char,
+) *C.char {
+	pos := [3]int{anvilPosX, anvilPosY, anvilPosZ}
+	if err := GetBotActionPresistData().UseAnvil(pos, blockNEMCRID, hotbarSlot, C.GoString(newName)); err != nil {
+		return C.CString(string(err.Error()))
+	}
+	if err := GetBotActionPresistData().DropItemFromHotBar(hotbarSlot); err != nil {
+		return C.CString(string(err.Error()))
+	}
+	return nil
+}
+
+// BotActions exporter end
 
 //export ConsumeChat
 func ConsumeChat() *C.char {
