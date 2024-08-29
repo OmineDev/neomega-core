@@ -38,24 +38,27 @@ import (
 
 //		return
 //	}
-func loginMCServer(ctx context.Context, authenticator Authenticator) (conn minecraft_conn.Conn, err error) {
+
+func loginAuthServer(ctx context.Context, authenticator Authenticator) (privateKey *ecdsa.PrivateKey, authResp map[string]any, err error) {
 	fmt.Println(i18n.T(i18n.S_generating_client_key_pair))
-	privateKey, _ := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+	privateKey, _ = ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
 	publicKey, _ := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
-
 	fmt.Println(i18n.T(i18n.S_retrieving_client_information_from_auth_server))
-	authResp, err := authenticator.GetAccess(ctx, publicKey)
+	authResp, err = authenticator.GetAccess(ctx, publicKey)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	address, _ := authResp["ip_address"].(string)
-	botUid, _ := authResp["uid"].(string)
-
 	serverMessage, _ := authResp["server_msg"].(string)
 	if len(serverMessage) > 0 {
 		fmt.Println(i18n.T(i18n.S_message_from_auth_server))
 		fmt.Println(pterm.LightGreen(strings.ReplaceAll(fmt.Sprintf("    %s", serverMessage), "\n", "\n    ")))
 	}
+	return privateKey, authResp, nil
+}
+
+func loginMCServer(ctx context.Context, privateKey *ecdsa.PrivateKey, authResp map[string]any) (conn minecraft_conn.Conn, err error) {
+	address, _ := authResp["ip_address"].(string)
+	botUid, _ := authResp["uid"].(string)
 
 	fmt.Println(i18n.T(i18n.S_establishing_raknet_connection))
 	rakNetConn, err := base_net.RakNet.DialContext(ctx, address)
@@ -174,9 +177,14 @@ func loginMCServer(ctx context.Context, authenticator Authenticator) (conn minec
 }
 
 func loginMCServerWithRetry(ctx context.Context, authenticator Authenticator, retryTimesRemains int) (conn minecraft_conn.Conn, err error) {
+	privateKey, authResp, err := loginAuthServer(ctx, authenticator)
+	if err != nil {
+		return nil, err
+	}
+	// chain info will be vaild in a short time, so it can be used to re-login
 	retryTimes := 0
 	for {
-		conn, err = loginMCServer(ctx, authenticator)
+		conn, err = loginMCServer(ctx, privateKey, authResp)
 		if err == nil {
 			break
 		} else {
