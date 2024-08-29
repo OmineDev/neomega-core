@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"regexp"
 
 	"github.com/OmineDev/neomega-core/i18n"
@@ -54,7 +56,7 @@ func parseError(message string) (err error) {
 
 func jsonDecodeResp(resp *http.Response) (map[string]interface{}, error) {
 	if resp.StatusCode == 503 {
-		return nil, fmt.Errorf(i18n.T(i18n.S_auth_server_is_down_503))
+		return nil, errors.New(i18n.T(i18n.S_auth_server_is_down_503))
 	}
 	_body, _ := io.ReadAll(resp.Body)
 	body := string(_body)
@@ -69,21 +71,33 @@ func jsonDecodeResp(resp *http.Response) (map[string]interface{}, error) {
 	return ret, nil
 }
 
+func checkAuthServerUrl(authUrl string) error {
+	parsedURL, err := url.Parse(authUrl)
+	if err != nil {
+		return errors.New(i18n.T(i18n.S_cannot_establish_http_connection_with_auth_server_api))
+	}
+	host := parsedURL.Hostname()
+	if host != "user.fastbuilder.pro" &&
+		host != "liliya233.uk" &&
+		host != "localhost" &&
+		host != "127.0.0.1" {
+		return errors.New(i18n.T(i18n.S_cannot_establish_http_connection_with_auth_server_api))
+	}
+	return nil
+}
+
 func CreateClient(options *ClientOptions) (*Client, error) {
-	if options.AuthServer != "https://user.fastbuilder.pro" &&
-		options.AuthServer != "https://liliya233.uk" &&
-		options.AuthServer != "http://localhost" &&
-		options.AuthServer != "http://127.0.0.1" {
-		return nil, fmt.Errorf(i18n.T(i18n.S_cannot_establish_http_connection_with_auth_server_api))
+	if err := checkAuthServerUrl(options.AuthServer); err != nil {
+		return nil, err
 	}
 	secret_res, err := http.Get(fmt.Sprintf("%s/api/new", options.AuthServer))
 	if err != nil {
-		return nil, fmt.Errorf(i18n.T(i18n.S_cannot_establish_http_connection_with_auth_server_api))
+		return nil, errors.New(i18n.T(i18n.S_cannot_establish_http_connection_with_auth_server_api))
 	}
 	_secret_body, _ := io.ReadAll(secret_res.Body)
 	secret_body := string(_secret_body)
 	if secret_res.StatusCode == 503 {
-		return nil, fmt.Errorf(i18n.T(i18n.S_auth_server_is_down_503))
+		return nil, errors.New(i18n.T(i18n.S_auth_server_is_down_503))
 	} else if secret_res.StatusCode != 200 {
 		return nil, parseError(secret_body)
 	}
