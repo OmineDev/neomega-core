@@ -185,13 +185,13 @@ func (h *SubChunkBatchReqHandler) GetResult() async_wrapper.AsyncResult[neomega.
 			detachFn()
 		})
 		detachFn = h.ar.AttachSubChunkResultListener(func(scr neomega.SubChunkResult) {
+			mu.Lock()
 			if _, found := hit[scr.SubCunkPos()]; found && (ac.Context().Err() == nil) {
-				mu.Lock()
 				hit[scr.SubCunkPos()] = true
 				result.results[scr.SubCunkPos()] = scr
 				delete(hit, scr.SubCunkPos())
-				mu.Unlock()
 			}
+			mu.Unlock()
 			if len(hit) == 0 {
 				detachFn()
 				ac.SetResult(result)
