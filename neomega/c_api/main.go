@@ -317,6 +317,12 @@ func ListenAllPackets() {
 	}, true)
 }
 
+//export ResetListenPacketsStatus
+func ResetListenPacketsStatus() {
+	// 请勿在连接未结束时调用, 可能产生意想不到的后果
+	GAllPacketsListenerEnabled = false
+}
+
 //export GetPacketNameIDMapping
 func GetPacketNameIDMapping() *C.char {
 	marshal, err := json.Marshal(GPacketNameIDMapping)
@@ -990,6 +996,12 @@ func ListenPlayerChange() {
 			Data:        action,
 		}
 	})
+}
+
+//export ResetListenPlayerChangeStatus
+func ResetListenPlayerChangeStatus() {
+	// 请勿在连接未结束时调用, 可能产生意想不到的后果
+	GListenPlayerChangeListened = false
 }
 
 //export ConsumePlayerChange
