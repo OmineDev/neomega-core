@@ -20,7 +20,6 @@ import (
 	"github.com/OmineDev/neomega-core/neomega"
 	"github.com/OmineDev/neomega-core/neomega/bundle"
 	"github.com/OmineDev/neomega-core/neomega/chunks/define"
-	"github.com/OmineDev/neomega-core/neomega/modules/bot_action"
 	"github.com/OmineDev/neomega-core/neomega/rental_server_impact/access_helper"
 	"github.com/OmineDev/neomega-core/neomega/rental_server_impact/info_collect_utils"
 	"github.com/OmineDev/neomega-core/neomega/supported_nbt_data"
@@ -932,13 +931,7 @@ func InterceptPlayerJustNextInput(uuidStr *C.char, retrieverID *C.char) {
 // 也许这块应该放到更合适的地方..
 
 func GetBotActionPresistData() neomega.BotAction {
-	return bot_action.NewAccessPointBotActionWithPersistData(
-		GOmegaCore.GetMicroUQHolder(),
-		GOmegaCore.GetGameControl(),
-		GOmegaCore.GetReactCore(),
-		GOmegaCore.GetGameControl(),
-		GNode,
-	)
+	return GOmegaCore.GetBotAction()
 }
 
 //export UseHotbarItem
