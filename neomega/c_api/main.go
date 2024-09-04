@@ -968,6 +968,11 @@ func RenameItemWithAnvil(
 	return nil
 }
 
+//export DropItemFromHotBar
+func DropItemFromHotBar(hotbarSlot uint8) {
+	GetBotActionPresistData().DropItemFromHotBar(hotbarSlot)
+}
+
 // BotActions exporter end
 
 //export ConsumeChat
@@ -1096,6 +1101,11 @@ func ConnectOmega(address *C.char) (Cerr *C.char) {
 	}
 	prepareOmegaAPIs(omegaCore)
 	return nil
+}
+
+//export ResetGOmega
+func ResetGOmega() {
+	GOmegaCore = nil
 }
 
 //export StartOmega
