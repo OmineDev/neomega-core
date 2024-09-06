@@ -1,6 +1,7 @@
 package player_interact
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
@@ -59,7 +60,9 @@ func (i *PlayerInteract) SetOnSpecificItemMsgCallBack(itemName string, cb func(c
 	i.specificItemMsgCbs[itemName] = append(i.specificItemMsgCbs[itemName], cb)
 }
 
-func (i *PlayerInteract) GetInput(playerName string) async_wrapper.AsyncResult[*neomega.GameChat] {
+var ErrPlayerLeave = fmt.Errorf("player leave")
+
+func (i *PlayerInteract) GetInput(playerName string, breakOnLeave bool) async_wrapper.AsyncResult[*neomega.GameChat] {
 	return async_wrapper.NewAsyncWrapper(func(ac *async_wrapper.AsyncController[*neomega.GameChat]) {
 		var c chan *neomega.GameChat
 		i.mu.Lock()
@@ -69,12 +72,30 @@ func (i *PlayerInteract) GetInput(playerName string) async_wrapper.AsyncResult[*
 			i.nextMsgListenerChan[playerName] = c
 		}
 		i.mu.Unlock()
-		select {
-		case chat := <-c:
-			ac.SetResult(chat)
-		case <-ac.Context().Done():
-			return
+		for {
+			select {
+			case chat := <-c:
+				if chat != nil {
+					ac.SetResult(chat)
+					return
+				}
+				// player leave
+				if breakOnLeave {
+					ac.SetResultAndErr(nil, ErrPlayerLeave)
+					return
+				}
+				// re-attach
+				i.mu.Lock()
+				if c, found = i.nextMsgListenerChan[playerName]; !found {
+					c = make(chan *neomega.GameChat)
+					i.nextMsgListenerChan[playerName] = c
+				}
+				i.mu.Unlock()
+			case <-ac.Context().Done():
+				return
+			}
 		}
+
 	}, true)
 }
 

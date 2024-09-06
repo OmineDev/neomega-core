@@ -67,8 +67,8 @@ func (p *PlayerKit) SubTitle(subTitle string, title string) {
 	p.i.info.SubTitleTo(p.userName, subTitle, title)
 }
 
-func (p *PlayerKit) GetInput() async_wrapper.AsyncResult[*neomega.GameChat] {
-	return p.i.GetInput(p.userName)
+func (p *PlayerKit) GetInput(breakOnLeave bool) async_wrapper.AsyncResult[*neomega.GameChat] {
+	return p.i.GetInput(p.userName, breakOnLeave)
 }
 
 func (p *PlayerKit) CheckCondition(onResult func(bool), conditions ...string) {

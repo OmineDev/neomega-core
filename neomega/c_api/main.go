@@ -924,7 +924,7 @@ func InterceptPlayerJustNextInput(uuidStr *C.char, retrieverID *C.char) {
 
 	p := GPlayers.Players[C.GoString(uuidStr)]
 	retrieverIDStr := C.GoString(retrieverID)
-	p.GPlayer.GetInput().AsyncGetResult(func(chat *neomega.GameChat, err error) {
+	p.GPlayer.GetInput(false).AsyncGetResult(func(chat *neomega.GameChat, err error) {
 		GEventsChan <- &GEvent{
 			EventType:   EventTypePlayerInterceptedInput,
 			RetrieverID: retrieverIDStr,

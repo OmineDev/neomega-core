@@ -81,7 +81,7 @@ type GameChat struct {
 }
 
 type PlayerMsgListener interface {
-	GetInput(playerName string) async_wrapper.AsyncResult[*GameChat]
+	GetInput(playerName string, breakOnLeave bool) async_wrapper.AsyncResult[*GameChat]
 	SetOnChatCallBack(func(chat *GameChat))
 	SetOnSpecificCommandBlockTellCallBack(commandBlockName string, cb func(chat *GameChat))
 	SetOnSpecificItemMsgCallBack(itemName string, cb func(chat *GameChat))
@@ -115,7 +115,7 @@ type PlayerKit interface {
 	ActionBar(msg string)
 	Title(msg string)
 	SubTitle(subTitle string, title string)
-	GetInput() async_wrapper.AsyncResult[*GameChat]
+	GetInput(breakOnLeave bool) async_wrapper.AsyncResult[*GameChat]
 	// e.g. CheckCondition(func(ok),"m=c","tag=op")
 	CheckCondition(onResult func(bool), conditions ...string)
 	Query(onResult func([]QueryResult), conditions ...string)
