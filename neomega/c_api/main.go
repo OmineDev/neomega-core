@@ -18,6 +18,7 @@ import (
 
 	"github.com/OmineDev/neomega-core/i18n"
 	"github.com/OmineDev/neomega-core/neomega"
+	"github.com/OmineDev/neomega-core/neomega/blocks"
 	"github.com/OmineDev/neomega-core/neomega/bundle"
 	"github.com/OmineDev/neomega-core/neomega/chunks/define"
 	"github.com/OmineDev/neomega-core/neomega/rental_server_impact/access_helper"
@@ -966,6 +967,16 @@ func RenameItemWithAnvil(
 		return C.CString(string(err.Error()))
 	}
 	return nil
+}
+
+//export GetBlockRuntimeID
+func GetBlockRuntimeID(blockID *C.char) int32 {
+	result, find := blocks.BlockStrToRuntimeID(C.GoString(blockID))
+	if find {
+		return int32(result)
+	} else {
+		return -1
+	}
 }
 
 //export DropItemFromHotBar
