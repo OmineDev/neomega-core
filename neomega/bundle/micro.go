@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/OmineDev/neomega-core/i18n"
+	"github.com/OmineDev/neomega-core/minecraft/protocol"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
 	"github.com/OmineDev/neomega-core/neomega"
 	"github.com/OmineDev/neomega-core/nodes/defines"
@@ -99,6 +100,22 @@ func NewMicroOmega(
 				}
 			}()
 		})
+		omega.PostponeActionsAfterChallengePassed("auto respawn", func() {
+			omega.GetGameListener().SetTypedPacketCallBack(packet.IDRespawn, func(p packet.Packet) {
+				pkt := p.(*packet.Respawn)
+				if pkt.State == packet.RespawnStateSearchingForSpawn {
+					omega.SendPacket(&packet.Respawn{
+						State:           packet.RespawnStateClientReadyToSpawn,
+						EntityRuntimeID: omega.GetBotRuntimeID(),
+					})
+					omega.SendPacket(&packet.PlayerAction{
+						EntityRuntimeID: omega.GetBotRuntimeID(),
+						ActionType:      protocol.PlayerActionRespawn,
+						BlockFace:       -1,
+					})
+				}
+			}, true)
+		})
 	}
 
 	omega.PostponeActionsAfterChallengePassed("dial tick every 1/20 second", func() {
@@ -107,7 +124,7 @@ func NewMicroOmega(
 			tickAdd := int64(0)
 			for {
 				// sleep in some platform (yes, you, windows!) is not very accurate
-				tickToAdd := (time.Now().Sub(startTime).Milliseconds() / 50) - tickAdd
+				tickToAdd := (time.Since(startTime).Milliseconds() / 50) - tickAdd
 				if tickToAdd > 0 {
 					tickAdd += tickToAdd
 					if tick, found := omega.GetMicroUQHolder().GetExtendInfo().GetCurrentTick(); found {
