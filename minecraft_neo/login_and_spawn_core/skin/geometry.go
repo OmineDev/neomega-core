@@ -55,7 +55,7 @@ func processGeometry(skin *Skin, rawData []byte) (err error) {
 	}
 	skin.SkinResourcePatch = bytes.ReplaceAll(
 		skin.SkinResourcePatch,
-		[]byte("geometry.humanoid.custom"),
+		[]byte("geometry.humanoid.customSlim"),
 		[]byte(geometryName),
 	)
 	/* Layer 2 */

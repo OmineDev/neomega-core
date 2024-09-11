@@ -52,9 +52,10 @@ func defaultClientData(address string, authResp map[string]any) login.ClientData
 	skin_info, _ := authResp["skin_info"].(map[string]any)
 	skin_iid, _ := skin_info["entity_id"].(string)
 	skin_url, _ := skin_info["res_url"].(string)
+	skin_is_slim, _ := skin_info["is_slim"].(bool)
 	growthLevel := int(bot_level)
 
-	skin, skinErr := skin.ProcessURLToSkin(skin_url)
+	skin, skinErr := skin.ProcessInfoToSkin(skin_url, skin_is_slim)
 
 	d := login.ClientData{}
 	d.PremiumSkin = (skinErr == nil)
@@ -66,6 +67,7 @@ func defaultClientData(address string, authResp map[string]any) login.ClientData
 	d.DeviceID = uuid.New().String()
 	d.LanguageCode = "zh_CN"
 	d.AnimatedImageData = make([]login.SkinAnimation, 0)
+	d.ArmSize = skin.GetSlimStatus()
 	d.PersonaPieces = make([]login.PersonaPiece, 0)
 	d.PieceTintColours = make([]login.PersonaPieceTintColour, 0)
 	d.SelfSignedID = uuid.New().String()

@@ -15,8 +15,8 @@ import (
 	"github.com/google/uuid"
 )
 
-//go:embed default_skin_resource_patch.json
-var defaultSkinResourcePatch []byte
+//go:embed default_skin_resource_patch_slim.json
+var defaultSkinResourcePatchSlim []byte
 
 //go:embed default_skin_geometry.json
 var defaultSkinGeometry []byte
@@ -43,13 +43,29 @@ type Skin struct {
 	SkinWidth int
 	// 皮肤的高度
 	SkinHight int
+	// 是否为纤细皮肤
+	IsSlim bool
 }
 
-func makeDefaultSkin() *Skin {
-	defaultSkinResourcePatchCopy := make([]byte, len(defaultSkinResourcePatch))
-	copy(defaultSkinResourcePatchCopy, defaultSkinResourcePatch)
+func (s *Skin) GetSlimStatus() string{
+	if s.IsSlim {
+		return "slim"
+	}
+	return "wide"
+}
+
+func makeDefaultSkin(isSlim bool) *Skin {
+	defaultSkinResourcePatchCopy := make([]byte, len(defaultSkinResourcePatchSlim))
+	copy(defaultSkinResourcePatchCopy, defaultSkinResourcePatchSlim)
 	defaultSkinGeometryCopy := make([]byte, len(defaultSkinGeometry))
 	copy(defaultSkinGeometryCopy, defaultSkinGeometry)
+	if !isSlim {
+		defaultSkinResourcePatchCopy = bytes.ReplaceAll(
+			defaultSkinResourcePatchCopy,
+			[]byte("geometry.humanoid.customSlim"),
+			[]byte("geometry.humanoid.custom"),
+		)
+	}
 	return &Skin{
 		SkinUUID:          uuid.NewString(),
 		SkinResourcePatch: defaultSkinResourcePatchCopy,
@@ -60,16 +76,17 @@ func makeDefaultSkin() *Skin {
 			[]byte{0, 0, 0, 255},
 			32*64,
 		),
+		IsSlim: isSlim,
 	}
 }
 
 // 从 url 指定的网址下载文件，
 // 并处理为有效的皮肤数据，
 // 然后保存在 skin 中
-func ProcessURLToSkin(url string) (skin *Skin, err error) {
+func ProcessInfoToSkin(url string, isSlim bool) (skin *Skin, err error) {
 	// 初始化默认皮肤信息
 	var skinImageData []byte
-	skin = makeDefaultSkin()
+	skin = makeDefaultSkin(isSlim)
 	// 从远程服务器下载皮肤文件
 	res, err := download_wrapper.DownloadMicroContent(url)
 	if err != nil {
@@ -123,7 +140,7 @@ func convertZIPToSkin(skin *Skin) (skinImageData []byte, err error) {
 		return nil, fmt.Errorf("convertZIPToSkin: %v", err)
 	}
 	// 设置皮肤默认资源路径
-	skin.SkinResourcePatch = defaultSkinResourcePatch
+	skin.SkinResourcePatch = defaultSkinResourcePatchSlim
 	// 查找皮肤内容
 	for _, file := range reader.File {
 		// 皮肤数据
