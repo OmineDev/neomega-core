@@ -2,6 +2,8 @@ package info_collect_utils
 
 import (
 	"bufio"
+	"context"
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +11,7 @@ import (
 	"syscall"
 
 	"github.com/OmineDev/neomega-core/i18n"
+	"github.com/OmineDev/neomega-core/neomega/fbauth"
 	"github.com/OmineDev/neomega-core/neomega/rental_server_impact/access_helper"
 	"github.com/OmineDev/neomega-core/utils/input"
 
@@ -213,7 +216,7 @@ func ReadUserInfo(userName, userPassword, userToken, serverCode, serverPassword,
 		flagNeedInteractivelyInput = true
 	}
 
-	if flagNeedInteractivelyInput {
+	for flagNeedInteractivelyInput {
 		authServerName = TranslateAuthServerToAuthServerName(authServer)
 		for authServer == "" {
 			fmt.Printf(i18n.T(i18n.S_please_select_auth_server), strings.Join(AUTH_SERVER_SELECT_STRINGS, "\n"))
@@ -238,7 +241,24 @@ func ReadUserInfo(userName, userPassword, userToken, serverCode, serverPassword,
 					break
 				}
 			}
+			fbClient, err := fbauth.CreateClient(&fbauth.ClientOptions{
+				AuthServer: authServer,
+			})
+			if err != nil {
+				pterm.Error.Printfln(i18n.T(i18n.S_cannot_connect_to_auth_server), authServer, err)
+				continue
+			} else {
+				userPasswordSHA256 := fmt.Sprintf("%x", sha256.Sum256([]byte(userPassword)))
+				authResp, err := fbClient.Auth(context.Background(), "::DRY::", "::DRY::", "", "", userName, userPasswordSHA256)
+				token, _ := authResp["token"].(string)
+				if err != nil || token == "" {
+					pterm.Error.Println(i18n.T(i18n.S_invalid_auth_server_user_account), err)
+					continue
+				}
+				userToken = token
+			}
 		}
+		break
 	}
 	// read server code and password
 	for serverCode == "" {
