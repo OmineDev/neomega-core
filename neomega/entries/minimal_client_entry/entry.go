@@ -13,7 +13,6 @@ import (
 	"github.com/OmineDev/neomega-core/neomega/rental_server_impact/access_helper"
 	"github.com/OmineDev/neomega-core/neomega/rental_server_impact/info_collect_utils"
 	"github.com/OmineDev/neomega-core/nodes"
-	"github.com/OmineDev/neomega-core/nodes/defines"
 
 	"github.com/pterm/pterm"
 )
@@ -36,7 +35,6 @@ func Entry(args *access_helper.ImpactOption) {
 	ctx := context.Background()
 	node := nodes.NewLocalNode(ctx)
 	node = nodes.NewGroup("neomega-core", node, false)
-	node.SetValue("_ServerID", defines.FromString(args.ServerCode))
 	omegaCore, err := access_helper.ImpactServer(context.Background(), node, accessOption)
 	if err != nil {
 		panic(err)

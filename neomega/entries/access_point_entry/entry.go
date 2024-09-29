@@ -49,11 +49,7 @@ func Entry(args *Args, individual bool) (omegaCore neomega.MicroOmega, node defi
 		huid = defines.FromString(StrMD5Str(args.UserToken))
 	}
 	node.SetValue("HashedUserID", huid)
-	// hserverCode := defines.Empty
-	// if args.ServerCode != "" {
-	// 	hserverCode = defines.FromString(StrMD5Str(args.ServerCode))
-	// }
-	// node.SetValue("HashedServerCode", hserverCode)
+	node.SetValue("_ServerID", defines.FromString(args.ServerCode))
 	node.SetTags("access-point-ready")
 	node.PublishMessage("reboot", defines.FromString("reboot to refresh data"))
 	fmt.Println(i18n.T(i18n.S_neomega_access_point_ready))
