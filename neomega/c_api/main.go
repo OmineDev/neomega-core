@@ -937,13 +937,26 @@ func InterceptPlayerJustNextInput(uuidStr *C.char, retrieverID *C.char) {
 // BotActions exporter
 // 也许这块应该放到更合适的地方..
 
-func GetBotActionPresistData() neomega.BotAction {
-	return GOmegaCore.GetBotAction()
-}
-
 //export UseHotbarItem
 func UseHotbarItem(slotID uint8) *C.char {
-	err := GetBotActionPresistData().UseHotBarItem(slotID)
+	err := GOmegaCore.GetBotAction().UseHotBarItem(slotID)
+	if err != nil {
+		return C.CString(string(err.Error()))
+	} else {
+		return nil
+	}
+}
+
+//export UseHotbarItemOnBlock
+func UseHotbarItemOnBlock(
+	x int,
+	y int,
+	z int,
+	blockNEMCRID uint32,
+	hotbarSlot uint8,
+	face int32,
+) *C.char {
+	err := GOmegaCore.GetBotAction().UseHotBarItemOnBlock(define.CubePos{x, y, z}, blockNEMCRID, face, hotbarSlot)
 	if err != nil {
 		return C.CString(string(err.Error()))
 	} else {
@@ -960,10 +973,10 @@ func RenameItemWithAnvil(
 	hotbarSlot uint8, newName *C.char,
 ) *C.char {
 	pos := [3]int{anvilPosX, anvilPosY, anvilPosZ}
-	if err := GetBotActionPresistData().UseAnvil(pos, blockNEMCRID, hotbarSlot, C.GoString(newName)); err != nil {
+	if err := GOmegaCore.GetBotAction().UseAnvil(pos, blockNEMCRID, hotbarSlot, C.GoString(newName)); err != nil {
 		return C.CString(string(err.Error()))
 	}
-	if err := GetBotActionPresistData().DropItemFromHotBar(hotbarSlot); err != nil {
+	if err := GOmegaCore.GetBotAction().DropItemFromHotBar(hotbarSlot); err != nil {
 		return C.CString(string(err.Error()))
 	}
 	return nil
@@ -981,7 +994,7 @@ func GetBlockRuntimeID(blockID *C.char) int32 {
 
 //export DropItemFromHotBar
 func DropItemFromHotBar(hotbarSlot uint8) {
-	GetBotActionPresistData().DropItemFromHotBar(hotbarSlot)
+	GOmegaCore.GetBotAction().DropItemFromHotBar(hotbarSlot)
 }
 
 // BotActions exporter end
