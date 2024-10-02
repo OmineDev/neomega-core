@@ -53,7 +53,7 @@ func (b *BotActionSimple) SetStructureBlockData(pos define.CubePos, settings *su
 			},
 		},
 		RedstoneSaveMode: settings.RedstoneSaveMode,
-		ShouldTrigger:    true,
+		ShouldTrigger:    false,
 	}
 	b.ctrl.SendPacket(updatePacket)
 }
