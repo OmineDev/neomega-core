@@ -196,7 +196,7 @@ func (o *BotActionHighLevel) highLevelGetAndRemoveSpecificBlockSideEffect(pos de
 		o.cmdHelper.RevertStructureWithGivenNameCmd(pos, backupName).Send()
 		o.microAction.SleepTick(1)
 	}
-	// o.cmdHelper.SetBlockCmd(pos, "air").AsWebSocket().SendAndGetResponse().BlockGetResult()
+	o.cmdHelper.SetBlockCmd(pos, "air").AsWebSocket().SendAndGetResponse().SetTimeout(time.Second * 3).BlockGetResult()
 	return deferFunc, nil
 }
 
