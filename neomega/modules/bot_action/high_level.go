@@ -763,6 +763,8 @@ func (o *BotActionHighLevel) HighLevelPlaceItemFrameItem(pos define.CubePos, slo
 }
 
 func (o *BotActionHighLevel) highLevelPlaceItemFrameItem(pos define.CubePos, slotID uint8, rotation int) (err error) {
+	var clickCount int
+
 	o.highLevelEnsureBotNearby(pos.Add(define.CubePos{0, 0, 0}), 0)
 	o.microAction.SleepTick(2)
 	block, err := o.areaRequester.LowLevelRequestStructure(pos, define.CubePos{1, 1, 1}, o.nextCountName()).SetTimeout(time.Second * 3).BlockGetResult()
@@ -789,39 +791,17 @@ func (o *BotActionHighLevel) highLevelPlaceItemFrameItem(pos define.CubePos, slo
 	}
 	o.microAction.SleepTick(1)
 
-	for i := 0; i < 20; i++ {
-		err = o.microAction.UseHotBarItemOnBlock(pos, runtimeID, facing, slotID)
-		if err != nil {
-			// fmt.Println(err)
-			continue
-		}
-		o.microAction.SleepTick(1)
-		block, err = o.areaRequester.LowLevelRequestStructure(pos, define.CubePos{1, 1, 1}, o.nextCountName()).SetTimeout(time.Second * 3).BlockGetResult()
-		if err != nil {
-			// fmt.Println(err)
-			continue
-		}
-		decoded, err := block.Decode()
-		if err != nil {
-			// fmt.Println(err)
-			continue
-		}
-		if len(decoded.ForeGroundRtidNested()) == 0 {
-			// fmt.Println("item frame nbt not found")
-			continue
-		}
-		currentNBT := decoded.NBTsInAbsolutePos()[pos]
-		rotationInfoF, ok := currentNBT["ItemRotation"].(float32)
-		if !ok {
-			// fmt.Println("cannot get item rotation")
-			continue
-		}
-		rotationNow := int(rotationInfoF)
-		if rotationNow == rotation || rotationNow == rotation*45 {
-			return nil
-		}
+	if rotation < 45 {
+		clickCount = 1 + rotation
+	} else {
+		clickCount = 1 + int(rotation/45)
 	}
-	return fmt.Errorf("cannot place item or rotate to correct angle")
+
+	for i := 0; i < clickCount; i++ {
+		_ = o.microAction.UseHotBarItemOnBlock(pos, runtimeID, facing, slotID)
+	}
+
+	return nil
 }
 
 func (o *BotActionHighLevel) HighLevelSetContainerContent(pos define.CubePos, containerInfo map[uint8]*supported_item.ContainerSlotItemStack) (err error) {
