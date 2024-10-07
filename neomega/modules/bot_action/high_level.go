@@ -821,6 +821,27 @@ func (o *BotActionHighLevel) HighLevelGenContainer(pos define.CubePos, container
 	}
 	defer release()
 	o.highLevelEnsureBotNearby(pos.Add(define.CubePos{0, 2, 0}), 3)
+
+	/*
+		Solve chest and trapped_chest related problems,
+		because the settings command is async.
+
+		We need ensure that the current block we will place is
+		after the last block we placed.
+
+		Note: To split a large chest, we usually place
+		a trapped_chest block the before chest block.
+		And for large trapped_chest, we usually place
+		a chest block before the trapped_chest block.
+		These features are come from PhoenixBuilder,
+		but not neomega-builder.
+
+		--Happy2018new
+	*/
+	if strings.Contains(block, "chest") {
+		o.microAction.SleepTick(5)
+	}
+
 	if ret, err := o.cmdHelper.SetBlockCmd(pos, block).AsWebSocket().SendAndGetResponse().SetTimeout(time.Second * 3).BlockGetResult(); ret == nil || err != nil {
 		return fmt.Errorf("cannot set container")
 	}
