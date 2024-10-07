@@ -829,12 +829,12 @@ func (o *BotActionHighLevel) HighLevelGenContainer(pos define.CubePos, container
 		We need ensure that the current block we will place is
 		after the last block we placed.
 
-		Note: To split a large chest, we usually place
-		a trapped_chest block the before chest block.
-		And for large trapped_chest, we usually place
-		a chest block before the trapped_chest block.
-		These features are come from PhoenixBuilder,
-		but not neomega-builder.
+		Note
+			1. To split a large chest/trapped_chest to single,
+			   we usually place a trapped_chest(chest) block
+			   before the chest(trapped_chest) block.
+			2. These features are come from PhoenixBuilder,
+			   but not neomega-builder.
 
 		--Happy2018new
 	*/
