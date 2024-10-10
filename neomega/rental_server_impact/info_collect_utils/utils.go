@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/OmineDev/neomega-core/i18n"
 	"github.com/OmineDev/neomega-core/neomega/fbauth"
@@ -246,6 +247,7 @@ func ReadUserInfo(userName, userPassword, userToken, serverCode, serverPassword,
 			})
 			if err != nil {
 				pterm.Error.Printfln(i18n.T(i18n.S_cannot_connect_to_auth_server), authServer, err)
+				time.Sleep(3 * time.Second)
 				continue
 			} else {
 				userPasswordSHA256 := fmt.Sprintf("%x", sha256.Sum256([]byte(userPassword)))
@@ -253,6 +255,8 @@ func ReadUserInfo(userName, userPassword, userToken, serverCode, serverPassword,
 				token, _ := authResp["token"].(string)
 				if err != nil || token == "" {
 					pterm.Error.Println(i18n.T(i18n.S_invalid_auth_server_user_account), err)
+					userName = ""
+					userPassword = ""
 					continue
 				}
 				userToken = token
