@@ -8,7 +8,9 @@ const (
 	ContainerSmithingTableMaterial
 	ContainerSmithingTableResultPreview
 	ContainerArmor
-	ContainerLevelEntity // container_items
+	// container_items, and now we can sure
+	// that it is at least used by agent robot
+	ContainerLevelEntity
 	ContainerBeaconPayment
 	ContainerBrewingStandInput
 	ContainerBrewingStandResult
