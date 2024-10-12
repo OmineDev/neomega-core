@@ -8,7 +8,7 @@ const (
 	ContainerSmithingTableMaterial
 	ContainerSmithingTableResultPreview
 	ContainerArmor
-	ContainerLevelEntity
+	ContainerLevelEntity // container_items
 	ContainerBeaconPayment
 	ContainerBrewingStandInput
 	ContainerBrewingStandResult
@@ -18,10 +18,10 @@ const (
 	ContainerCraftingOutputPreview
 	ContainerRecipeConstruction
 	ContainerRecipeNature
+	ContainerRecipeCustom // Netease
 	ContainerRecipeItems
 	ContainerRecipeSearch
 	ContainerRecipeSearchBar
-	_ // Netease: Unknown extra container type between 14 and 22
 	ContainerRecipeEquipment
 	ContainerRecipeBook
 	ContainerEnchantingInput
