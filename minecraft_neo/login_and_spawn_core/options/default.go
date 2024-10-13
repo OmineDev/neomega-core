@@ -47,7 +47,6 @@ func NewDefaultOptions(
 
 // defaultClientData edits the ClientData passed to have defaults set to all fields that were left unchanged.
 func defaultClientData(address string, authResp map[string]any) login.ClientData {
-	bot_name, _ := authResp["username"].(string)
 	bot_level, _ := authResp["growth_level"].(float64)
 	skin_info, _ := authResp["skin_info"].(map[string]any)
 	skin_iid, _ := skin_info["entity_id"].(string)
@@ -79,6 +78,5 @@ func defaultClientData(address string, authResp map[string]any) login.ClientData
 	d.SkinGeometry = base64.StdEncoding.EncodeToString(skin.SkinGeometry)
 	d.SkinGeometryVersion = base64.StdEncoding.EncodeToString([]byte("0.0.0"))
 	d.SkinItemID = skin_iid
-	d.ThirdPartyName = bot_name
 	return d
 }
