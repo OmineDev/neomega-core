@@ -9,6 +9,7 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -58,7 +59,6 @@ func loginAuthServer(ctx context.Context, authenticator Authenticator) (privateK
 
 func loginMCServer(ctx context.Context, privateKey *ecdsa.PrivateKey, authResp map[string]any) (conn minecraft_conn.Conn, err error) {
 	address, _ := authResp["ip_address"].(string)
-	botUid, _ := authResp["uid"].(string)
 
 	fmt.Println(i18n.T(i18n.S_establishing_raknet_connection))
 	rakNetConn, err := base_net.RakNet.DialContext(ctx, address)
@@ -93,7 +93,7 @@ func loginMCServer(ctx context.Context, privateKey *ecdsa.PrivateKey, authResp m
 		Enabled: false,
 	})
 	packetConn.WritePacket(&packet.NeteaseJson{
-		Data: []byte(fmt.Sprintf(`{"eventName":"LOGIN_UID","resid":"","uid":"%s"}`, botUid)),
+		Data: []byte(fmt.Sprintf(`{"eventName":"LOGIN_UID","resid":"","uid":"%s"}`, strconv.FormatInt(opt.IdentityData.Uid, 10))),
 	})
 	// conn.WritePacket(&packet.PyRpc{
 	// 	Value: py_rpc.FromGo([]any{
