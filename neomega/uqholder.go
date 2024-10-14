@@ -22,6 +22,7 @@ type BotBasicInfoHolder interface {
 	GetBotUniqueID() int64
 	GetBotIdentity() string
 	GetBotUUIDStr() string
+	GetBotUID() int64
 	UQInfoHolderEntry
 }
 

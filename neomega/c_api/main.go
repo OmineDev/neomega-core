@@ -356,6 +356,7 @@ func GetClientMaintainedBotBasicInfo() *C.char {
 		"BotUniqueID":  basicInfo.GetBotUniqueID(),
 		"BotIdentity":  basicInfo.GetBotIdentity(),
 		"BotUUIDStr":   basicInfo.GetBotUUIDStr(),
+		"BotUID":       basicInfo.GetBotUID(),
 	}
 	data, _ := json.Marshal(basicInfoMap)
 	return C.CString(string(data))
