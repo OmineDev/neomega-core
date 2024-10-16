@@ -116,6 +116,8 @@ func lookupEventType(x Event, eventType *int32) bool {
 		*eventType = EventTypeBossKilled
 	case *AgentCommandEvent:
 		*eventType = EventTypeAgentCommand
+	case *AgentCreatedEvent:
+		*eventType = EventTypeAgentCreated
 	case *PatternRemovedEvent:
 		*eventType = EventTypePatternRemoved
 	case *SlashCommandExecutedEvent:
