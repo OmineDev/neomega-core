@@ -421,7 +421,6 @@ func (o *BotActionHighLevel) highLevelMoveItemToContainer(pos define.CubePos, mo
 			}
 		}
 	} else if strings.Contains(block.ShortName(), "chest") {
-		o.cmdHelper.BackupStructureWithGivenNameCmd(pos.Add(define.CubePos{0, 1, 0}), define.CubePos{1, 1, 1}, "container_blocker").SendAndGetResponse().SetTimeout(time.Second * 3).BlockGetResult()
 		deferAction, err = o.highLevelRemoveSpecificBlockSideEffect(pos.Add(define.CubePos{0, 1, 0}), o.nextCountName())
 		if err != nil {
 			return err
