@@ -193,10 +193,10 @@ func (o *BotActionHighLevel) highLevelGetAndRemoveSpecificBlockSideEffect(pos de
 		return func() {}, fmt.Errorf("cannot backup block for revert")
 	}
 	deferFunc = func() {
-		o.cmdHelper.RevertStructureWithGivenNameCmd(pos, backupName).Send()
+		o.cmdHelper.RevertStructureWithGivenNameCmd(pos, backupName).SendAndGetResponse().BlockGetResult()
 		o.microAction.SleepTick(1)
 	}
-	o.cmdHelper.SetBlockCmd(pos, "air").AsWebSocket().SendAndGetResponse().SetTimeout(time.Second * 3).BlockGetResult()
+	o.cmdHelper.SetBlockCmd(pos, "structure_void").AsWebSocket().SendAndGetResponse().SetTimeout(time.Second * 3).BlockGetResult()
 	return deferFunc, nil
 }
 
@@ -477,8 +477,8 @@ func (o *BotActionHighLevel) highLevelRenameItemWithAnvil(pos define.CubePos, sl
 	if containerRuntimeID == blocks.AIR_RUNTIMEID {
 		return fmt.Errorf("block of %v @ %v (nemc) not found, should be anvil", pos, containerRuntimeID)
 	}
-	defer deferActionStand()
 	defer deferAction()
+	defer deferActionStand()
 	o.microAction.SleepTick(1)
 	return o.microAction.UseAnvil(pos, containerRuntimeID, slot, newName)
 }
@@ -610,7 +610,7 @@ func (o *BotActionHighLevel) highLevelBlockBreakAndPickInHotBar(pos define.CubeP
 	if err != nil {
 		return err
 	}
-	recoverAction, err := o.highLevelGetAndRemoveSpecificBlockSideEffect(pos, "_temp_break"+o.nextCountName())
+	recoverAction, err := o.highLevelRemoveSpecificBlockSideEffect(pos, "_temp_break"+o.nextCountName())
 	if err != nil {
 		return err
 	}
@@ -965,8 +965,8 @@ func (o *BotActionHighLevel) highLevelSetContainerItems(pos define.CubePos, cont
 			}
 		}
 
-		defer deferActionStand()
 		defer deferAction()
+		defer deferActionStand()
 
 		for hotBarSlot, stack := range slotAndEnchant {
 			if len(stack.Item.Enchants) > 0 {
