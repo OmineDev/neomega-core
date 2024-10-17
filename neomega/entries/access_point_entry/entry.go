@@ -16,7 +16,7 @@ import (
 
 const ENTRY_NAME = "omega_access_point"
 
-func Entry(args *Args, individual bool) (omegaCore neomega.MicroOmega, node defines.Node) {
+func Entry(args *Args) (omegaCore neomega.MicroOmega, node defines.Node) {
 	fmt.Println(i18n.T(i18n.S_neomega_access_point_starting))
 	impactOption := args.ImpactOption
 	var err error
@@ -53,10 +53,6 @@ func Entry(args *Args, individual bool) (omegaCore neomega.MicroOmega, node defi
 	node.SetTags("access-point-ready")
 	node.PublishMessage("reboot", defines.FromString("reboot to refresh data"))
 	fmt.Println(i18n.T(i18n.S_neomega_access_point_ready))
-
-	if individual {
-		panic(<-omegaCore.WaitClosed())
-	}
 	return
 }
 
