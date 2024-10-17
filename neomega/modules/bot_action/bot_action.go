@@ -726,9 +726,22 @@ func (o *AccessPointBotActionWithPersistData) UseAnvil(pos define.CubePos, block
 									itemInstance.Stack.NBTData["display"] = make(map[string]any)
 								}
 								itemInstance.Stack.NBTData["display"].(map[string]any)["Name"] = slot.CustomName
-								_, ok := itemInstance.Stack.NBTData["RepairCost"]
-								if !ok {
+								if itemInstance.Stack.NBTData["RepairCost"] == nil {
 									itemInstance.Stack.NBTData["RepairCost"] = int32(0)
+								}
+							} else {
+								if display, ok := itemInstance.Stack.NBTData["display"].(map[string]any); ok {
+									itemHasName := (display["Name"] != nil)
+									itemHasRepairCost := (itemInstance.Stack.NBTData["RepairCost"] != nil)
+									if len(display) == 1 && itemHasName {
+										delete(itemInstance.Stack.NBTData, "display")
+									} else {
+										delete(display, "Name")
+										itemInstance.Stack.NBTData["display"] = display
+									}
+									if itemHasName && !itemHasRepairCost {
+										itemInstance.Stack.NBTData["RepairCost"] = int32(0)
+									}
 								}
 							}
 						}
