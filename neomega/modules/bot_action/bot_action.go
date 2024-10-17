@@ -726,6 +726,10 @@ func (o *AccessPointBotActionWithPersistData) UseAnvil(pos define.CubePos, block
 									itemInstance.Stack.NBTData["display"] = make(map[string]any)
 								}
 								itemInstance.Stack.NBTData["display"].(map[string]any)["Name"] = slot.CustomName
+								_, ok := itemInstance.Stack.NBTData["RepairCost"]
+								if !ok {
+									itemInstance.Stack.NBTData["RepairCost"] = int32(0)
+								}
 							}
 						}
 						o.clientInfo.writeInventorySlot(0, slot.Slot, itemInstance)
