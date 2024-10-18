@@ -193,7 +193,7 @@ func (o *BotActionHighLevel) highLevelGetAndRemoveSpecificBlockSideEffect(pos de
 		return func() {}, fmt.Errorf("cannot backup block for revert")
 	}
 	deferFunc = func() {
-		o.cmdHelper.RevertStructureWithGivenNameCmd(pos, backupName).SendAndGetResponse().BlockGetResult()
+		o.cmdHelper.RevertStructureWithGivenNameCmd(pos, backupName).Send()
 		o.microAction.SleepTick(1)
 	}
 	o.cmdHelper.SetBlockCmd(pos, "structure_void").AsWebSocket().SendAndGetResponse().SetTimeout(time.Second * 3).BlockGetResult()
@@ -477,8 +477,8 @@ func (o *BotActionHighLevel) highLevelRenameItemWithAnvil(pos define.CubePos, sl
 	if containerRuntimeID == blocks.AIR_RUNTIMEID {
 		return fmt.Errorf("block of %v @ %v (nemc) not found, should be anvil", pos, containerRuntimeID)
 	}
-	defer deferAction()
 	defer deferActionStand()
+	defer deferAction()
 	o.microAction.SleepTick(1)
 	return o.microAction.UseAnvil(pos, containerRuntimeID, slot, newName)
 }
@@ -873,13 +873,7 @@ func (o *BotActionHighLevel) highLevelMakeItem(item *supported_item.Item, slotID
 			}
 		}
 		if item.DisplayName != "" {
-			deferActionStand, _ := o.highLevelRemoveSpecificBlockSideEffect(anvilPos.Add(define.CubePos{0, -1, 0}), o.nextCountName())
-			o.cmdHelper.SetBlockCmd(anvilPos.Add(define.CubePos{0, -1, 0}), "glass").AsWebSocket().SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult()
-			deferAction, _ := o.highLevelRemoveSpecificBlockSideEffect(anvilPos, o.nextCountName())
-			o.cmdHelper.SetBlockCmd(anvilPos, "anvil").AsWebSocket().SendAndGetResponse().SetTimeout(3 * time.Second).BlockGetResult()
-			o.highLevelRenameItemWithAnvil(anvilPos, slotID, item.DisplayName, false)
-			deferAction()
-			deferActionStand()
+			o.highLevelRenameItemWithAnvil(anvilPos, slotID, item.DisplayName, true)
 		}
 		if len(item.Enchants) > 0 {
 			if err := o.highLevelEnchantItem(slotID, item.Enchants); err != nil {
@@ -965,8 +959,8 @@ func (o *BotActionHighLevel) highLevelSetContainerItems(pos define.CubePos, cont
 			}
 		}
 
-		defer deferAction()
 		defer deferActionStand()
+		defer deferAction()
 
 		for hotBarSlot, stack := range slotAndEnchant {
 			if len(stack.Item.Enchants) > 0 {
