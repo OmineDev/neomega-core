@@ -50,7 +50,7 @@ func DefaultOptions() *Options {
 		ServerConnectionTimeout: time.Minute,
 		ChallengeSolvingTimeout: time.Minute,
 		WriteBackToken:          false,
-		ServerConnectRetryTimes: 1,
+		ServerConnectRetryTimes: 3,
 		ImpactOption:            DefaultImpactOption(),
 		PrintUQHolderDebugInfo:  false,
 		MakeBotCreative:         true,
