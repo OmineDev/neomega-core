@@ -27,27 +27,26 @@ type ItemStackRequestDetails struct {
 }
 
 type ExtendInfoHolder struct {
-	WorldName                    string
-	knownWorldName               bool
-	WorldSeed                    int64
-	knownWorldSeed               bool
-	WorldGenerator               int32
-	knownWorldGenerator          bool
-	LevelID                      string
-	knownLevelID                 bool
-	CompressThreshold            uint16
-	knownCompressThreshold       bool
-	lastSyncRatioStaticStartTime time.Time
-	lastSyncRatioStaticStartTick int64
-	syncRatio                    float32
-	CurrentTick                  int64
-	knownCurrentTick             bool
-	WorldGameMode                int32
-	knownWorldGameMode           bool
-	WorldDifficulty              uint32
-	knownWorldDifficulty         bool
-	currentContainerOpened       bool
-	currentOpenedContainer       *packet.ContainerOpen
+	WorldName              string
+	knownWorldName         bool
+	WorldSeed              int64
+	knownWorldSeed         bool
+	WorldGenerator         int32
+	knownWorldGenerator    bool
+	LevelID                string
+	knownLevelID           bool
+	CompressThreshold      uint16
+	knownCompressThreshold bool
+	lastSyncTime           time.Time
+	syncRatio              float32
+	CurrentTick            int64
+	knownCurrentTick       bool
+	WorldGameMode          int32
+	knownWorldGameMode     bool
+	WorldDifficulty        uint32
+	knownWorldDifficulty   bool
+	currentContainerOpened bool
+	currentOpenedContainer *packet.ContainerOpen
 	// InventorySlotCount      uint32
 	// knownInventorySlotCount bool
 	Time                int32
@@ -124,8 +123,8 @@ func (e *ExtendInfoHolder) setCompressThreshold(compressThreshold uint16) {
 
 func (e *ExtendInfoHolder) GetCurrentTick() (currentTick int64, found bool) {
 	var ticksShouldGo int64
-	if e.lastSyncRatioStaticStartTick != 0 {
-		ticksShouldGo = time.Since(e.lastSyncRatioStaticStartTime).Milliseconds() / 50
+	if !e.lastSyncTime.IsZero() {
+		ticksShouldGo = time.Since(e.lastSyncTime).Milliseconds() / 50
 	}
 	return e.CurrentTick + ticksShouldGo, e.knownCurrentTick
 }
@@ -257,29 +256,20 @@ func (uq *ExtendInfoHolder) UpdateFromPacket(pk packet.Packet) {
 	case *packet.SetDifficulty:
 		uq.setWorldDifficulty(p.Difficulty)
 	case *packet.TickSync:
-		if p.ClientRequestTimestamp == 0 {
-			uq.setCurrentTick(p.ServerReceptionTimestamp)
-			// fmt.Println("tick sync", p)
+		if uq.knownCurrentTick {
+			intendClientTick, _ := uq.GetCurrentTick()
+			actualClientTick := p.ServerReceptionTimestamp + (intendClientTick-p.ClientRequestTimestamp)/2
+			uq.setCurrentTick(actualClientTick)
+			syncRatio := float32(actualClientTick) / float32(intendClientTick)
+			if syncRatio > 1 {
+				uq.syncRatio = 1
+			} else {
+				uq.syncRatio = syncRatio
+			}
 		} else {
-			// fmt.Println(p.ServerReceptionTimestamp, p.ClientRequestTimestamp)
-			deltaTime := p.ServerReceptionTimestamp - p.ClientRequestTimestamp
-			if deltaTime < 0 {
-				deltaTime = 0
-			}
-			uq.setCurrentTick(p.ServerReceptionTimestamp + deltaTime)
-			if uq.lastSyncRatioStaticStartTick != 0 {
-				ticksShouldGo := time.Since(uq.lastSyncRatioStaticStartTime).Milliseconds() / 50
-				ticksActualGo := p.ServerReceptionTimestamp - uq.lastSyncRatioStaticStartTick
-				syncRatio := float32(ticksActualGo) / float32(ticksShouldGo)
-				if syncRatio > 1 {
-					uq.syncRatio = 1
-				} else {
-					uq.syncRatio = syncRatio
-				}
-			}
+			uq.setCurrentTick(p.ServerReceptionTimestamp)
 		}
-		uq.lastSyncRatioStaticStartTick = p.ServerReceptionTimestamp
-		uq.lastSyncRatioStaticStartTime = time.Now()
+		uq.lastSyncTime = time.Now()
 	case *packet.ChangeDimension:
 		uq.Dimension = p.Dimension
 		uq.knownDimension = true
