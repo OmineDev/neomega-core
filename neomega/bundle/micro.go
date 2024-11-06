@@ -96,7 +96,7 @@ func NewMicroOmega(
 					omega.GetGameControl().SendPacket(&packet.TickSync{
 						ClientRequestTimestamp: int64(clientTick),
 					})
-					time.Sleep(time.Second * 5)
+					time.Sleep(time.Second * 10)
 				}
 			}()
 		})
@@ -115,26 +115,6 @@ func NewMicroOmega(
 					})
 				}
 			}, true)
-		})
-		omega.PostponeActionsAfterChallengePassed("dial tick every 1/20 second", func() {
-			go func() {
-				startTime := time.Now()
-				tickAdd := int64(0)
-				for {
-					// sleep in some platform (yes, you, windows!) is not very accurate
-					tickToAdd := (time.Since(startTime).Milliseconds() / 50) - tickAdd
-					if tickToAdd > 0 {
-						tickAdd += tickToAdd
-						if tick, found := omega.GetMicroUQHolder().GetExtendInfo().GetCurrentTick(); found {
-							omega.GetMicroUQHolder().GetExtendInfo().UpdateFromPacket(&packet.TickSync{
-								ClientRequestTimestamp:   0,
-								ServerReceptionTimestamp: tick + tickToAdd,
-							})
-						}
-					}
-					time.Sleep(time.Second / 20)
-				}
-			}()
 		})
 		omega.PostponeActionsAfterChallengePassed("force reset dimension and pos", func() {
 			e := &neomega.PosAndDimensionInfo{}

@@ -123,7 +123,11 @@ func (e *ExtendInfoHolder) setCompressThreshold(compressThreshold uint16) {
 }
 
 func (e *ExtendInfoHolder) GetCurrentTick() (currentTick int64, found bool) {
-	return e.CurrentTick, e.knownCurrentTick
+	var ticksShouldGo int64
+	if e.lastSyncRatioStaticStartTick != 0 {
+		ticksShouldGo = time.Since(e.lastSyncRatioStaticStartTime).Milliseconds() / 50
+	}
+	return e.CurrentTick + ticksShouldGo, e.knownCurrentTick
 }
 
 func (e *ExtendInfoHolder) setCurrentTick(currentTick int64) {
@@ -253,18 +257,18 @@ func (uq *ExtendInfoHolder) UpdateFromPacket(pk packet.Packet) {
 	case *packet.SetDifficulty:
 		uq.setWorldDifficulty(p.Difficulty)
 	case *packet.TickSync:
-		nowTime := time.Now()
 		if p.ClientRequestTimestamp == 0 {
 			uq.setCurrentTick(p.ServerReceptionTimestamp)
 			// fmt.Println("tick sync", p)
 		} else {
+			// fmt.Println(p.ServerReceptionTimestamp, p.ClientRequestTimestamp)
 			deltaTime := p.ServerReceptionTimestamp - p.ClientRequestTimestamp
 			if deltaTime < 0 {
 				deltaTime = 0
 			}
 			uq.setCurrentTick(p.ServerReceptionTimestamp + deltaTime)
 			if uq.lastSyncRatioStaticStartTick != 0 {
-				ticksShouldGo := nowTime.Sub(uq.lastSyncRatioStaticStartTime).Milliseconds() / 50
+				ticksShouldGo := time.Since(uq.lastSyncRatioStaticStartTime).Milliseconds() / 50
 				ticksActualGo := p.ServerReceptionTimestamp - uq.lastSyncRatioStaticStartTick
 				syncRatio := float32(ticksActualGo) / float32(ticksShouldGo)
 				if syncRatio > 1 {
@@ -273,9 +277,9 @@ func (uq *ExtendInfoHolder) UpdateFromPacket(pk packet.Packet) {
 					uq.syncRatio = syncRatio
 				}
 			}
-			uq.lastSyncRatioStaticStartTick = p.ServerReceptionTimestamp
-			uq.lastSyncRatioStaticStartTime = time.Now()
 		}
+		uq.lastSyncRatioStaticStartTick = p.ServerReceptionTimestamp
+		uq.lastSyncRatioStaticStartTime = time.Now()
 	case *packet.ChangeDimension:
 		uq.Dimension = p.Dimension
 		uq.knownDimension = true
