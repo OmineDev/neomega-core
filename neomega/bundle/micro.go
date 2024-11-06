@@ -116,40 +116,39 @@ func NewMicroOmega(
 				}
 			}, true)
 		})
+		omega.PostponeActionsAfterChallengePassed("dial tick every 1/20 second", func() {
+			go func() {
+				startTime := time.Now()
+				tickAdd := int64(0)
+				for {
+					// sleep in some platform (yes, you, windows!) is not very accurate
+					tickToAdd := (time.Since(startTime).Milliseconds() / 50) - tickAdd
+					if tickToAdd > 0 {
+						tickAdd += tickToAdd
+						if tick, found := omega.GetMicroUQHolder().GetExtendInfo().GetCurrentTick(); found {
+							omega.GetMicroUQHolder().GetExtendInfo().UpdateFromPacket(&packet.TickSync{
+								ClientRequestTimestamp:   0,
+								ServerReceptionTimestamp: tick + tickToAdd,
+							})
+						}
+					}
+					time.Sleep(time.Second / 20)
+				}
+			}()
+		})
+		omega.PostponeActionsAfterChallengePassed("force reset dimension and pos", func() {
+			e := &neomega.PosAndDimensionInfo{}
+			if bot_action.RefreshPosAndDimensionInfo(e, omega) == nil {
+				// fmt.Println(e)
+				omega.MicroUQHolder.UpdateFromPacket(&packet.ChangeDimension{
+					Dimension: int32(e.Dimension),
+					Position:  e.HeadPosPrecise,
+				})
+			}
+		})
 	}
 
-	omega.PostponeActionsAfterChallengePassed("dial tick every 1/20 second", func() {
-		go func() {
-			startTime := time.Now()
-			tickAdd := int64(0)
-			for {
-				// sleep in some platform (yes, you, windows!) is not very accurate
-				tickToAdd := (time.Since(startTime).Milliseconds() / 50) - tickAdd
-				if tickToAdd > 0 {
-					tickAdd += tickToAdd
-					if tick, found := omega.GetMicroUQHolder().GetExtendInfo().GetCurrentTick(); found {
-						omega.GetMicroUQHolder().GetExtendInfo().UpdateFromPacket(&packet.TickSync{
-							ClientRequestTimestamp:   0,
-							ServerReceptionTimestamp: tick + tickToAdd,
-						})
-					}
-				}
-				time.Sleep(time.Second / 20)
-			}
-		}()
-	})
-	omega.PostponeActionsAfterChallengePassed("force reset dimension and pos", func() {
-		e := &neomega.PosAndDimensionInfo{}
-		if bot_action.RefreshPosAndDimensionInfo(e, omega) == nil {
-			// fmt.Println(e)
-			omega.MicroUQHolder.UpdateFromPacket(&packet.ChangeDimension{
-				Dimension: int32(e.Dimension),
-				Position:  e.HeadPosPrecise,
-			})
-		}
-	})
-
-	if !isAccessPoint && true {
+	if !isAccessPoint {
 		omega.PostponeActionsAfterChallengePassed("check bot command status each 10s", func() {
 			go func() {
 				for {
