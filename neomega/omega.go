@@ -78,6 +78,8 @@ type GameChat struct {
 	RawParameters []string
 	// 附加信息，用于传递额外的信息，一般为空，也可能是 packet.Text 数据包，不要过于依赖这个字段
 	Aux any
+	// 解析后的消息
+	ParsedMsg string
 }
 
 type PlayerMsgListener interface {

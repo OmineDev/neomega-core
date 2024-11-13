@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/OmineDev/neomega-core/i18n"
+	"github.com/OmineDev/neomega-core/minecraft/lang"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
 	"github.com/OmineDev/neomega-core/minecraft_neo/cascade_conn/base_net"
 	"github.com/OmineDev/neomega-core/minecraft_neo/cascade_conn/byte_frame_conn"
@@ -188,7 +189,8 @@ func loginMCServerWithRetry(ctx context.Context, authenticator Authenticator, re
 		if err == nil {
 			break
 		} else {
-			fmt.Println(err)
+			msg, _ := lang.LangFormat(lang.LANG_ZH_CN, err.Error())
+			fmt.Println(msg)
 		}
 		if retryTimesRemains <= 0 {
 			break

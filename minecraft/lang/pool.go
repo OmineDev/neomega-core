@@ -100,11 +100,4 @@ func init() {
 		}
 		langTemplates[lang] = langMap
 	}
-	// test the LangFormat function
-	// fmt.Println(LangFormat(LANG_ZH_CN, "commands.event.error.failed", "dataA", "dataB"))
-	// fmt.Println(LangFormat(LANG_ZH_CN, "netease.report.kick.hint"))
-	// fmt.Println(LangFormat(LANG_ZH_CN, "commands.execute.outRangedDetectPosition", 100, 200, 300, 400))
-	// fmt.Println(LangFormat(LANG_ZH_CN, "commands.generic.syntax", "/summon", "errorStr", "Steve"))
-	// fmt.Println(LangFormat(LANG_ZH_CN, "gameMode.changed", LangFormat(LANG_ZH_CN, "createWorldScreen.gameMode.creative")))
-	// fmt.Println(LangFormat(LANG_ZH_CN, "commands.generic.double.tooSmall", 2.1, 4.5))
 }

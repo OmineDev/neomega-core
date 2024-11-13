@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/OmineDev/neomega-core/minecraft/lang"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
 	"github.com/OmineDev/neomega-core/neomega"
 	"github.com/OmineDev/neomega-core/neomega/uqholder"
 	"github.com/OmineDev/neomega-core/utils/async_wrapper"
+	"github.com/OmineDev/neomega-core/utils/rawtext_wrapper"
 )
 
 func (i *PlayerInteract) onTextPacket(pk *packet.Text) {
@@ -24,6 +26,17 @@ func (i *PlayerInteract) onTextPacket(pk *packet.Text) {
 			cleanedMessage = append(cleanedMessage, v)
 		}
 	}
+	parsedMsg := rawtext_wrapper.ParseGameRawText(pk.Message)
+	if pk.NeedsTranslation {
+		args := make([]any, 0, len(pk.Parameters))
+		for _, v := range pk.Parameters {
+			args = append(args, v)
+		}
+		formatted, ok := lang.LangFormat(lang.LANG_ZH_CN, parsedMsg, args...)
+		if ok {
+			parsedMsg = formatted
+		}
+	}
 	chat := &neomega.GameChat{
 		Name:          uqholder.ToPlainName(pk.SourceName),
 		Msg:           cleanedMessage,
@@ -32,6 +45,7 @@ func (i *PlayerInteract) onTextPacket(pk *packet.Text) {
 		RawName:       pk.SourceName,
 		RawParameters: pk.Parameters,
 		Aux:           nil,
+		ParsedMsg:     parsedMsg,
 	}
 	i.onChat(chat)
 }
