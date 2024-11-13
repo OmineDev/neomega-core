@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/OmineDev/neomega-core/i18n"
+	"github.com/OmineDev/neomega-core/minecraft/lang"
 	"github.com/OmineDev/neomega-core/minecraft/protocol/packet"
 	"github.com/OmineDev/neomega-core/neomega"
 	"github.com/OmineDev/neomega-core/neomega/minecraft_conn"
@@ -100,7 +101,8 @@ func NewAccessPointReactCore(node defines.Node, conn minecraft_conn.Conn) neomeg
 			// }, time.Second/5)
 			if pkt.ID() == packet.IDDisconnect {
 				pk := pkt.(*packet.Disconnect)
-				core.CloseWithError(fmt.Errorf("%v: %v", i18n.T(i18n.S_mc_server_disconnect), pk.Message))
+				msg, _ := lang.LangFormat(lang.LANG_ZH_CN, pk.Message, nil)
+				core.CloseWithError(fmt.Errorf("%v: %v", i18n.T(i18n.S_mc_server_disconnect), msg))
 			}
 			core.handlePacket(pkt)
 			if pkt.ID() == packet.IDCommandOutput {

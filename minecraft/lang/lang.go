@@ -1,6 +1,7 @@
 package lang
 
 import (
+	"fmt"
 	"strings"
 	"text/template"
 )
@@ -36,10 +37,8 @@ func LangFormat(lang uint, key string, args ...any) (string, bool) {
 	}
 	// trim and format args
 	for i, arg := range args {
-		if str, ok := arg.(string); ok {
-			if formatted, ok := execTemplate(templates, str, nil); ok {
-				args[i] = formatted
-			}
+		if formatted, ok := execTemplate(templates, fmt.Sprintf("%v", arg), nil); ok {
+			args[i] = formatted
 		}
 	}
 	// trim and format key
