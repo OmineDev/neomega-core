@@ -6,27 +6,32 @@ import (
 	"text/template"
 )
 
-func execTemplate(templates map[string]*template.Template, key string, data []any) (string, bool) {
-	// define a function to format the string
-	formatFunc := func(str string) (string, bool) {
-		if tmpl, ok := templates[str]; ok {
-			var formatedArg strings.Builder
-			err := tmpl.Execute(&formatedArg, data)
-			return formatedArg.String(), err == nil
+func execTemplate(templates map[string]*template.Template, key string, data []any) (result string, ok bool) {
+	parts := strings.Split(key, "%")
+	tmplNames := make([]string, len(parts))
+	// iterate template names
+	for name := range templates {
+		// iterate parts to get the longest match
+		for index, part := range parts {
+			if strings.HasPrefix(part, name) && len(name) > len(tmplNames[index]) {
+				tmplNames[index] = name
+			}
 		}
-		return str, false
 	}
-	// format by key
-	parts := strings.SplitN(key, "%", 2)
-	switch len(parts) {
-	case 1:
-		return formatFunc(parts[0])
-	case 2:
-		formatted, ok := formatFunc(parts[1])
-		return parts[0] + formatted, ok
-	default:
-		return key, false
+	// execute templates
+	for index, tmplName := range tmplNames {
+		// no match
+		if tmplName == "" {
+			continue
+		}
+		// execute the template
+		var formatted strings.Builder
+		if err := templates[tmplName].Execute(&formatted, data); err != nil {
+			continue
+		}
+		parts[index] = strings.Replace(parts[index], tmplName, formatted.String(), 1)
 	}
+	return strings.Join(parts, ""), true
 }
 
 func LangFormat(lang uint, key string, args ...any) (string, bool) {
