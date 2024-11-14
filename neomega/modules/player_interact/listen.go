@@ -9,7 +9,6 @@ import (
 	"github.com/OmineDev/neomega-core/neomega"
 	"github.com/OmineDev/neomega-core/neomega/uqholder"
 	"github.com/OmineDev/neomega-core/utils/async_wrapper"
-	"github.com/OmineDev/neomega-core/utils/rawtext_wrapper"
 )
 
 func (i *PlayerInteract) onTextPacket(pk *packet.Text) {
@@ -26,7 +25,7 @@ func (i *PlayerInteract) onTextPacket(pk *packet.Text) {
 			cleanedMessage = append(cleanedMessage, v)
 		}
 	}
-	parsedMsg := rawtext_wrapper.ParseGameRawText(pk.Message)
+	parsedMsg := lang.ParseGameRawText(pk.Message)
 	if pk.NeedsTranslation {
 		args := make([]any, 0, len(pk.Parameters))
 		for _, v := range pk.Parameters {
