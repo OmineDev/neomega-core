@@ -118,7 +118,7 @@ func (r *SubChunkBatchResult) ToChunks(optionalAlterFn func(r neomega.SubChunkRe
 		var found bool
 		if c, found = chunkSet[cp]; !found {
 			c = &chunks.ChunkWithAuxInfo{
-				Chunk:     chunk.New(blocks.AIR_RUNTIMEID, define.WorldRange),
+				Chunk:     chunk.New(blocks.AIR_RUNTIMEID, define.Dimension(r.finalDim).RangeUpperInclude()),
 				BlockNbts: make(map[define.CubePos]map[string]interface{}),
 				SyncTime:  time.Now().Unix(),
 				ChunkPos:  cp,
