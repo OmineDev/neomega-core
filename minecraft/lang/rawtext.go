@@ -40,8 +40,7 @@ func parseGameRawText(rawText *RawText) (result []any) {
 				args = parseGameRawText(item.With)
 			}
 			// translate
-			formatted, _ := LangFormat(LANG_ZH_CN, item.Translate, args...)
-			result = append(result, formatted)
+			result = append(result, LangFormat(LANG_ZH_CN, item.Translate, args...))
 		}
 	}
 	return

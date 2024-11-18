@@ -101,7 +101,7 @@ func NewAccessPointReactCore(node defines.Node, conn minecraft_conn.Conn) neomeg
 			// }, time.Second/5)
 			if pkt.ID() == packet.IDDisconnect {
 				pk := pkt.(*packet.Disconnect)
-				msg, _ := lang.LangFormat(lang.LANG_ZH_CN, pk.Message, nil)
+				msg := lang.LangFormat(lang.LANG_ZH_CN, pk.Message, nil)
 				core.CloseWithError(fmt.Errorf("%v: %v", i18n.T(i18n.S_mc_server_disconnect), msg))
 			}
 			core.handlePacket(pkt)

@@ -189,8 +189,7 @@ func loginMCServerWithRetry(ctx context.Context, authenticator Authenticator, re
 		if err == nil {
 			break
 		} else {
-			msg, _ := lang.LangFormat(lang.LANG_ZH_CN, err.Error())
-			fmt.Println(msg)
+			fmt.Println(lang.LangFormat(lang.LANG_ZH_CN, err.Error()))
 		}
 		if retryTimesRemains <= 0 {
 			break

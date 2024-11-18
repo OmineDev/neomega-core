@@ -24,8 +24,64 @@ var (
 	formatSpecifierRegex = regexp.MustCompile(`%(\d+\$)?[-+#0 ]?(\d+|\*)?(\.\d+|\.\*)?[hlL]?[a-zA-Z%]`)
 	excludeFloatRegex    = regexp.MustCompile(`%\.\d*f`)
 	indexRegex           = regexp.MustCompile(`\d+`)
-	langTemplates        map[uint]map[string]*template.Template // map[langCode][key]template
+	langNodes            map[uint]*langNode // map[langCode][NodeTree]
 )
+
+type langNode struct {
+	template *template.Template
+	subNodes map[string]*langNode
+}
+
+func addTemplateNode(node *langNode, key string, template *template.Template) {
+	// split the key into parts
+	nodeNames := strings.SplitN(key, ".", 2)
+	// create sub node
+	subnode, ok := node.subNodes[nodeNames[0]]
+	if !ok {
+		subnode = &langNode{
+			subNodes: make(map[string]*langNode),
+		}
+		node.subNodes[nodeNames[0]] = subnode
+	}
+	// add the template to the sub node
+	if len(nodeNames) == 1 {
+		subnode.template = template
+	} else {
+		addTemplateNode(subnode, nodeNames[1], template)
+	}
+}
+
+func execTemplateNode(node *langNode, str string, value []any) (string, bool) {
+	strNode := strings.SplitN(str, ".", 2)[0]
+	// get the longest match of sub node
+	var subNode *langNode
+	var subNodeName string
+	for name, node := range node.subNodes {
+		if strings.HasPrefix(strNode, name) && (len(name) > len(subNodeName)) {
+			subNode = node
+			subNodeName = name
+		}
+		// if full match, break
+		if len(strNode) == len(subNodeName) {
+			break
+		}
+	}
+	// cut off matched string (node name)
+	str = strings.TrimPrefix(str, subNodeName)
+	// return if no matches sub node or the first char is not "." (no next)
+	if subNode == nil {
+		if node.template == nil {
+			return "", false
+		}
+		var formatted strings.Builder
+		if err := node.template.Execute(&formatted, value); err != nil {
+			return "", false
+		}
+		return formatted.String() + str, true
+	}
+	// if sub node exists and the first char is "."
+	return execTemplateNode(subNode, strings.TrimPrefix(str, "."), value)
+}
 
 func convertToTemplate(input string) (*template.Template, error) {
 	// replace all format specifiers with template format
@@ -54,8 +110,7 @@ func convertToTemplate(input string) (*template.Template, error) {
 	return template.New("").Parse(output)
 }
 
-func readLangFile(content []byte) (result map[string]*template.Template, err error) {
-	result = make(map[string]*template.Template)
+func readLangFile(node *langNode, content []byte) error {
 	// read the lang file line by line
 	brotliReader := brotli.NewReader(bytes.NewReader(content))
 	scanner := bufio.NewScanner(brotliReader)
@@ -73,17 +128,16 @@ func readLangFile(content []byte) (result map[string]*template.Template, err err
 		}
 		content[0] = strings.TrimSpace(content[0])
 		content[1] = strings.TrimSpace(content[1])
-		// add the key and value to the map
-		result[content[0]], err = convertToTemplate(content[1])
+		// convert the value to template
+		template, err := convertToTemplate(content[1])
 		if err != nil {
-			return nil, err
+			continue
 		}
+		// add the template to the node tree
+		addTemplateNode(node, content[0], template)
 	}
 	// check for errors
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-	return result, nil
+	return scanner.Err()
 }
 
 func init() {
@@ -92,12 +146,14 @@ func init() {
 		LANG_ZH_CN: zh_CN,
 	}
 	// parse lang files
-	langTemplates = make(map[uint]map[string]*template.Template)
-	for lang, content := range langFiles {
-		langMap, err := readLangFile(content)
-		if err != nil {
+	langNodes = make(map[uint]*langNode)
+	for langCode, content := range langFiles {
+		node := &langNode{
+			subNodes: make(map[string]*langNode),
+		}
+		if err := readLangFile(node, content); err != nil {
 			panic(err)
 		}
-		langTemplates[lang] = langMap
+		langNodes[langCode] = node
 	}
 }

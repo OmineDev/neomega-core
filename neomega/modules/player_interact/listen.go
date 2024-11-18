@@ -31,10 +31,7 @@ func (i *PlayerInteract) onTextPacket(pk *packet.Text) {
 		for _, v := range pk.Parameters {
 			args = append(args, v)
 		}
-		formatted, ok := lang.LangFormat(lang.LANG_ZH_CN, parsedMsg, args...)
-		if ok {
-			parsedMsg = formatted
-		}
+		parsedMsg = lang.LangFormat(lang.LANG_ZH_CN, parsedMsg, args...)
 	}
 	chat := &neomega.GameChat{
 		Name:          uqholder.ToPlainName(pk.SourceName),
