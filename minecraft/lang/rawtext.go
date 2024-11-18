@@ -6,8 +6,8 @@ import (
 )
 
 type RawTextItem struct {
-	Text      string   `json:"text,omitempty"`
-	Translate string   `json:"translate,omitempty"`
+	Text      *string  `json:"text,omitempty"`
+	Translate *string  `json:"translate,omitempty"`
 	With      *RawText `json:"with,omitempty"`
 }
 
@@ -28,19 +28,19 @@ func ParseGameRawText(str string) (result string) {
 
 func parseGameRawText(rawText *RawText) (result []any) {
 	for _, item := range rawText.RawTextItemList {
-		if item.Text != "" {
+		if item.Text != nil {
 			// text
-			result = append(result, item.Text)
+			result = append(result, *item.Text)
 			continue
 		}
-		if item.Translate != "" {
+		if item.Translate != nil {
 			// with
 			args := []any{}
 			if item.With != nil {
 				args = parseGameRawText(item.With)
 			}
 			// translate
-			result = append(result, LangFormat(LANG_ZH_CN, item.Translate, args...))
+			result = append(result, LangFormat(LANG_ZH_CN, *item.Translate, args...))
 		}
 	}
 	return
