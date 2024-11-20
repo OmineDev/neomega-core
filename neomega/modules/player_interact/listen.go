@@ -29,7 +29,7 @@ func (i *PlayerInteract) onTextPacket(pk *packet.Text) {
 	if pk.NeedsTranslation {
 		args := make([]any, 0, len(pk.Parameters))
 		for _, v := range pk.Parameters {
-			args = append(args, v)
+			args = append(args, lang.LangFormat(lang.LANG_ZH_CN, v))
 		}
 		parsedMsg = lang.LangFormat(lang.LANG_ZH_CN, parsedMsg, args...)
 	}
