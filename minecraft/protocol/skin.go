@@ -223,23 +223,3 @@ func (x *PersonaPieceTintColour) Marshal(r IO) {
 	r.String(&x.PieceType)
 	FuncSliceUint32Length(r, &x.Colours, r.String)
 }
-
-// Netease
-type ConfirmSkinUnknownEntry struct {
-	// Netease
-	Unknown1 bool
-	// Netease, such as 16384
-	Unknown2 uint64
-	// Netease, such as 9223372038116336821
-	Unknown3 uint64
-	// Netease
-	Unknown4 string
-}
-
-// Netease
-func (x *ConfirmSkinUnknownEntry) Marshal(r IO) {
-	r.Bool(&x.Unknown1)
-	r.Uint64(&x.Unknown2)
-	r.Uint64(&x.Unknown3)
-	r.String(&x.Unknown4)
-}

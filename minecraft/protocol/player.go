@@ -171,3 +171,20 @@ func (x *PlayerBlockAction) Marshal(r IO) {
 		r.Varint32(&x.Face)
 	}
 }
+
+// Netease
+type NeteasePlayerData struct {
+	// Netease
+	Unknown1 bool
+	// Netease
+	UUID uuid.UUID
+	// Netease
+	Unknown2 string
+}
+
+// Netease
+func (x *NeteasePlayerData) Marshal(r IO) {
+	r.Bool(&x.Unknown1)
+	r.UUID(&x.UUID)
+	r.String(&x.Unknown2)
+}

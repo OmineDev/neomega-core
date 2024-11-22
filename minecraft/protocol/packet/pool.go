@@ -280,6 +280,9 @@ func init() {
 		IDMobBlockActorChanged: func() Packet { return &MobBlockActorChanged{} }, // Netease
 		IDChangeActorMotion:    func() Packet { return &ChangeActorMotion{} },    // Netease
 		IDAnimateEmoteEntity:   func() Packet { return &AnimateEmoteEntity{} },   // Netease
+		IDChangeBiome:          func() Packet { return &ChangeBiome{} },          // Netease
+		IDUpdateBiome:          func() Packet { return &UpdateBiome{} },          // Netease
+		IDSyncSkin:             func() Packet { return &SyncSkin{} },             // Netease
 		// ---
 		IDCameraInstruction:             func() Packet { return &CameraInstruction{} },
 		IDCompressedBiomeDefinitionList: func() Packet { return &CompressedBiomeDefinitionList{} },
@@ -364,7 +367,8 @@ func init() {
 		IDEditorNetwork:                   func() Packet { return &EditorNetwork{} },
 		IDRequestNetworkSettings:          func() Packet { return &RequestNetworkSettings{} },
 		IDGameTestResults:                 func() Packet { return &GameTestResults{} },
-		IDPyRpc:                           func() Packet { return &PyRpc{} },
+		IDPyRpc:                           func() Packet { return &PyRpc{} },    // Netease
+		IDSyncSkin:                        func() Packet { return &SyncSkin{} }, // Netease
 		IDOpenSign:                        func() Packet { return &OpenSign{} },
 	}
 	for id, pk := range clientOriginating {

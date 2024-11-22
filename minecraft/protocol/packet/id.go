@@ -222,7 +222,10 @@ const (
 	IDMobBlockActorChanged                      // Netease: new packet
 	IDChangeActorMotion                         // Netease: new packet
 	IDAnimateEmoteEntity                        // Netease: new packet
-	IDCameraInstruction             = iota + 79 // Netease: 301 -> 300
+	IDChangeBiome                               // Netease: new packet
+	IDUpdateBiome                               // Netease: new packet
+	IDSyncSkin                                  // Netease: new packet
+	IDCameraInstruction             = iota + 76 // Netease: 301 -> 300
 	IDCompressedBiomeDefinitionList             // Netease: 302 -> 301
 	IDTrimData                                  // Netease: 303 -> 302
 	IDOpenSign                                  // Netease: 304 -> 303

@@ -7,7 +7,7 @@ import (
 // Netease packet
 type ConfirmSkin struct {
 	// Netease: skin info
-	SkinInfo []protocol.ConfirmSkinUnknownEntry
+	PlayerData []protocol.NeteasePlayerData
 	// Netease: launcher uids
 	Uids []string
 	// Netease
@@ -20,7 +20,7 @@ func (*ConfirmSkin) ID() uint32 {
 }
 
 func (pk *ConfirmSkin) Marshal(io protocol.IO) {
-	protocol.SliceVaruint32Length(io, &pk.SkinInfo)
-	protocol.FuncSliceOfLen(io, uint32(len(pk.SkinInfo)), &pk.Uids, io.String)
-	protocol.FuncSliceOfLen(io, uint32(len(pk.SkinInfo)), &pk.Unknown3, io.String)
+	protocol.SliceVaruint32Length(io, &pk.PlayerData)
+	protocol.FuncSliceOfLen(io, uint32(len(pk.PlayerData)), &pk.Uids, io.String)
+	protocol.FuncSliceOfLen(io, uint32(len(pk.PlayerData)), &pk.Unknown3, io.String)
 }
