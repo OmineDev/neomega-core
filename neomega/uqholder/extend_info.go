@@ -259,13 +259,15 @@ func (uq *ExtendInfoHolder) UpdateFromPacket(pk packet.Packet) {
 		if uq.knownCurrentTick {
 			intendClientTick, _ := uq.GetCurrentTick()
 			actualClientTick := p.ServerReceptionTimestamp + (intendClientTick-p.ClientRequestTimestamp)/2
-			uq.setCurrentTick(actualClientTick)
-			syncRatio := float32(actualClientTick) / float32(intendClientTick)
+			syncRatio := float32(actualClientTick-uq.CurrentTick) / float32(intendClientTick-uq.CurrentTick)
 			if syncRatio > 1 {
 				uq.syncRatio = 1
+			} else if syncRatio < 0 {
+				uq.syncRatio = 0
 			} else {
 				uq.syncRatio = syncRatio
 			}
+			uq.setCurrentTick(actualClientTick)
 		} else {
 			uq.setCurrentTick(p.ServerReceptionTimestamp)
 		}
