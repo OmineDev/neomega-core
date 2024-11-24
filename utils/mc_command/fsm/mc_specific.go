@@ -30,7 +30,7 @@ func (n *selectorOrNameLeadingCharNode) Do(r TextReader, currentRead *Text) {
 // `@abc` `@abc[ ... ]` `" sth "` `name`
 func MCSelectorOrNameLogic(end, fail AutomataNode) AutomataNode {
 	_1 := &selectorOrNameLeadingCharNode{}
-	_3 := MakeQuoteMixtureNonExceptStringNode("\r\n\t ")
+	_3 := MakeQuoteMixtureNonExceptStringNode("\r\n\t ~^")
 	_4 := MakeWhiteSpaceStringNode()
 	_5 := MakeMiddleBracketStringNode()
 	_4_then_5 := (&MachineNodeWrapper{

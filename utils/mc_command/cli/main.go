@@ -45,7 +45,6 @@ func main() {
 	command = `fill ~~~~~~ stained_glass -1 replace stone -1`
 	command = `summon armor_stand -5025 304 -4974 ~ ~ a 草方包`
 	command = `execute positioned -10000 -60 -10000 run setworldspawn ~2~~2`
-	command = `execute facing -10000 -60 -10000 run setworldspawn ~2~~2`
 	fmt.Println(command)
 	fmt.Println(mc_command.UpdateLegacyCommand(command))
 }

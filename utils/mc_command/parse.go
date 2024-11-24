@@ -46,40 +46,45 @@ func ParseLegacyMCExecuteCommand(command string) *LegacyMCExecuteCommand {
 	c.Pos = t
 	_, _ = token.ReadWhiteSpace(reader)
 	back := reader.Snapshot()
-	ok, _ = token.ReadSpecific(reader, "run", true)
+	ok, _ = token.ReadSpecific(reader, "detect", true)
 	if ok {
+		token.ReadWhiteSpace(reader)
+		ok, t = token.ReadPosition(reader)
+		if !ok {
+			return nil
+		}
+		c.DetectPosIfAny = t
+		token.ReadWhiteSpace(reader)
+		ok, t = token.ReadNonWhiteSpace(reader)
+		if !ok {
+			return nil
+		}
+		c.DetectBlockNameIfAny = t
+		token.ReadWhiteSpace(reader)
+		ok, t = token.ReadSignedInteger(reader)
+		if !ok {
+			return nil
+		}
+		c.DetectBlockValueIfAny = t
+		token.ReadWhiteSpace(reader)
+	} else {
 		back()
+	}
+
+	back = reader.Snapshot()
+	ok, _ = token.ReadAnySpecifics(
+		reader,
+		[]string{"if", "unless", "align", "anchored", "as", "at", "facing", "in", "positioned", "rotated", "run"},
+		true,
+	)
+	if ok {
 		if c.Selector == "facing" || c.Selector == "positioned" {
 			// It's a new version command!
 			return nil
 		}
 	}
-	ok, _ = token.ReadSpecific(reader, "detect", true)
-	if !ok {
-		back()
-		_, subCommand := token.ReadUntilEnd(reader)
-		c.SubCommand = subCommand
-		return c
-	}
-	token.ReadWhiteSpace(reader)
-	ok, t = token.ReadPosition(reader)
-	if !ok {
-		return nil
-	}
-	c.DetectPosIfAny = t
-	token.ReadWhiteSpace(reader)
-	ok, t = token.ReadNonWhiteSpace(reader)
-	if !ok {
-		return nil
-	}
-	c.DetectBlockNameIfAny = t
-	token.ReadWhiteSpace(reader)
-	ok, t = token.ReadSignedInteger(reader)
-	if !ok {
-		return nil
-	}
-	c.DetectBlockValueIfAny = t
-	token.ReadWhiteSpace(reader)
+	back()
+
 	ok, t = token.ReadUntilEnd(reader)
 	if !ok {
 		return nil
