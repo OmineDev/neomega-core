@@ -46,6 +46,14 @@ func ParseLegacyMCExecuteCommand(command string) *LegacyMCExecuteCommand {
 	c.Pos = t
 	_, _ = token.ReadWhiteSpace(reader)
 	back := reader.Snapshot()
+	ok, _ = token.ReadSpecific(reader, "run", true)
+	if ok {
+		back()
+		if c.Selector == "facing" || c.Selector == "positioned" {
+			// It's a new version command!
+			return nil
+		}
+	}
 	ok, _ = token.ReadSpecific(reader, "detect", true)
 	if !ok {
 		back()
