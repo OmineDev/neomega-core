@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strings"
 
 	"github.com/OmineDev/neomega-core/i18n"
 )
@@ -77,8 +78,8 @@ func checkAuthServerUrl(authUrl string) error {
 		return errors.New(i18n.T(i18n.S_cannot_establish_http_connection_with_auth_server_api))
 	}
 	host := parsedURL.Hostname()
-	if host != "user.fastbuilder.pro" &&
-		host != "liliya233.uk" &&
+	if strings.HasSuffix(host, "fastbuilder.pro") &&
+		strings.HasSuffix(host, "liliya233.uk") &&
 		host != "localhost" &&
 		host != "127.0.0.1" {
 		return errors.New(i18n.T(i18n.S_cannot_establish_http_connection_with_auth_server_api))

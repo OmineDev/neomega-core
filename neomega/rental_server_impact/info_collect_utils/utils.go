@@ -100,23 +100,30 @@ func WriteFBToken(token string, tokenPath string) {
 }
 
 const (
-	AUTH_SERVER_FB_OFFICIAL = "https://user.fastbuilder.pro"
-	AUTH_SERVER_LILIYA      = "https://liliya233.uk"
+	AUTH_SERVER_FB_OFFICIAL   = "https://user.fastbuilder.pro"
+	AUTH_SERVER_LILIYA        = "https://liliya233.uk"
+	AUTH_SERVER_LILIYA_DIRECT = "https://direct.liliya233.uk"
 )
 
 var AUTH_SERVER_NAMES = map[string]string{
 	AUTH_SERVER_FB_OFFICIAL: i18n.T(i18n.S_auth_server_name_official),
 	AUTH_SERVER_LILIYA:      i18n.T(i18n.S_auth_server_name_liliya),
 }
-var AUTH_SERVER_SELECT_STRINGS = []string{"1. " + i18n.T(i18n.S_auth_server_name_official), "2. " + i18n.T(i18n.S_auth_server_name_liliya)}
+var AUTH_SERVER_SELECT_STRINGS = []string{
+	"1. " + i18n.T(i18n.S_auth_server_name_official),
+	"2. " + i18n.T(i18n.S_auth_server_name_liliya),
+	"3. " + i18n.T(i18n.S_auth_server_name_liliya_direct),
+}
 
 func TranslateInputToAuthServer(input string) (authServer string, authServerName string, err error) {
 	if strings.Contains(input, "1") {
 		return AUTH_SERVER_FB_OFFICIAL, i18n.T(i18n.S_auth_server_name_official), nil
 	} else if strings.Contains(input, "2") {
 		return AUTH_SERVER_LILIYA, i18n.T(i18n.S_auth_server_name_liliya), nil
+	} else if strings.Contains(input, "3") {
+		return AUTH_SERVER_LILIYA_DIRECT, i18n.T(i18n.S_auth_server_name_liliya_direct), nil
 	}
-	return "", "", fmt.Errorf(i18n.T(i18n.S_invalid_selection_please_select_in_1_to_2))
+	return "", "", fmt.Errorf(i18n.T(i18n.S_invalid_selection_please_select_in_range), len(AUTH_SERVER_SELECT_STRINGS))
 }
 
 func TranslateAuthServerToAuthServerName(authServer string) (authServerName string) {
